@@ -11,9 +11,19 @@ config_version=5
 [application]
 
 config/name="New Game Project"
+run/main_scene="uid://c1ha2r6un06ks"
 config/features=PackedStringArray("4.4", "Forward Plus")
 config/icon="res://icon.svg"
+
+[display]
+
+window/size/mode=2
+window/stretch/mode="viewport"
 
 [dotnet]
 
 project/assembly_name="New Game Project"
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=0
