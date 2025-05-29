@@ -9,6 +9,14 @@ public partial class Player : CharacterBody2D
 	
 	private Vector2 velocity = Vector2.Zero;
 	
+	public override void _Process(double delta)
+	{
+		var animatedSprite2D = GetNode<AnimatedSprite2D>("AnimatedSprite2D");
+		animatedSprite2D.Animation = "move";
+		animatedSprite2D.FlipH = Velocity.X < 0;
+		animatedSprite2D.Play();
+	}
+	
 	public override void _PhysicsProcess(double delta)
 	{
 		Vector2 direction = Vector2.Zero;
@@ -26,6 +34,8 @@ public partial class Player : CharacterBody2D
 		if (direction.Length() > 0)
 			direction = direction.Normalized();
 
+		
+		
 		// Calculate desired velocity
 		Vector2 desiredVelocity = direction * MAX_SPEED;
 
@@ -37,11 +47,14 @@ public partial class Player : CharacterBody2D
 			velocityChange = velocityChange.Clamp(-1.0f * ACCELERATION * (float)delta, ACCELERATION * (float)delta);
 		else
 			velocityChange = velocityChange.Clamp(-1.0f * DECELERATION * (float)delta, DECELERATION * (float)delta);
-
+			
 		// Update velocity
 		velocity += velocityChange;
 
 		Velocity = velocity;
+		
+		
+		
 		// Move the character
 		MoveAndSlide();
 	}

@@ -50,4 +50,4 @@ shape = SubResource("CircleShape2D_ibj0t")
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 sprite_frames = SubResource("SpriteFrames_kjpio")
 animation = &"move"
-frame_progress = 0.638196
+frame_progress = 0.993177
