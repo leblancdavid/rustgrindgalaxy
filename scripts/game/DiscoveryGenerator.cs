@@ -93,11 +93,13 @@ public sealed class DiscoveryGenerator
             GravityScale = gravityScale,
             EnemyDensity = 0.8f + (difficultyFactor * 0.6f) + seededRng.RandfRange(-0.05f, 0.08f),
             PickupDensity = 0.85f + ((6 - discovery.DifficultyTier) * 0.06f) + seededRng.RandfRange(-0.04f, 0.08f),
+            HazardDensity = GetHazardDensity(discovery.EnvironmentTheme, difficultyFactor, seededRng),
             MaterialTarget = 3 + discovery.DifficultyTier,
             PrimaryMineral = discovery.PrimaryMineral,
             SecondaryMineral = discovery.SecondaryMineral,
             DifficultyTier = discovery.DifficultyTier,
             LevelTemplateId = "industrial_01",
+            Modifiers = RollModifiers(discovery.EnvironmentTheme, difficultyFactor, seededRng),
         };
     }
 
@@ -219,5 +221,52 @@ public sealed class DiscoveryGenerator
             EnvironmentTheme.Derelict => rng.RandfRange(0.7f, 0.86f),
             _ => 1.0f,
         };
+    }
+
+    private static float GetHazardDensity(EnvironmentTheme theme, float difficultyFactor, RandomNumberGenerator rng)
+    {
+        var baseDensity = theme switch
+        {
+            EnvironmentTheme.Industrial => 0.55f,
+            EnvironmentTheme.Rocky => 0.45f,
+            EnvironmentTheme.Frozen => 0.65f,
+            EnvironmentTheme.Derelict => 0.75f,
+            _ => 0.5f,
+        };
+
+        return Mathf.Clamp(baseDensity + (difficultyFactor * 0.35f) + rng.RandfRange(-0.08f, 0.08f), 0.2f, 1.25f);
+    }
+
+    private static System.Collections.Generic.List<MissionModifierType> RollModifiers(EnvironmentTheme theme, float difficultyFactor, RandomNumberGenerator rng)
+    {
+        var modifiers = new System.Collections.Generic.List<MissionModifierType>();
+
+        if (theme is EnvironmentTheme.Derelict or EnvironmentTheme.Frozen)
+        {
+            modifiers.Add(MissionModifierType.LowVisibility);
+        }
+
+        if (theme is EnvironmentTheme.Industrial or EnvironmentTheme.Rocky)
+        {
+            modifiers.Add(MissionModifierType.RichVeins);
+        }
+
+        if (theme == EnvironmentTheme.Derelict || (theme == EnvironmentTheme.Industrial && rng.Randf() < 0.7f))
+        {
+            modifiers.Add(MissionModifierType.SignalInterference);
+        }
+
+        if (difficultyFactor >= 0.6f || theme == EnvironmentTheme.Derelict)
+        {
+            modifiers.Add(MissionModifierType.UnstableRails);
+        }
+
+        var maxModifiers = difficultyFactor >= 0.75f ? 3 : 2;
+        while (modifiers.Count > maxModifiers)
+        {
+            modifiers.RemoveAt(rng.RandiRange(0, modifiers.Count - 1));
+        }
+
+        return modifiers;
     }
 }

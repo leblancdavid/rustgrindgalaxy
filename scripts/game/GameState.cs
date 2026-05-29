@@ -18,6 +18,8 @@ public partial class GameState : Node
 
     public MissionRunData? ActiveMission { get; private set; }
 
+    public MissionResultData? LastMissionResult { get; private set; }
+
     public override void _Ready()
     {
         LoadData();
@@ -66,6 +68,8 @@ public partial class GameState : Node
             return;
         }
 
+        LastMissionResult = CreateMissionResult(true, collectedMinerals);
+
         foreach (var entry in collectedMinerals)
         {
             var key = entry.Key.ToString();
@@ -84,9 +88,16 @@ public partial class GameState : Node
             return;
         }
 
+        LastMissionResult = CreateMissionResult(false, new Dictionary<MineralType, int>());
+
         Data.FailedMissionCount += 1;
         ActiveMission = null;
         SaveData();
+    }
+
+    public void ClearLastMissionResult()
+    {
+        LastMissionResult = null;
     }
 
     public int GetTotalRecoveredMinerals()
@@ -155,5 +166,23 @@ public partial class GameState : Node
                 Data.RecoveredMinerals[key] = 0;
             }
         }
+    }
+
+    private MissionResultData CreateMissionResult(bool succeeded, IReadOnlyDictionary<MineralType, int> collectedMinerals)
+    {
+        var mission = ActiveMission ?? MissionRunData.CreateFallback();
+        var dictionary = collectedMinerals.ToDictionary(entry => entry.Key.ToString(), entry => entry.Value);
+
+        return new MissionResultData
+        {
+            Succeeded = succeeded,
+            MissionTitle = mission.MissionTitle,
+            ThemeLabel = mission.ThemeLabel,
+            DifficultyTier = mission.DifficultyTier,
+            MaterialTarget = mission.MaterialTarget,
+            TotalCollected = collectedMinerals.Values.Sum(),
+            Modifiers = new List<MissionModifierType>(mission.Modifiers),
+            CollectedMinerals = dictionary,
+        };
     }
 }

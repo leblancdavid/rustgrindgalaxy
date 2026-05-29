@@ -39,6 +39,7 @@ public partial class World : Node2D
         Player.SetLoadout(DebugLoadout);
         Player.GravityScale = _mission.GravityScale;
         MissionMaterialTarget = _mission.MaterialTarget;
+        ApplyMissionModifiers();
 
         if (GetNodeOrNull<LevelIndustrial01>("Level") is { } level)
         {
@@ -159,9 +160,30 @@ public partial class World : Node2D
         return _mission.DifficultyTier;
     }
 
+    public string GetMissionModifierSummary()
+    {
+        return _mission.GetModifierSummary();
+    }
+
     private void UpdateExtractionState()
     {
         ExtractionZone?.SetActive(CanExtract());
+    }
+
+    private void ApplyMissionModifiers()
+    {
+        foreach (var modifier in _mission.Modifiers)
+        {
+            switch (modifier)
+            {
+                case MissionModifierType.RichVeins:
+                    MissionMaterialTarget = Mathf.Max(2, MissionMaterialTarget - 1);
+                    break;
+                case MissionModifierType.SignalInterference:
+                    RestartDelaySeconds = 1.0f;
+                    break;
+            }
+        }
     }
 
     private void ReturnToTerminal(bool missionSucceeded)
@@ -175,7 +197,7 @@ public partial class World : Node2D
             _gameState.FailActiveMission();
         }
 
-        var targetScene = ReturnScene ?? GD.Load<PackedScene>("res://scenes/game/MissionTerminal.tscn");
+        var targetScene = ReturnScene ?? GD.Load<PackedScene>("res://scenes/ui/MissionResults.tscn");
         GetTree().ChangeSceneToPacked(targetScene);
     }
 }

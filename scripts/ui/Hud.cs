@@ -24,7 +24,7 @@ public partial class Hud : CanvasLayer
         var railSpeed = player.ResolvedEffects.RailSpeedBonus;
         var missionTitle = world?.GetMissionTitle() ?? "Industrial Test Run";
         var themeLabel = world?.GetMissionThemeLabel() ?? "Industrial";
-        _missionLabel.Text = $"{missionTitle}\nTheme: {themeLabel}  Difficulty: T{world?.GetMissionDifficulty() ?? 1}";
+        _missionLabel.Text = $"{missionTitle}\nTheme: {themeLabel}  Difficulty: T{world?.GetMissionDifficulty() ?? 1}\nModifiers: {world?.GetMissionModifierSummary() ?? "None"}";
         _statusLabel.Text = $"State: {state}\nRail Bonus: {railSpeed:0.0}  Gravity: {player.GravityScale:0.00}";
 
         var materialTarget = world?.MissionMaterialTarget ?? 0;

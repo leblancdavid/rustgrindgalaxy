@@ -2,9 +2,6 @@
 
 [ext_resource type="Script" path="res://scripts/world/LevelIndustrial01.cs" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/world/GrindRail.tscn" id="2"]
-[ext_resource type="PackedScene" path="res://scenes/enemies/Raider.tscn" id="3"]
-[ext_resource type="PackedScene" path="res://scenes/enemies/Drone.tscn" id="4"]
-[ext_resource type="PackedScene" path="res://scenes/world/MineralPickup.tscn" id="5"]
 [ext_resource type="PackedScene" path="res://scenes/world/ExtractionZone.tscn" id="6"]
 
 [sub_resource type="RectangleShape2D" id="1"]
@@ -71,27 +68,62 @@ position = Vector2(224, 88)
 Width = 92.0
 BaseSpeed = 172.0
 
-[node name="RaiderA" parent="." instance=ExtResource("3")]
+[node name="SpawnedActors" type="Node2D" parent="."]
+
+[node name="SpawnMarkers" type="Node2D" parent="."]
+
+[node name="Raiders" type="Node2D" parent="SpawnMarkers"]
+
+[node name="RaiderA" type="Marker2D" parent="SpawnMarkers/Raiders"]
 position = Vector2(154, 86)
 
-[node name="DroneA" parent="." instance=ExtResource("4")]
+[node name="RaiderB" type="Marker2D" parent="SpawnMarkers/Raiders"]
+position = Vector2(92, 146)
+
+[node name="RaiderC" type="Marker2D" parent="SpawnMarkers/Raiders"]
+position = Vector2(252, 126)
+
+[node name="Drones" type="Node2D" parent="SpawnMarkers"]
+
+[node name="DroneA" type="Marker2D" parent="SpawnMarkers/Drones"]
 position = Vector2(222, 64)
 
-[node name="PickupA" parent="." instance=ExtResource("5")]
+[node name="DroneB" type="Marker2D" parent="SpawnMarkers/Drones"]
+position = Vector2(142, 56)
+
+[node name="Hazards" type="Node2D" parent="SpawnMarkers"]
+
+[node name="HazardA" type="Marker2D" parent="SpawnMarkers/Hazards"]
+position = Vector2(124, 146)
+
+[node name="HazardB" type="Marker2D" parent="SpawnMarkers/Hazards"]
+position = Vector2(206, 146)
+
+[node name="HazardC" type="Marker2D" parent="SpawnMarkers/Hazards"]
+position = Vector2(262, 126)
+
+[node name="HazardD" type="Marker2D" parent="SpawnMarkers/Hazards"]
+position = Vector2(92, 106)
+
+[node name="PickupMarkers" type="Node2D" parent="SpawnMarkers"]
+
+[node name="PickupA" type="Marker2D" parent="SpawnMarkers/PickupMarkers"]
 position = Vector2(70, 98)
-Mineral = 2
 
-[node name="PickupB" parent="." instance=ExtResource("5")]
+[node name="PickupB" type="Marker2D" parent="SpawnMarkers/PickupMarkers"]
 position = Vector2(132, 92)
-Mineral = 3
 
-[node name="PickupC" parent="." instance=ExtResource("5")]
+[node name="PickupC" type="Marker2D" parent="SpawnMarkers/PickupMarkers"]
 position = Vector2(221, 72)
-Mineral = 0
 
-[node name="PickupD" parent="." instance=ExtResource("5")]
+[node name="PickupD" type="Marker2D" parent="SpawnMarkers/PickupMarkers"]
 position = Vector2(270, 118)
-Mineral = 4
+
+[node name="PickupE" type="Marker2D" parent="SpawnMarkers/PickupMarkers"]
+position = Vector2(186, 146)
+
+[node name="PickupF" type="Marker2D" parent="SpawnMarkers/PickupMarkers"]
+position = Vector2(104, 146)
 
 [node name="ExtractionZone" parent="." instance=ExtResource("6")]
 position = Vector2(300, 144)
