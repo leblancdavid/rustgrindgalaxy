@@ -4,6 +4,7 @@ using System.Linq;
 
 public partial class World : Node2D
 {
+    [Export] public PackedScene? ReturnScene;
     [Export] public float RestartDelaySeconds = 0.75f;
     [Export] public int MissionMaterialTarget = 4;
 
@@ -17,6 +18,8 @@ public partial class World : Node2D
 
     public Dictionary<MineralType, int> CollectedMinerals { get; } = new();
 
+    private GameState _gameState = null!;
+    private MissionRunData _mission = null!;
     private float _deathTimer;
 
     private bool _restartReady;
@@ -25,6 +28,8 @@ public partial class World : Node2D
 
     public override void _Ready()
     {
+        _gameState = GetNode<GameState>("/root/GameState");
+        _mission = _gameState.ActiveMission ?? MissionRunData.CreateFallback();
         Player = GetNode<PlayerController>("Player");
         HudLayer = GetNode<Hud>("Hud");
         ExtractionZone = GetNode<ExtractionZone>("Level/ExtractionZone");
@@ -32,6 +37,13 @@ public partial class World : Node2D
         var generator = new ModuleGenerator();
         DebugLoadout = generator.GenerateDebugLoadout(ModuleRarity.Rare);
         Player.SetLoadout(DebugLoadout);
+        Player.GravityScale = _mission.GravityScale;
+        MissionMaterialTarget = _mission.MaterialTarget;
+
+        if (GetNodeOrNull<LevelIndustrial01>("Level") is { } level)
+        {
+            level.ApplyMission(_mission);
+        }
 
         foreach (var mineral in System.Enum.GetValues<MineralType>())
         {
@@ -55,7 +67,7 @@ public partial class World : Node2D
         {
             if (Input.IsActionJustPressed("ui_accept"))
             {
-                GetTree().ReloadCurrentScene();
+                ReturnToTerminal(true);
                 return;
             }
 
@@ -75,7 +87,7 @@ public partial class World : Node2D
 
             if (_restartReady && Input.IsActionJustPressed("ui_accept"))
             {
-                GetTree().ReloadCurrentScene();
+                ReturnToTerminal(false);
                 return;
             }
         }
@@ -132,8 +144,38 @@ public partial class World : Node2D
         _missionComplete = true;
     }
 
+    public string GetMissionTitle()
+    {
+        return _mission.MissionTitle;
+    }
+
+    public string GetMissionThemeLabel()
+    {
+        return _mission.ThemeLabel;
+    }
+
+    public int GetMissionDifficulty()
+    {
+        return _mission.DifficultyTier;
+    }
+
     private void UpdateExtractionState()
     {
         ExtractionZone?.SetActive(CanExtract());
+    }
+
+    private void ReturnToTerminal(bool missionSucceeded)
+    {
+        if (missionSucceeded)
+        {
+            _gameState.CompleteActiveMission(CollectedMinerals);
+        }
+        else
+        {
+            _gameState.FailActiveMission();
+        }
+
+        var targetScene = ReturnScene ?? GD.Load<PackedScene>("res://scenes/game/MissionTerminal.tscn");
+        GetTree().ChangeSceneToPacked(targetScene);
     }
 }

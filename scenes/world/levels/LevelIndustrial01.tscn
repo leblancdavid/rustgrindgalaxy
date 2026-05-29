@@ -1,9 +1,23 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://scripts/world/LevelIndustrial01.cs" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/world/GrindRail.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/Raider.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/Drone.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/world/MineralPickup.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/world/ExtractionZone.tscn" id="6"]
 
 [sub_resource type="RectangleShape2D" id="1"]
 size = Vector2(320, 16)
+
+[sub_resource type="RectangleShape2D" id="2"]
+size = Vector2(56, 10)
+
+[sub_resource type="RectangleShape2D" id="3"]
+size = Vector2(52, 10)
+
+[sub_resource type="RectangleShape2D" id="4"]
+size = Vector2(54, 10)
 
 [node name="LevelIndustrial01" type="Node2D"]
 script = ExtResource("1")

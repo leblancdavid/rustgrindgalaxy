@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/world/World.cs" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/player/Player.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/world/levels/LevelIndustrial01.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/ui/Hud.tscn" id="4"]
 
 [node name="World" type="Node2D"]
 script = ExtResource("1")

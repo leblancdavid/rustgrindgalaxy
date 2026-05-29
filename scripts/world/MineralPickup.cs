@@ -10,8 +10,14 @@ public partial class MineralPickup : Area2D
     public override void _Ready()
     {
         _visual = GetNode<Polygon2D>("Visual");
-        _visual.Color = GetMineralColor(Mineral);
+        UpdateVisual();
         BodyEntered += OnBodyEntered;
+    }
+
+    public void SetMineral(MineralType mineral)
+    {
+        Mineral = mineral;
+        UpdateVisual();
     }
 
     private void OnBodyEntered(Node2D body)
@@ -38,5 +44,13 @@ public partial class MineralPickup : Area2D
             MineralType.Umbra => new Color(0.3216f, 0.2745f, 0.4078f, 1.0f),
             _ => Colors.White,
         };
+    }
+
+    private void UpdateVisual()
+    {
+        if (_visual != null)
+        {
+            _visual.Color = GetMineralColor(Mineral);
+        }
     }
 }
