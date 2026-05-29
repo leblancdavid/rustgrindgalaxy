@@ -1,3 +1,21 @@
-# Godot 4+ specific ignores
+# Godot 4.x
 .godot/
+*.import
+export_presets.cfg
+
+# Mono/.NET
+.mono/
+bin/
+obj/
+*.user
+*.dll
+*.pdb
+*.mdb
+*.binlog
+
+# OS/editor
 /android/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
