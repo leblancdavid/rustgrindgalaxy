@@ -43,7 +43,7 @@ public partial class MissionResults : Control
         _titleLabel.Text = result.Succeeded ? "Mission Complete" : "Mission Failed";
         _summaryLabel.Text =
             $"{result.MissionTitle}\n" +
-            $"Theme: {result.ThemeLabel}  Difficulty: T{result.DifficultyTier}  Hazard Pressure: {GetHazardPressureText(result.ThemeLabel, result.DifficultyTier)}";
+            $"Theme: {result.ThemeLabel}  Difficulty: T{result.DifficultyTier}  Hazard Pressure: {GetHazardPressureText(result)}";
 
         _detailsLabel.Text = result.Succeeded
             ? $"Collected {result.TotalCollected} / {result.MaterialTarget} required minerals.\nRecovered: {result.SummaryText}\nModifiers: {result.ModifierSummary}"
@@ -62,15 +62,20 @@ public partial class MissionResults : Control
         GetTree().ChangeSceneToPacked(terminalScene);
     }
 
-    private static string GetHazardPressureText(string themeLabel, int difficultyTier)
+    private static string GetHazardPressureText(MissionResultData result)
     {
-        var score = difficultyTier + (themeLabel is "Derelict" or "Frozen" ? 1 : 0);
-        return score switch
+        return EnvironmentCatalog.GetHazardPressureText(ParseTheme(result.ThemeLabel), result.DifficultyTier);
+    }
+
+    private static EnvironmentTheme ParseTheme(string themeLabel)
+    {
+        return themeLabel switch
         {
-            <= 2 => "Low",
-            <= 4 => "Moderate",
-            <= 6 => "High",
-            _ => "Severe",
+            "Industrial" => EnvironmentTheme.Industrial,
+            "Rocky" => EnvironmentTheme.Rocky,
+            "Frozen" => EnvironmentTheme.Frozen,
+            "Derelict" => EnvironmentTheme.Derelict,
+            _ => EnvironmentTheme.Industrial,
         };
     }
 }

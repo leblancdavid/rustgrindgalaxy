@@ -1,4 +1,5 @@
 using Godot;
+using System.Collections.Generic;
 
 public sealed class DiscoveryGenerator
 {
@@ -54,7 +55,8 @@ public sealed class DiscoveryGenerator
         var seededRng = new RandomNumberGenerator { Seed = (ulong)seed };
         var destinationType = RollDestinationType(seededRng);
         var theme = RollEnvironmentTheme(seededRng, probeTier, destinationType);
-        var primaryMineral = GetPrimaryMineral(theme);
+        var profile = EnvironmentCatalog.GetProfile(theme);
+        var primaryMineral = profile.PrimaryMineral;
         var secondaryMineral = RollSecondaryMineral(seededRng, primaryMineral);
         var difficultyTier = RollDifficultyTier(seededRng, probeTier);
 
@@ -80,7 +82,8 @@ public sealed class DiscoveryGenerator
     {
         var runSeed = NextSeed() ^ discovery.Seed ^ discovery.TimesVisited;
         var seededRng = new RandomNumberGenerator { Seed = (ulong)runSeed };
-        var gravityScale = GetGravityScale(discovery.EnvironmentTheme, seededRng);
+        var profile = EnvironmentCatalog.GetProfile(discovery.EnvironmentTheme);
+        var gravityScale = EnvironmentCatalog.RollGravityScale(discovery.EnvironmentTheme, seededRng);
         var difficultyFactor = discovery.DifficultyTier / 5.0f;
 
         return new MissionRunData
@@ -88,31 +91,24 @@ public sealed class DiscoveryGenerator
             DiscoveryId = discovery.Id,
             RunSeed = runSeed,
             MissionTitle = discovery.DisplayName,
-            ThemeLabel = GetThemeDisplayName(discovery.EnvironmentTheme),
-            PaletteKey = discovery.EnvironmentTheme.ToString().ToLowerInvariant(),
+            ThemeLabel = profile.DisplayName,
+            PaletteKey = profile.PaletteKey,
             GravityScale = gravityScale,
             EnemyDensity = 0.8f + (difficultyFactor * 0.6f) + seededRng.RandfRange(-0.05f, 0.08f),
             PickupDensity = 0.85f + ((6 - discovery.DifficultyTier) * 0.06f) + seededRng.RandfRange(-0.04f, 0.08f),
-            HazardDensity = GetHazardDensity(discovery.EnvironmentTheme, difficultyFactor, seededRng),
+            HazardDensity = EnvironmentCatalog.RollHazardDensity(discovery.EnvironmentTheme, difficultyFactor, seededRng),
             MaterialTarget = 3 + discovery.DifficultyTier,
             PrimaryMineral = discovery.PrimaryMineral,
             SecondaryMineral = discovery.SecondaryMineral,
             DifficultyTier = discovery.DifficultyTier,
-            LevelTemplateId = "industrial_01",
+            LevelTemplateId = GetLevelTemplateId(discovery, profile),
             Modifiers = RollModifiers(discovery.EnvironmentTheme, difficultyFactor, seededRng),
         };
     }
 
     public static string GetThemeDisplayName(EnvironmentTheme theme)
     {
-        return theme switch
-        {
-            EnvironmentTheme.Industrial => "Industrial",
-            EnvironmentTheme.Rocky => "Rocky",
-            EnvironmentTheme.Frozen => "Frozen",
-            EnvironmentTheme.Derelict => "Derelict",
-            _ => "Unknown",
-        };
+        return EnvironmentCatalog.GetDisplayName(theme);
     }
 
     private long NextSeed()
@@ -162,18 +158,6 @@ public sealed class DiscoveryGenerator
         };
     }
 
-    private static MineralType GetPrimaryMineral(EnvironmentTheme theme)
-    {
-        return theme switch
-        {
-            EnvironmentTheme.Industrial => MineralType.Cinder,
-            EnvironmentTheme.Rocky => MineralType.Solar,
-            EnvironmentTheme.Frozen => MineralType.Azure,
-            EnvironmentTheme.Derelict => MineralType.Umbra,
-            _ => MineralType.Cinder,
-        };
-    }
-
     private static MineralType RollSecondaryMineral(RandomNumberGenerator rng, MineralType primary)
     {
         MineralType mineral;
@@ -211,54 +195,18 @@ public sealed class DiscoveryGenerator
         return $"A {GetThemeDisplayName(theme).ToLowerInvariant()} {typeLabel} with difficulty {difficultyTier} salvage pressure. Primary returns favor {primaryMineral}.";
     }
 
-    private static float GetGravityScale(EnvironmentTheme theme, RandomNumberGenerator rng)
+    private static List<MissionModifierType> RollModifiers(EnvironmentTheme theme, float difficultyFactor, RandomNumberGenerator rng)
     {
-        return theme switch
+        var modifiers = new List<MissionModifierType>(EnvironmentCatalog.GetProfile(theme).CommonModifiers);
+
+        if (modifiers.Contains(MissionModifierType.SignalInterference) && theme == EnvironmentTheme.Industrial && rng.Randf() >= 0.7f)
         {
-            EnvironmentTheme.Industrial => rng.RandfRange(0.95f, 1.05f),
-            EnvironmentTheme.Rocky => rng.RandfRange(0.88f, 0.98f),
-            EnvironmentTheme.Frozen => rng.RandfRange(0.78f, 0.9f),
-            EnvironmentTheme.Derelict => rng.RandfRange(0.7f, 0.86f),
-            _ => 1.0f,
-        };
-    }
-
-    private static float GetHazardDensity(EnvironmentTheme theme, float difficultyFactor, RandomNumberGenerator rng)
-    {
-        var baseDensity = theme switch
-        {
-            EnvironmentTheme.Industrial => 0.55f,
-            EnvironmentTheme.Rocky => 0.45f,
-            EnvironmentTheme.Frozen => 0.65f,
-            EnvironmentTheme.Derelict => 0.75f,
-            _ => 0.5f,
-        };
-
-        return Mathf.Clamp(baseDensity + (difficultyFactor * 0.35f) + rng.RandfRange(-0.08f, 0.08f), 0.2f, 1.25f);
-    }
-
-    private static System.Collections.Generic.List<MissionModifierType> RollModifiers(EnvironmentTheme theme, float difficultyFactor, RandomNumberGenerator rng)
-    {
-        var modifiers = new System.Collections.Generic.List<MissionModifierType>();
-
-        if (theme is EnvironmentTheme.Derelict or EnvironmentTheme.Frozen)
-        {
-            modifiers.Add(MissionModifierType.LowVisibility);
+            modifiers.Remove(MissionModifierType.SignalInterference);
         }
 
-        if (theme is EnvironmentTheme.Industrial or EnvironmentTheme.Rocky)
+        if (modifiers.Contains(MissionModifierType.UnstableRails) && difficultyFactor < 0.6f && theme != EnvironmentTheme.Derelict)
         {
-            modifiers.Add(MissionModifierType.RichVeins);
-        }
-
-        if (theme == EnvironmentTheme.Derelict || (theme == EnvironmentTheme.Industrial && rng.Randf() < 0.7f))
-        {
-            modifiers.Add(MissionModifierType.SignalInterference);
-        }
-
-        if (difficultyFactor >= 0.6f || theme == EnvironmentTheme.Derelict)
-        {
-            modifiers.Add(MissionModifierType.UnstableRails);
+            modifiers.Remove(MissionModifierType.UnstableRails);
         }
 
         var maxModifiers = difficultyFactor >= 0.75f ? 3 : 2;
@@ -268,5 +216,17 @@ public sealed class DiscoveryGenerator
         }
 
         return modifiers;
+    }
+
+    private static string GetLevelTemplateId(DiscoveryRecord discovery, EnvironmentProfile profile)
+    {
+        return discovery.DestinationType switch
+        {
+            DestinationType.AbandonedShip => "derelict_01",
+            DestinationType.AbandonedStation when discovery.EnvironmentTheme == EnvironmentTheme.Derelict => "derelict_01",
+            DestinationType.Planet when discovery.EnvironmentTheme == EnvironmentTheme.Derelict => "derelict_01",
+            DestinationType.Planet when discovery.EnvironmentTheme is EnvironmentTheme.Rocky or EnvironmentTheme.Frozen => "surface_01",
+            _ => profile.DefaultLevelTemplateId,
+        };
     }
 }

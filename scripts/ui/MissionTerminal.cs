@@ -104,50 +104,12 @@ public partial class MissionTerminal : Control
             $"Difficulty: {discovery.DifficultyTier}\n" +
             $"Primary Mineral: {discovery.PrimaryMineral}\n" +
             $"Secondary Mineral: {discovery.SecondaryMineral}\n" +
-            $"Expected Hazard Pressure: {GetHazardPressureText(discovery.EnvironmentTheme, discovery.DifficultyTier)}\n" +
-            $"Likely Modifiers: {GetModifierPreview(discovery.EnvironmentTheme, discovery.DifficultyTier)}\n" +
+            $"Expected Hazard Pressure: {EnvironmentCatalog.GetHazardPressureText(discovery.EnvironmentTheme, discovery.DifficultyTier)}\n" +
+            $"Likely Modifiers: {EnvironmentCatalog.GetLikelyModifierPreview(discovery.EnvironmentTheme, discovery.DifficultyTier)}\n" +
             $"Visits: {discovery.TimesVisited}\n\n" +
             discovery.Description;
 
         _launchButton.Disabled = false;
-    }
-
-    private static string GetHazardPressureText(EnvironmentTheme theme, int difficultyTier)
-    {
-        var score = difficultyTier + (theme == EnvironmentTheme.Derelict || theme == EnvironmentTheme.Frozen ? 1 : 0);
-        return score switch
-        {
-            <= 2 => "Low",
-            <= 4 => "Moderate",
-            <= 6 => "High",
-            _ => "Severe",
-        };
-    }
-
-    private static string GetModifierPreview(EnvironmentTheme theme, int difficultyTier)
-    {
-        var modifiers = new List<string>();
-        if (theme is EnvironmentTheme.Derelict or EnvironmentTheme.Frozen)
-        {
-            modifiers.Add(nameof(MissionModifierType.LowVisibility));
-        }
-
-        if (theme is EnvironmentTheme.Industrial or EnvironmentTheme.Rocky)
-        {
-            modifiers.Add(nameof(MissionModifierType.RichVeins));
-        }
-
-        if (theme is EnvironmentTheme.Derelict or EnvironmentTheme.Industrial)
-        {
-            modifiers.Add(nameof(MissionModifierType.SignalInterference));
-        }
-
-        if (difficultyTier >= 4 || theme == EnvironmentTheme.Derelict)
-        {
-            modifiers.Add(nameof(MissionModifierType.UnstableRails));
-        }
-
-        return modifiers.Count > 0 ? string.Join(", ", modifiers) : "None";
     }
 
     private void OnLaunchPressed()

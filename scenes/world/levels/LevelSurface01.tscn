@@ -1,0 +1,128 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/LevelSurface01.cs" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/world/GrindRail.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/world/ExtractionZone.tscn" id="3"]
+
+[sub_resource type="RectangleShape2D" id="1"]
+size = Vector2(320, 16)
+
+[sub_resource type="RectangleShape2D" id="2"]
+size = Vector2(58, 10)
+
+[sub_resource type="RectangleShape2D" id="3"]
+size = Vector2(52, 10)
+
+[sub_resource type="RectangleShape2D" id="4"]
+size = Vector2(46, 10)
+
+[node name="LevelSurface01" type="Node2D"]
+script = ExtResource("1")
+
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(160, 164)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+shape = SubResource("1")
+
+[node name="Sky" type="ColorRect" parent="."]
+offset_right = 320.0
+offset_bottom = 180.0
+color = Color(0.13, 0.1, 0.08, 1)
+
+[node name="Horizon" type="ColorRect" parent="."]
+offset_top = 96.0
+offset_right = 320.0
+offset_bottom = 140.0
+color = Color(0.48, 0.34, 0.21, 1)
+
+[node name="DustBand" type="ColorRect" parent="."]
+offset_top = 52.0
+offset_right = 320.0
+offset_bottom = 86.0
+color = Color(0.88, 0.69, 0.4, 0.18)
+
+[node name="PlatformA" type="StaticBody2D" parent="."]
+position = Vector2(78, 134)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PlatformA"]
+shape = SubResource("2")
+
+[node name="PlatformB" type="StaticBody2D" parent="."]
+position = Vector2(170, 108)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PlatformB"]
+shape = SubResource("3")
+
+[node name="PlatformC" type="StaticBody2D" parent="."]
+position = Vector2(254, 84)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PlatformC"]
+shape = SubResource("4")
+
+[node name="RailA" parent="." instance=ExtResource("2")]
+position = Vector2(112, 128)
+Width = 98.0
+BaseSpeed = 148.0
+
+[node name="RailB" parent="." instance=ExtResource("2")]
+position = Vector2(222, 102)
+Width = 88.0
+BaseSpeed = 160.0
+
+[node name="SpawnedActors" type="Node2D" parent="."]
+
+[node name="SpawnMarkers" type="Node2D" parent="."]
+
+[node name="Raiders" type="Node2D" parent="SpawnMarkers"]
+
+[node name="RaiderA" type="Marker2D" parent="SpawnMarkers/Raiders"]
+position = Vector2(66, 128)
+
+[node name="RaiderB" type="Marker2D" parent="SpawnMarkers/Raiders"]
+position = Vector2(176, 102)
+
+[node name="RaiderC" type="Marker2D" parent="SpawnMarkers/Raiders"]
+position = Vector2(268, 146)
+
+[node name="Drones" type="Node2D" parent="SpawnMarkers"]
+
+[node name="DroneA" type="Marker2D" parent="SpawnMarkers/Drones"]
+position = Vector2(146, 74)
+
+[node name="DroneB" type="Marker2D" parent="SpawnMarkers/Drones"]
+position = Vector2(236, 58)
+
+[node name="Hazards" type="Node2D" parent="SpawnMarkers"]
+
+[node name="HazardA" type="Marker2D" parent="SpawnMarkers/Hazards"]
+position = Vector2(124, 146)
+
+[node name="HazardB" type="Marker2D" parent="SpawnMarkers/Hazards"]
+position = Vector2(214, 146)
+
+[node name="HazardC" type="Marker2D" parent="SpawnMarkers/Hazards"]
+position = Vector2(252, 78)
+
+[node name="PickupMarkers" type="Node2D" parent="SpawnMarkers"]
+
+[node name="PickupA" type="Marker2D" parent="SpawnMarkers/PickupMarkers"]
+position = Vector2(52, 122)
+
+[node name="PickupB" type="Marker2D" parent="SpawnMarkers/PickupMarkers"]
+position = Vector2(114, 122)
+
+[node name="PickupC" type="Marker2D" parent="SpawnMarkers/PickupMarkers"]
+position = Vector2(170, 96)
+
+[node name="PickupD" type="Marker2D" parent="SpawnMarkers/PickupMarkers"]
+position = Vector2(224, 90)
+
+[node name="PickupE" type="Marker2D" parent="SpawnMarkers/PickupMarkers"]
+position = Vector2(262, 72)
+
+[node name="PickupF" type="Marker2D" parent="SpawnMarkers/PickupMarkers"]
+position = Vector2(288, 138)
+
+[node name="ExtractionZone" parent="." instance=ExtResource("3")]
+position = Vector2(296, 72)

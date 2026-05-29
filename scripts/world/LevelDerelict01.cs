@@ -2,7 +2,7 @@ using Godot;
 using System.Collections.Generic;
 using System.Linq;
 
-public partial class LevelIndustrial01 : MissionLevel
+public partial class LevelDerelict01 : MissionLevel
 {
     private const string RaiderScenePath = "res://scenes/enemies/Raider.tscn";
     private const string DroneScenePath = "res://scenes/enemies/Drone.tscn";
@@ -10,10 +10,10 @@ public partial class LevelIndustrial01 : MissionLevel
     private const string ShockHazardScenePath = "res://scenes/world/ShockHazard.tscn";
 
     private ColorRect _backdrop = null!;
-    private ColorRect _upperWall = null!;
-    private ColorRect _midStripe = null!;
-    private Node2D _railA = null!;
-    private Node2D _railB = null!;
+    private ColorRect _hullBand = null!;
+    private ColorRect _fogBand = null!;
+    private GrindRail _railA = null!;
+    private GrindRail _railB = null!;
     private PackedScene _raiderScene = null!;
     private PackedScene _droneScene = null!;
     private PackedScene _pickupScene = null!;
@@ -27,10 +27,10 @@ public partial class LevelIndustrial01 : MissionLevel
     public override void _Ready()
     {
         _backdrop = GetNode<ColorRect>("Backdrop");
-        _upperWall = GetNode<ColorRect>("UpperWall");
-        _midStripe = GetNode<ColorRect>("MidStripe");
-        _railA = GetNode<Node2D>("RailA");
-        _railB = GetNode<Node2D>("RailB");
+        _hullBand = GetNode<ColorRect>("HullBand");
+        _fogBand = GetNode<ColorRect>("FogBand");
+        _railA = GetNode<GrindRail>("RailA");
+        _railB = GetNode<GrindRail>("RailB");
         _raiderScene = GD.Load<PackedScene>(RaiderScenePath);
         _droneScene = GD.Load<PackedScene>(DroneScenePath);
         _pickupScene = GD.Load<PackedScene>(PickupScenePath);
@@ -43,6 +43,11 @@ public partial class LevelIndustrial01 : MissionLevel
         CacheMarkerChildren("SpawnMarkers/Hazards", _hazardSpawnMarkers);
     }
 
+    public override ExtractionZone GetExtractionZone()
+    {
+        return GetNode<ExtractionZone>("ExtractionZone");
+    }
+
     public override void ApplyMission(MissionRunData mission)
     {
         ApplyPalette(mission.PaletteKey);
@@ -50,36 +55,43 @@ public partial class LevelIndustrial01 : MissionLevel
         SpawnMissionContent(mission);
     }
 
-    public override ExtractionZone GetExtractionZone()
-    {
-        return GetNode<ExtractionZone>("ExtractionZone");
-    }
-
     private void ApplyPalette(string paletteKey)
     {
         switch (paletteKey)
         {
-            case "rocky":
-                _backdrop.Color = new Color(0.121f, 0.094f, 0.09f, 1.0f);
-                _upperWall.Color = new Color(0.266f, 0.2f, 0.153f, 1.0f);
-                _midStripe.Color = new Color(0.62f, 0.403f, 0.215f, 0.35f);
-                break;
             case "frozen":
-                _backdrop.Color = new Color(0.05f, 0.08f, 0.14f, 1.0f);
-                _upperWall.Color = new Color(0.13f, 0.2f, 0.32f, 1.0f);
-                _midStripe.Color = new Color(0.49f, 0.77f, 0.94f, 0.3f);
+                _backdrop.Color = new Color(0.035f, 0.07f, 0.12f, 1.0f);
+                _hullBand.Color = new Color(0.29f, 0.52f, 0.72f, 1.0f);
+                _fogBand.Color = new Color(0.72f, 0.9f, 0.98f, 0.18f);
                 break;
-            case "derelict":
-                _backdrop.Color = new Color(0.07f, 0.055f, 0.09f, 1.0f);
-                _upperWall.Color = new Color(0.18f, 0.13f, 0.2f, 1.0f);
-                _midStripe.Color = new Color(0.59f, 0.33f, 0.67f, 0.28f);
+            case "industrial":
+                _backdrop.Color = new Color(0.09f, 0.08f, 0.1f, 1.0f);
+                _hullBand.Color = new Color(0.42f, 0.28f, 0.23f, 1.0f);
+                _fogBand.Color = new Color(0.89f, 0.51f, 0.22f, 0.16f);
+                break;
+            case "rocky":
+                _backdrop.Color = new Color(0.08f, 0.065f, 0.06f, 1.0f);
+                _hullBand.Color = new Color(0.36f, 0.28f, 0.18f, 1.0f);
+                _fogBand.Color = new Color(0.82f, 0.62f, 0.34f, 0.14f);
                 break;
             default:
-                _backdrop.Color = new Color(0.0784314f, 0.0980392f, 0.121569f, 1.0f);
-                _upperWall.Color = new Color(0.12549f, 0.152941f, 0.188235f, 1.0f);
-                _midStripe.Color = new Color(0.227451f, 0.447059f, 0.529412f, 0.4f);
+                _backdrop.Color = new Color(0.05f, 0.045f, 0.08f, 1.0f);
+                _hullBand.Color = new Color(0.25f, 0.18f, 0.3f, 1.0f);
+                _fogBand.Color = new Color(0.64f, 0.41f, 0.76f, 0.18f);
                 break;
         }
+    }
+
+    private void ApplyModifiers(MissionRunData mission)
+    {
+        var lowVisibility = mission.Modifiers.Contains(MissionModifierType.LowVisibility);
+        var signalInterference = mission.Modifiers.Contains(MissionModifierType.SignalInterference);
+        var unstableRails = mission.Modifiers.Contains(MissionModifierType.UnstableRails);
+
+        _backdrop.Modulate = lowVisibility ? new Color(0.58f, 0.58f, 0.65f, 1.0f) : Colors.White;
+        _fogBand.Visible = !signalInterference;
+        _railA.BaseSpeed = unstableRails ? 196.0f : 162.0f;
+        _railB.BaseSpeed = unstableRails ? 204.0f : 170.0f;
     }
 
     private void SpawnMissionContent(MissionRunData mission)
@@ -95,30 +107,10 @@ public partial class LevelIndustrial01 : MissionLevel
         SpawnHazards(rng, mission.HazardDensity, mission.PaletteKey);
     }
 
-    private void ApplyModifiers(MissionRunData mission)
-    {
-        var lowVisibility = mission.Modifiers.Contains(MissionModifierType.LowVisibility);
-        var signalInterference = mission.Modifiers.Contains(MissionModifierType.SignalInterference);
-        var unstableRails = mission.Modifiers.Contains(MissionModifierType.UnstableRails);
-
-        _backdrop.Modulate = lowVisibility ? new Color(0.65f, 0.65f, 0.7f, 1.0f) : Colors.White;
-        _midStripe.Visible = !signalInterference;
-
-        if (_railA is GrindRail railA)
-        {
-            railA.BaseSpeed = unstableRails ? 188.0f : 150.0f;
-        }
-
-        if (_railB is GrindRail railB)
-        {
-            railB.BaseSpeed = unstableRails ? 210.0f : 172.0f;
-        }
-    }
-
     private void SpawnEnemies(RandomNumberGenerator rng, float enemyDensity)
     {
-        var raiderCount = Mathf.Clamp(Mathf.RoundToInt(_raiderSpawnMarkers.Count * enemyDensity), 1, _raiderSpawnMarkers.Count);
-        var droneCount = Mathf.Clamp(Mathf.RoundToInt(_droneSpawnMarkers.Count * Mathf.Max(0.35f, enemyDensity - 0.15f)), 0, _droneSpawnMarkers.Count);
+        var raiderCount = Mathf.Clamp(Mathf.RoundToInt(_raiderSpawnMarkers.Count * Mathf.Max(0.8f, enemyDensity)), 1, _raiderSpawnMarkers.Count);
+        var droneCount = Mathf.Clamp(Mathf.RoundToInt(_droneSpawnMarkers.Count * Mathf.Max(0.45f, enemyDensity)), 1, _droneSpawnMarkers.Count);
 
         foreach (var marker in PickMarkers(_raiderSpawnMarkers, raiderCount, rng))
         {
@@ -138,23 +130,15 @@ public partial class LevelIndustrial01 : MissionLevel
     private void SpawnPickups(RandomNumberGenerator rng, float pickupDensity, MineralType primaryMineral, MineralType secondaryMineral)
     {
         var pickupCount = Mathf.Clamp(Mathf.RoundToInt(_pickupSpawnMarkers.Count * pickupDensity), 1, _pickupSpawnMarkers.Count);
-        var minerals = new[]
-        {
-            primaryMineral,
-            secondaryMineral,
-            primaryMineral,
-            secondaryMineral,
-            primaryMineral,
-        };
-
         var chosenMarkers = PickMarkers(_pickupSpawnMarkers, pickupCount, rng);
+
         for (var index = 0; index < chosenMarkers.Count; index += 1)
         {
             var pickup = _pickupScene.Instantiate<MineralPickup>();
             _spawnedActors.AddChild(pickup);
             pickup.GlobalPosition = chosenMarkers[index].GlobalPosition;
-            pickup.SetMineral(minerals[index % minerals.Length]);
-            if (index == chosenMarkers.Count - 1 && chosenMarkers.Count > 2)
+            pickup.SetMineral(index % 3 == 0 ? secondaryMineral : primaryMineral);
+            if (index == 0 || index == chosenMarkers.Count - 1)
             {
                 pickup.Amount = 2;
             }
@@ -163,7 +147,7 @@ public partial class LevelIndustrial01 : MissionLevel
 
     private void SpawnHazards(RandomNumberGenerator rng, float hazardDensity, string paletteKey)
     {
-        var hazardCount = Mathf.Clamp(Mathf.RoundToInt(_hazardSpawnMarkers.Count * hazardDensity), 0, _hazardSpawnMarkers.Count);
+        var hazardCount = Mathf.Clamp(Mathf.RoundToInt(_hazardSpawnMarkers.Count * Mathf.Max(0.5f, hazardDensity)), 1, _hazardSpawnMarkers.Count);
         foreach (var marker in PickMarkers(_hazardSpawnMarkers, hazardCount, rng))
         {
             var hazard = _shockHazardScene.Instantiate<ShockHazard>();
@@ -175,10 +159,7 @@ public partial class LevelIndustrial01 : MissionLevel
 
     private static List<Marker2D> PickMarkers(List<Marker2D> markers, int count, RandomNumberGenerator rng)
     {
-        var shuffled = markers
-            .OrderBy(_ => rng.Randi())
-            .ToList();
-
+        var shuffled = markers.OrderBy(_ => rng.Randi()).ToList();
         if (count < shuffled.Count)
         {
             shuffled.RemoveRange(count, shuffled.Count - count);

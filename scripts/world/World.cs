@@ -4,6 +4,10 @@ using System.Linq;
 
 public partial class World : Node2D
 {
+    private const string IndustrialLevelScenePath = "res://scenes/world/levels/LevelIndustrial01.tscn";
+    private const string DerelictLevelScenePath = "res://scenes/world/levels/LevelDerelict01.tscn";
+    private const string SurfaceLevelScenePath = "res://scenes/world/levels/LevelSurface01.tscn";
+
     [Export] public PackedScene? ReturnScene;
     [Export] public float RestartDelaySeconds = 0.75f;
     [Export] public int MissionMaterialTarget = 4;
@@ -13,6 +17,8 @@ public partial class World : Node2D
     public Hud HudLayer { get; private set; } = null!;
 
     public ExtractionZone ExtractionZone { get; private set; } = null!;
+
+    public MissionLevel ActiveLevel { get; private set; } = null!;
 
     public PlayerLoadout DebugLoadout { get; private set; } = null!;
 
@@ -32,7 +38,8 @@ public partial class World : Node2D
         _mission = _gameState.ActiveMission ?? MissionRunData.CreateFallback();
         Player = GetNode<PlayerController>("Player");
         HudLayer = GetNode<Hud>("Hud");
-        ExtractionZone = GetNode<ExtractionZone>("Level/ExtractionZone");
+        ActiveLevel = InstantiateMissionLevel(_mission.LevelTemplateId);
+        ExtractionZone = ActiveLevel.GetExtractionZone();
 
         var generator = new ModuleGenerator();
         DebugLoadout = generator.GenerateDebugLoadout(ModuleRarity.Rare);
@@ -40,11 +47,7 @@ public partial class World : Node2D
         Player.GravityScale = _mission.GravityScale;
         MissionMaterialTarget = _mission.MaterialTarget;
         ApplyMissionModifiers();
-
-        if (GetNodeOrNull<LevelIndustrial01>("Level") is { } level)
-        {
-            level.ApplyMission(_mission);
-        }
+        ActiveLevel.ApplyMission(_mission);
 
         foreach (var mineral in System.Enum.GetValues<MineralType>())
         {
@@ -184,6 +187,27 @@ public partial class World : Node2D
                     break;
             }
         }
+    }
+
+    private MissionLevel InstantiateMissionLevel(string levelTemplateId)
+    {
+        var levelRoot = GetNode<Node2D>("LevelRoot");
+        foreach (var child in levelRoot.GetChildren())
+        {
+            child.QueueFree();
+        }
+
+        var scenePath = levelTemplateId switch
+        {
+            "derelict_01" => DerelictLevelScenePath,
+            "surface_01" => SurfaceLevelScenePath,
+            _ => IndustrialLevelScenePath,
+        };
+
+        var packedScene = GD.Load<PackedScene>(scenePath);
+        var level = packedScene.Instantiate<MissionLevel>();
+        levelRoot.AddChild(level);
+        return level;
     }
 
     private void ReturnToTerminal(bool missionSucceeded)
