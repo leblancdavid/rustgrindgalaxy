@@ -1,9 +1,4 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "instructions": ["AGENTS.md"],
-  "reference": {
-    "kbtv": {
-      "path": "D:\\Dev\\Games\\kbtv"
-    }
-  }
 }

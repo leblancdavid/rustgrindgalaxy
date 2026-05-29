@@ -6,6 +6,13 @@ public partial class PlayerController : CharacterBody2D
     [Export] public float JumpVelocity = -260.0f;
     [Export] public float GravityScale = 1.0f;
 
+    public PlayerLoadout? Loadout { get; private set; }
+
+    public void SetLoadout(PlayerLoadout loadout)
+    {
+        Loadout = loadout;
+    }
+
     public override void _PhysicsProcess(double delta)
     {
         var velocity = Velocity;
