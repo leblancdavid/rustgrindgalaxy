@@ -18,3 +18,66 @@ shape = SubResource("1")
 offset_right = 320.0
 offset_bottom = 180.0
 color = Color(0.0784314, 0.0980392, 0.121569, 1)
+
+[node name="UpperWall" type="ColorRect" parent="."]
+offset_right = 320.0
+offset_bottom = 26.0
+color = Color(0.12549, 0.152941, 0.188235, 1)
+
+[node name="MidStripe" type="ColorRect" parent="."]
+offset_top = 86.0
+offset_right = 320.0
+offset_bottom = 90.0
+color = Color(0.227451, 0.447059, 0.529412, 0.4)
+
+[node name="PlatformA" type="StaticBody2D" parent="."]
+position = Vector2(68, 112)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PlatformA"]
+shape = SubResource("2")
+
+[node name="PlatformB" type="StaticBody2D" parent="."]
+position = Vector2(158, 92)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PlatformB"]
+shape = SubResource("3")
+
+[node name="PlatformC" type="StaticBody2D" parent="."]
+position = Vector2(258, 132)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PlatformC"]
+shape = SubResource("4")
+
+[node name="RailA" parent="." instance=ExtResource("2")]
+position = Vector2(116, 108)
+Width = 84.0
+
+[node name="RailB" parent="." instance=ExtResource("2")]
+position = Vector2(224, 88)
+Width = 92.0
+BaseSpeed = 172.0
+
+[node name="RaiderA" parent="." instance=ExtResource("3")]
+position = Vector2(154, 86)
+
+[node name="DroneA" parent="." instance=ExtResource("4")]
+position = Vector2(222, 64)
+
+[node name="PickupA" parent="." instance=ExtResource("5")]
+position = Vector2(70, 98)
+Mineral = 2
+
+[node name="PickupB" parent="." instance=ExtResource("5")]
+position = Vector2(132, 92)
+Mineral = 3
+
+[node name="PickupC" parent="." instance=ExtResource("5")]
+position = Vector2(221, 72)
+Mineral = 0
+
+[node name="PickupD" parent="." instance=ExtResource("5")]
+position = Vector2(270, 118)
+Mineral = 4
+
+[node name="ExtractionZone" parent="." instance=ExtResource("6")]
+position = Vector2(300, 144)
