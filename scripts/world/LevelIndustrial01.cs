@@ -4,6 +4,10 @@ using System.Linq;
 
 public partial class LevelIndustrial01 : MissionLevel
 {
+    private const string IndustrialChunkStartScenePath = "res://scenes/world/chunks/industrial/IndustrialChunkStart.tscn";
+    private const string IndustrialChunkMidHighScenePath = "res://scenes/world/chunks/industrial/IndustrialChunkMidHigh.tscn";
+    private const string IndustrialChunkMidLowScenePath = "res://scenes/world/chunks/industrial/IndustrialChunkMidLow.tscn";
+    private const string IndustrialChunkEndScenePath = "res://scenes/world/chunks/industrial/IndustrialChunkEnd.tscn";
     private const string RaiderScenePath = "res://scenes/enemies/Raider.tscn";
     private const string DroneScenePath = "res://scenes/enemies/Drone.tscn";
     private const string PickupScenePath = "res://scenes/world/MineralPickup.tscn";
@@ -12,13 +16,17 @@ public partial class LevelIndustrial01 : MissionLevel
     private ColorRect _backdrop = null!;
     private ColorRect _upperWall = null!;
     private ColorRect _midStripe = null!;
-    private Node2D _railA = null!;
-    private Node2D _railB = null!;
+    private PackedScene _chunkStartScene = null!;
+    private PackedScene _chunkMidHighScene = null!;
+    private PackedScene _chunkMidLowScene = null!;
+    private PackedScene _chunkEndScene = null!;
     private PackedScene _raiderScene = null!;
     private PackedScene _droneScene = null!;
     private PackedScene _pickupScene = null!;
     private PackedScene _shockHazardScene = null!;
+    private Node2D _chunkRoot = null!;
     private Node2D _spawnedActors = null!;
+    private readonly List<GrindRail> _rails = new();
     private readonly List<Marker2D> _raiderSpawnMarkers = new();
     private readonly List<Marker2D> _droneSpawnMarkers = new();
     private readonly List<Marker2D> _pickupSpawnMarkers = new();
@@ -29,23 +37,22 @@ public partial class LevelIndustrial01 : MissionLevel
         _backdrop = GetNode<ColorRect>("Backdrop");
         _upperWall = GetNode<ColorRect>("UpperWall");
         _midStripe = GetNode<ColorRect>("MidStripe");
-        _railA = GetNode<Node2D>("RailA");
-        _railB = GetNode<Node2D>("RailB");
+        _chunkStartScene = GD.Load<PackedScene>(IndustrialChunkStartScenePath);
+        _chunkMidHighScene = GD.Load<PackedScene>(IndustrialChunkMidHighScenePath);
+        _chunkMidLowScene = GD.Load<PackedScene>(IndustrialChunkMidLowScenePath);
+        _chunkEndScene = GD.Load<PackedScene>(IndustrialChunkEndScenePath);
         _raiderScene = GD.Load<PackedScene>(RaiderScenePath);
         _droneScene = GD.Load<PackedScene>(DroneScenePath);
         _pickupScene = GD.Load<PackedScene>(PickupScenePath);
         _shockHazardScene = GD.Load<PackedScene>(ShockHazardScenePath);
+        _chunkRoot = GetNode<Node2D>("ChunkRoot");
         _spawnedActors = GetNode<Node2D>("SpawnedActors");
-
-        CacheMarkerChildren("SpawnMarkers/Raiders", _raiderSpawnMarkers);
-        CacheMarkerChildren("SpawnMarkers/Drones", _droneSpawnMarkers);
-        CacheMarkerChildren("SpawnMarkers/Pickups", _pickupSpawnMarkers);
-        CacheMarkerChildren("SpawnMarkers/Hazards", _hazardSpawnMarkers);
     }
 
     public override void ApplyMission(MissionRunData mission)
     {
         ApplyPalette(mission.PaletteKey);
+        AssembleChunks(mission);
         ApplyModifiers(mission);
         SpawnMissionContent(mission);
     }
@@ -104,15 +111,47 @@ public partial class LevelIndustrial01 : MissionLevel
         _backdrop.Modulate = lowVisibility ? new Color(0.65f, 0.65f, 0.7f, 1.0f) : Colors.White;
         _midStripe.Visible = !signalInterference;
 
-        if (_railA is GrindRail railA)
+        for (var index = 0; index < _rails.Count; index += 1)
         {
-            railA.BaseSpeed = unstableRails ? 188.0f : 150.0f;
+            var baseSpeed = 150.0f + (index * 12.0f);
+            _rails[index].BaseSpeed = unstableRails ? baseSpeed + 28.0f : baseSpeed;
+        }
+    }
+
+    private void AssembleChunks(MissionRunData mission)
+    {
+        foreach (var child in _chunkRoot.GetChildren())
+        {
+            child.QueueFree();
         }
 
-        if (_railB is GrindRail railB)
+        _rails.Clear();
+        _raiderSpawnMarkers.Clear();
+        _droneSpawnMarkers.Clear();
+        _pickupSpawnMarkers.Clear();
+        _hazardSpawnMarkers.Clear();
+
+        var rng = new RandomNumberGenerator { Seed = (ulong)(mission.RunSeed ^ 0x51F15EED) };
+        var chunks = new List<PackedScene>
         {
-            railB.BaseSpeed = unstableRails ? 210.0f : 172.0f;
+            _chunkStartScene,
+            rng.Randf() < 0.5f ? _chunkMidHighScene : _chunkMidLowScene,
+            rng.Randf() < 0.5f ? _chunkMidLowScene : _chunkMidHighScene,
+            _chunkEndScene,
+        };
+
+        var offsetX = 0.0f;
+        foreach (var chunkScene in chunks)
+        {
+            var chunk = chunkScene.Instantiate<IndustrialChunk>();
+            _chunkRoot.AddChild(chunk);
+            chunk.Position = new Vector2(offsetX, 0.0f);
+            CacheChunkReferences(chunk);
+            offsetX += chunk.GetChunkWidth();
         }
+
+        var extractionOffset = new Vector2(offsetX - 84.0f, 144.0f);
+        GetExtractionZone().Position = extractionOffset;
     }
 
     private void SpawnEnemies(RandomNumberGenerator rng, float enemyDensity)
@@ -188,9 +227,30 @@ public partial class LevelIndustrial01 : MissionLevel
         return shuffled;
     }
 
-    private void CacheMarkerChildren(string path, List<Marker2D> target)
+    private void CacheChunkReferences(IndustrialChunk chunk)
     {
-        var parent = GetNode<Node>(path);
+        foreach (var child in chunk.GetChildren())
+        {
+            if (child is GrindRail rail)
+            {
+                _rails.Add(rail);
+            }
+        }
+
+        CacheMarkerChildren(chunk, "SpawnMarkers/Raiders", _raiderSpawnMarkers);
+        CacheMarkerChildren(chunk, "SpawnMarkers/Drones", _droneSpawnMarkers);
+        CacheMarkerChildren(chunk, "SpawnMarkers/PickupMarkers", _pickupSpawnMarkers);
+        CacheMarkerChildren(chunk, "SpawnMarkers/Hazards", _hazardSpawnMarkers);
+    }
+
+    private void CacheMarkerChildren(Node chunk, string path, List<Marker2D> target)
+    {
+        var parent = chunk.GetNodeOrNull<Node>(path);
+        if (parent == null)
+        {
+            return;
+        }
+
         foreach (var child in parent.GetChildren())
         {
             if (child is Marker2D marker)

@@ -1,29 +1,10 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/world/LevelIndustrial01.cs" id="1"]
-[ext_resource type="PackedScene" path="res://scenes/world/GrindRail.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/world/ExtractionZone.tscn" id="6"]
-
-[sub_resource type="RectangleShape2D" id="1"]
-size = Vector2(320, 16)
-
-[sub_resource type="RectangleShape2D" id="2"]
-size = Vector2(56, 10)
-
-[sub_resource type="RectangleShape2D" id="3"]
-size = Vector2(52, 10)
-
-[sub_resource type="RectangleShape2D" id="4"]
-size = Vector2(54, 10)
 
 [node name="LevelIndustrial01" type="Node2D"]
 script = ExtResource("1")
-
-[node name="Ground" type="StaticBody2D" parent="."]
-position = Vector2(160, 164)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
-shape = SubResource("1")
 
 [node name="Backdrop" type="ColorRect" parent="."]
 offset_right = 320.0
@@ -41,89 +22,9 @@ offset_right = 320.0
 offset_bottom = 90.0
 color = Color(0.227451, 0.447059, 0.529412, 0.4)
 
-[node name="PlatformA" type="StaticBody2D" parent="."]
-position = Vector2(68, 112)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="PlatformA"]
-shape = SubResource("2")
-
-[node name="PlatformB" type="StaticBody2D" parent="."]
-position = Vector2(158, 92)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="PlatformB"]
-shape = SubResource("3")
-
-[node name="PlatformC" type="StaticBody2D" parent="."]
-position = Vector2(258, 132)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="PlatformC"]
-shape = SubResource("4")
-
-[node name="RailA" parent="." instance=ExtResource("2")]
-position = Vector2(116, 108)
-Width = 84.0
-
-[node name="RailB" parent="." instance=ExtResource("2")]
-position = Vector2(224, 88)
-Width = 92.0
-BaseSpeed = 172.0
+[node name="ChunkRoot" type="Node2D" parent="."]
 
 [node name="SpawnedActors" type="Node2D" parent="."]
-
-[node name="SpawnMarkers" type="Node2D" parent="."]
-
-[node name="Raiders" type="Node2D" parent="SpawnMarkers"]
-
-[node name="RaiderA" type="Marker2D" parent="SpawnMarkers/Raiders"]
-position = Vector2(154, 86)
-
-[node name="RaiderB" type="Marker2D" parent="SpawnMarkers/Raiders"]
-position = Vector2(92, 146)
-
-[node name="RaiderC" type="Marker2D" parent="SpawnMarkers/Raiders"]
-position = Vector2(252, 126)
-
-[node name="Drones" type="Node2D" parent="SpawnMarkers"]
-
-[node name="DroneA" type="Marker2D" parent="SpawnMarkers/Drones"]
-position = Vector2(222, 64)
-
-[node name="DroneB" type="Marker2D" parent="SpawnMarkers/Drones"]
-position = Vector2(142, 56)
-
-[node name="Hazards" type="Node2D" parent="SpawnMarkers"]
-
-[node name="HazardA" type="Marker2D" parent="SpawnMarkers/Hazards"]
-position = Vector2(124, 146)
-
-[node name="HazardB" type="Marker2D" parent="SpawnMarkers/Hazards"]
-position = Vector2(206, 146)
-
-[node name="HazardC" type="Marker2D" parent="SpawnMarkers/Hazards"]
-position = Vector2(262, 126)
-
-[node name="HazardD" type="Marker2D" parent="SpawnMarkers/Hazards"]
-position = Vector2(92, 106)
-
-[node name="PickupMarkers" type="Node2D" parent="SpawnMarkers"]
-
-[node name="PickupA" type="Marker2D" parent="SpawnMarkers/PickupMarkers"]
-position = Vector2(70, 98)
-
-[node name="PickupB" type="Marker2D" parent="SpawnMarkers/PickupMarkers"]
-position = Vector2(132, 92)
-
-[node name="PickupC" type="Marker2D" parent="SpawnMarkers/PickupMarkers"]
-position = Vector2(221, 72)
-
-[node name="PickupD" type="Marker2D" parent="SpawnMarkers/PickupMarkers"]
-position = Vector2(270, 118)
-
-[node name="PickupE" type="Marker2D" parent="SpawnMarkers/PickupMarkers"]
-position = Vector2(186, 146)
-
-[node name="PickupF" type="Marker2D" parent="SpawnMarkers/PickupMarkers"]
-position = Vector2(104, 146)
 
 [node name="ExtractionZone" parent="." instance=ExtResource("6")]
 position = Vector2(300, 144)

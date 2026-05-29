@@ -3,6 +3,8 @@ using System.Collections.Generic;
 
 public partial class MissionTerminal : Control
 {
+    private const string ContentRoot = "Panel/Margin/Scroll/VBox";
+
     private GameState _gameState = null!;
     private ItemList _catalogList = null!;
     private Label _summaryLabel = null!;
@@ -14,15 +16,15 @@ public partial class MissionTerminal : Control
     public override void _Ready()
     {
         _gameState = GetNode<GameState>("/root/GameState");
-        _catalogList = GetNode<ItemList>("Panel/Margin/VBox/CatalogList");
-        _summaryLabel = GetNode<Label>("Panel/Margin/VBox/SummaryLabel");
-        _detailLabel = GetNode<Label>("Panel/Margin/VBox/DetailLabel");
-        _statusLabel = GetNode<Label>("Panel/Margin/VBox/StatusLabel");
-        _launchButton = GetNode<Button>("Panel/Margin/VBox/Actions/LaunchButton");
+        _catalogList = GetNode<ItemList>($"{ContentRoot}/CatalogList");
+        _summaryLabel = GetNode<Label>($"{ContentRoot}/SummaryLabel");
+        _detailLabel = GetNode<Label>($"{ContentRoot}/DetailLabel");
+        _statusLabel = GetNode<Label>($"{ContentRoot}/StatusLabel");
+        _launchButton = GetNode<Button>($"{ContentRoot}/Actions/LaunchButton");
 
-        GetNode<Button>("Panel/Margin/VBox/ProbeButtons/BasicButton").Pressed += () => LaunchProbe(ProbeTier.Basic);
-        GetNode<Button>("Panel/Margin/VBox/ProbeButtons/SurveyButton").Pressed += () => LaunchProbe(ProbeTier.Survey);
-        GetNode<Button>("Panel/Margin/VBox/ProbeButtons/DeepScanButton").Pressed += () => LaunchProbe(ProbeTier.DeepScan);
+        GetNode<Button>($"{ContentRoot}/ProbeButtons/BasicButton").Pressed += () => LaunchProbe(ProbeTier.Basic);
+        GetNode<Button>($"{ContentRoot}/ProbeButtons/SurveyButton").Pressed += () => LaunchProbe(ProbeTier.Survey);
+        GetNode<Button>($"{ContentRoot}/ProbeButtons/DeepScanButton").Pressed += () => LaunchProbe(ProbeTier.DeepScan);
         _catalogList.ItemSelected += OnCatalogItemSelected;
         _launchButton.Pressed += OnLaunchPressed;
 
@@ -43,16 +45,14 @@ public partial class MissionTerminal : Control
 
         foreach (var discovery in _gameState.GetDiscoveries())
         {
-            var label = $"{discovery.DisplayName}  [{discovery.EnvironmentTheme} / T{discovery.DifficultyTier}]";
+            var label = $"{discovery.DisplayName}  T{discovery.DifficultyTier}";
             _catalogList.AddItem(label);
             _discoveryIds.Add(discovery.Id);
         }
 
         _summaryLabel.Text =
-            $"Recovered Minerals: {_gameState.GetTotalRecoveredMinerals()}\n" +
-            $"Catalog Size: {_discoveryIds.Count}\n" +
-            $"Completed: {_gameState.Data.CompletedMissionCount}  Failed: {_gameState.Data.FailedMissionCount}\n" +
-            $"Stored: {_gameState.GetRecoveredMineralSummary()}";
+            $"Stored: {_gameState.GetTotalRecoveredMinerals()}  Catalog: {_discoveryIds.Count}\n" +
+            $"Runs: {_gameState.Data.CompletedMissionCount} clear / {_gameState.Data.FailedMissionCount} fail";
 
         if (_discoveryIds.Count == 0)
         {
@@ -98,16 +98,9 @@ public partial class MissionTerminal : Control
         }
 
         _detailLabel.Text =
-            $"Destination: {discovery.DisplayName}\n" +
-            $"Type: {discovery.DestinationType}\n" +
-            $"Theme: {DiscoveryGenerator.GetThemeDisplayName(discovery.EnvironmentTheme)}\n" +
-            $"Difficulty: {discovery.DifficultyTier}\n" +
-            $"Primary Mineral: {discovery.PrimaryMineral}\n" +
-            $"Secondary Mineral: {discovery.SecondaryMineral}\n" +
-            $"Expected Hazard Pressure: {EnvironmentCatalog.GetHazardPressureText(discovery.EnvironmentTheme, discovery.DifficultyTier)}\n" +
-            $"Likely Modifiers: {EnvironmentCatalog.GetLikelyModifierPreview(discovery.EnvironmentTheme, discovery.DifficultyTier)}\n" +
-            $"Visits: {discovery.TimesVisited}\n\n" +
-            discovery.Description;
+            $"{DiscoveryGenerator.GetThemeDisplayName(discovery.EnvironmentTheme)} | {discovery.DestinationType} | T{discovery.DifficultyTier}\n" +
+            $"Drops: {discovery.PrimaryMineral}/{discovery.SecondaryMineral}  Hazard: {EnvironmentCatalog.GetHazardPressureText(discovery.EnvironmentTheme, discovery.DifficultyTier)}\n" +
+            $"Mods: {EnvironmentCatalog.GetLikelyModifierPreview(discovery.EnvironmentTheme, discovery.DifficultyTier)}  Visits: {discovery.TimesVisited}";
 
         _launchButton.Disabled = false;
     }

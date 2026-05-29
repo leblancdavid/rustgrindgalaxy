@@ -23,10 +23,10 @@ color = Color(0.054902, 0.0666667, 0.0901961, 1)
 [node name="Panel" type="Panel" parent="."]
 layout_mode = 1
 anchors_preset = 8
-anchor_left = 0.15
-anchor_top = 0.1
-anchor_right = 0.85
-anchor_bottom = 0.9
+anchor_left = 0.08
+anchor_top = 0.04
+anchor_right = 0.92
+anchor_bottom = 0.96
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -37,68 +37,78 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 16
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
 
-[node name="VBox" type="VBoxContainer" parent="Panel/Margin"]
+[node name="Scroll" type="ScrollContainer" parent="Panel/Margin"]
 layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
 
-[node name="TitleLabel" type="Label" parent="Panel/Margin/VBox"]
+[node name="VBox" type="VBoxContainer" parent="Panel/Margin/Scroll"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="TitleLabel" type="Label" parent="Panel/Margin/Scroll/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
 text = "Mission Terminal"
 
-[node name="IntroLabel" type="Label" parent="Panel/Margin/VBox"]
+[node name="IntroLabel" type="Label" parent="Panel/Margin/Scroll/VBox"]
 layout_mode = 2
-text = "Launch probes, catalog discoveries, and deploy to salvage runs."
+autowrap_mode = 3
+text = "Launch probes and pick a run."
 
-[node name="ProbeButtons" type="HBoxContainer" parent="Panel/Margin/VBox"]
+[node name="ProbeButtons" type="HBoxContainer" parent="Panel/Margin/Scroll/VBox"]
 layout_mode = 2
 
-[node name="BasicButton" type="Button" parent="Panel/Margin/VBox/ProbeButtons"]
+[node name="BasicButton" type="Button" parent="Panel/Margin/Scroll/VBox/ProbeButtons"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Basic Probe"
 
-[node name="SurveyButton" type="Button" parent="Panel/Margin/VBox/ProbeButtons"]
+[node name="SurveyButton" type="Button" parent="Panel/Margin/Scroll/VBox/ProbeButtons"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Survey Probe"
 
-[node name="DeepScanButton" type="Button" parent="Panel/Margin/VBox/ProbeButtons"]
+[node name="DeepScanButton" type="Button" parent="Panel/Margin/Scroll/VBox/ProbeButtons"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Deep Scan"
 
-[node name="SummaryLabel" type="Label" parent="Panel/Margin/VBox"]
+[node name="SummaryLabel" type="Label" parent="Panel/Margin/Scroll/VBox"]
 layout_mode = 2
+autowrap_mode = 3
 text = "Recovered Minerals: 0"
 
-[node name="CatalogLabel" type="Label" parent="Panel/Margin/VBox"]
+[node name="CatalogLabel" type="Label" parent="Panel/Margin/Scroll/VBox"]
 layout_mode = 2
 text = "Discovery Catalog"
 
-[node name="CatalogList" type="ItemList" parent="Panel/Margin/VBox"]
-custom_minimum_size = Vector2(0, 170)
+[node name="CatalogList" type="ItemList" parent="Panel/Margin/Scroll/VBox"]
+custom_minimum_size = Vector2(0, 108)
 layout_mode = 2
 
-[node name="DetailLabel" type="Label" parent="Panel/Margin/VBox"]
-custom_minimum_size = Vector2(0, 120)
+[node name="DetailLabel" type="Label" parent="Panel/Margin/Scroll/VBox"]
+custom_minimum_size = Vector2(0, 54)
 layout_mode = 2
 autowrap_mode = 3
 text = "Launch a probe to discover a new destination."
 
-[node name="Actions" type="HBoxContainer" parent="Panel/Margin/VBox"]
+[node name="Actions" type="HBoxContainer" parent="Panel/Margin/Scroll/VBox"]
 layout_mode = 2
 
-[node name="LaunchButton" type="Button" parent="Panel/Margin/VBox/Actions"]
+[node name="LaunchButton" type="Button" parent="Panel/Margin/Scroll/VBox/Actions"]
 layout_mode = 2
 size_flags_horizontal = 3
 disabled = true
 text = "Launch Mission"
 
-[node name="StatusLabel" type="Label" parent="Panel/Margin/VBox"]
+[node name="StatusLabel" type="Label" parent="Panel/Margin/Scroll/VBox"]
 layout_mode = 2
+autowrap_mode = 3
 text = "Awaiting probe launch."

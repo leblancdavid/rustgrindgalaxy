@@ -23,10 +23,10 @@ color = Color(0.0470588, 0.054902, 0.0784314, 1)
 [node name="Panel" type="Panel" parent="."]
 layout_mode = 1
 anchors_preset = 8
-anchor_left = 0.18
-anchor_top = 0.16
-anchor_right = 0.82
-anchor_bottom = 0.84
+anchor_left = 0.16
+anchor_top = 0.18
+anchor_right = 0.84
+anchor_bottom = 0.82
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -37,31 +37,32 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 18
-theme_override_constants/margin_top = 18
-theme_override_constants/margin_right = 18
-theme_override_constants/margin_bottom = 18
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
 
 [node name="VBox" type="VBoxContainer" parent="Panel/Margin"]
 layout_mode = 2
 
 [node name="TitleLabel" type="Label" parent="Panel/Margin/VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 18
 text = "Mission Complete"
 
 [node name="SummaryLabel" type="Label" parent="Panel/Margin/VBox"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 11
 text = "Mission Summary"
 
 [node name="DetailsLabel" type="Label" parent="Panel/Margin/VBox"]
-custom_minimum_size = Vector2(0, 90)
+custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 autowrap_mode = 3
 text = "Details"
 
 [node name="TotalsLabel" type="Label" parent="Panel/Margin/VBox"]
-custom_minimum_size = Vector2(0, 80)
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 autowrap_mode = 3
 text = "Totals"

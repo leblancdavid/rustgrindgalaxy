@@ -308,6 +308,27 @@ Priorities:
 - hit feedback
 - basic UI for health, materials, and mission result
 
+### UI And Typography
+
+The game uses a pixel-art presentation, so UI layout and text sizing must be treated as part of gameplay readability rather than an afterthought.
+
+Rules for the current slice:
+
+- all HUD and menu screens must fit at the native project viewport of `640x360`
+- critical actions must be visible without scrolling when a scene first opens unless the scene is explicitly designed as a scrolling panel
+- if content may exceed the viewport height, use a `ScrollContainer` instead of relying on editor preview size or clipped layouts
+- fonts must remain readable under integer scaling and should avoid feeling oversized relative to the pixel-art scene
+- button labels should stay short and direct
+- layout should put primary actions first, detailed explanation second
+- new UI scenes should be checked at native resolution before considering them ready for playtest
+
+Failure signs for UI in this slice:
+
+- primary buttons render offscreen or below the fold
+- text blocks dominate the screen and hide actions
+- menu screens feel denser than the gameplay they support
+- the player spends time fighting layout instead of making decisions
+
 Polish is welcome, but should not slow down the core loop.
 
 ## Success Metrics

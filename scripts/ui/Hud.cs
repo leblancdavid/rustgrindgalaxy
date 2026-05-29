@@ -21,41 +21,40 @@ public partial class Hud : CanvasLayer
     {
         var world = GetParentOrNull<World>();
         var state = player.IsGrinding ? "GRIND" : player.IsNearRail ? "NEAR RAIL" : "GROUND";
-        var railSpeed = player.ResolvedEffects.RailSpeedBonus;
         var missionTitle = world?.GetMissionTitle() ?? "Industrial Test Run";
         var themeLabel = world?.GetMissionThemeLabel() ?? "Industrial";
-        _missionLabel.Text = $"{missionTitle}\nTheme: {themeLabel}  Difficulty: T{world?.GetMissionDifficulty() ?? 1}\nModifiers: {world?.GetMissionModifierSummary() ?? "None"}";
-        _statusLabel.Text = $"State: {state}\nRail Bonus: {railSpeed:0.0}  Gravity: {player.GravityScale:0.00}";
+        _missionLabel.Text = $"{missionTitle}\n{themeLabel}  T{world?.GetMissionDifficulty() ?? 1}";
+        _statusLabel.Text = state;
 
         var materialTarget = world?.MissionMaterialTarget ?? 0;
         _messageLabel.Text = string.Empty;
 
         _materialsLabel.Text = world != null
-            ? $"Materials: {world.GetTotalCollectedMinerals()} / {materialTarget}\n{world.GetCollectedMineralSummary()}"
+            ? $"Mat {world.GetTotalCollectedMinerals()} / {materialTarget}"
             : "Materials: 0";
 
         if (world != null && world.IsMissionComplete())
         {
-            _healthLabel.Text = $"HP: {player.CurrentHealth} / {player.MaxHealth}";
-            _messageLabel.Text = "Mission Complete\nPress Jump to Return";
+            _healthLabel.Text = $"HP {player.CurrentHealth}/{player.MaxHealth}";
+            _messageLabel.Text = "Clear - Jump";
             return;
         }
 
         if (player.IsDead)
         {
-            _healthLabel.Text = "HP: 0 / 0\nSTATUS: DESTROYED";
+            _healthLabel.Text = "HP 0";
 
             _messageLabel.Text = world != null && world.IsRestartReady()
-                ? "Press Jump to Return"
-                : "System Failure";
+                ? "Destroyed - Jump"
+                : "Destroyed";
 
             return;
         }
 
-        var invuln = player.InvulnerabilityTimeRemaining > 0.0f ? "  I-FRAMES" : string.Empty;
-        _healthLabel.Text = $"HP: {player.CurrentHealth} / {player.MaxHealth}{invuln}";
+        var invuln = player.InvulnerabilityTimeRemaining > 0.0f ? " *" : string.Empty;
+        _healthLabel.Text = $"HP {player.CurrentHealth}/{player.MaxHealth}{invuln}";
         _messageLabel.Text = world != null && world.CanExtract()
-            ? "Extraction Ready"
-            : "Collect minerals";
+            ? "Extract Ready"
+            : "Collect";
     }
 }
