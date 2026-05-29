@@ -2,12 +2,20 @@ using Godot;
 
 public partial class PlayerController : CharacterBody2D
 {
-    [Export] public float MoveSpeed = 120.0f;
-    [Export] public float JumpVelocity = -260.0f;
+    [Export] public float MoveSpeed = 150.0f;
+    [Export] public float GroundAcceleration = 720.0f;
+    [Export] public float CoastDeceleration = 80.0f;
+    [Export] public float AirAcceleration = 320.0f;
+    [Export] public float MinimumJumpVelocity = -250.0f;
+    [Export] public float JumpVelocity = -500.0f;
+    [Export] public float MaxJumpHoldTime = 0.28f;
     [Export] public float GravityScale = 1.0f;
     [Export] public float RailSnapDistance = 12.0f;
+    [Export] public float RailAttachCooldownSeconds = 0.18f;
     [Export] public int MaxHealth = 5;
     [Export] public float InvulnerabilityDuration = 0.75f;
+
+    private const string GrindAction = "grind";
 
     private ResolvedModuleEffects _resolvedEffects = new();
     private GrindRail? _nearbyRail;
@@ -15,6 +23,9 @@ public partial class PlayerController : CharacterBody2D
     private float _grindDirection;
     private float _railArmorTimeRemaining;
     private float _invulnerabilityTimeRemaining;
+    private float _railAttachCooldownRemaining;
+    private float _jumpChargeTime;
+    private bool _isChargingJump;
     private Polygon2D _visual = null!;
     private Color _baseColor;
 
@@ -36,6 +47,7 @@ public partial class PlayerController : CharacterBody2D
 
     public override void _Ready()
     {
+        EnsureGrindInput();
         _visual = GetNode<Polygon2D>("Visual");
         _baseColor = _visual.Color;
         CurrentHealth = MaxHealth;
@@ -69,24 +81,21 @@ public partial class PlayerController : CharacterBody2D
     {
         if (IsDead)
         {
+            CancelJumpCharge();
             Velocity = Vector2.Zero;
             return;
         }
 
+        var deltaSeconds = (float)delta;
         var velocity = Velocity;
         var inputDirection = Input.GetAxis("ui_left", "ui_right");
-        _railArmorTimeRemaining = Mathf.Max(0.0f, _railArmorTimeRemaining - (float)delta);
-        _invulnerabilityTimeRemaining = Mathf.Max(0.0f, _invulnerabilityTimeRemaining - (float)delta);
+        var wasOnFloor = IsOnFloor();
+        _railArmorTimeRemaining = Mathf.Max(0.0f, _railArmorTimeRemaining - deltaSeconds);
+        _invulnerabilityTimeRemaining = Mathf.Max(0.0f, _invulnerabilityTimeRemaining - deltaSeconds);
+        _railAttachCooldownRemaining = Mathf.Max(0.0f, _railAttachCooldownRemaining - deltaSeconds);
 
-        if (_invulnerabilityTimeRemaining > 0.0f)
-        {
-            var flashOn = Mathf.PosMod(Time.GetTicksMsec() / 100, 2) == 0;
-            _visual.Color = flashOn ? new Color(1.0f, 0.45f, 0.45f, 1.0f) : _baseColor;
-        }
-        else
-        {
-            _visual.Color = _baseColor;
-        }
+        UpdateDamageFlash();
+        UpdateJumpCharge(deltaSeconds, wasOnFloor, _activeRail != null);
 
         if (_activeRail != null)
         {
@@ -99,13 +108,18 @@ public partial class PlayerController : CharacterBody2D
         var gravityMultiplier = _resolvedEffects.HangTimeGravityMultiplier;
         var gravity = (float)ProjectSettings.GetSetting("physics/2d/default_gravity") * GravityScale * gravityMultiplier;
 
-        if (!IsOnFloor())
+        if (!wasOnFloor)
         {
-            velocity.Y += gravity * (float)delta;
+            velocity.Y += gravity * deltaSeconds;
 
-            if (CanStartGrinding(inputDirection))
+            if (_isChargingJump)
             {
-                EnterRail(_nearbyRail!, inputDirection);
+                CancelJumpCharge();
+            }
+
+            if (CanStartGrinding(inputDirection, velocity.X))
+            {
+                EnterRail(_nearbyRail!, GetRequestedDirection(inputDirection, velocity.X));
                 HandleGrinding(ref velocity, inputDirection);
                 Velocity = velocity;
                 MoveAndSlide();
@@ -113,28 +127,22 @@ public partial class PlayerController : CharacterBody2D
             }
         }
 
-        if (Input.IsActionJustPressed("ui_accept") && IsOnFloor())
+        if (TryReleaseJump(ref velocity, inputDirection, wasOnFloor, false))
         {
-            velocity.Y = JumpVelocity - _resolvedEffects.LaunchHeightBonus;
-            velocity.X = inputDirection * MoveSpeed;
+            Velocity = velocity;
+            MoveAndSlide();
+            return;
+        }
 
-            if (!Mathf.IsZeroApprox(inputDirection))
-            {
-                velocity.X += Mathf.Sign(inputDirection) * _resolvedEffects.BurstTakeoffSpeedBonus;
-            }
-        }
-        else
-        {
-            velocity.X = inputDirection * MoveSpeed;
-        }
+        ApplyHorizontalMovement(ref velocity, inputDirection, deltaSeconds, wasOnFloor);
 
         Velocity = velocity;
         MoveAndSlide();
     }
 
-    private bool CanStartGrinding(float inputDirection)
+    private bool CanStartGrinding(float inputDirection, float currentVelocityX)
     {
-        if (_nearbyRail == null || Mathf.IsZeroApprox(inputDirection))
+        if (_nearbyRail == null || Input.IsActionPressed(GrindAction) == false || _railAttachCooldownRemaining > 0.0f)
         {
             return false;
         }
@@ -144,20 +152,34 @@ public partial class PlayerController : CharacterBody2D
             return false;
         }
 
+        var requestedDirection = GetRequestedDirection(inputDirection, currentVelocityX);
+        if (Mathf.IsZeroApprox(requestedDirection))
+        {
+            return false;
+        }
+
         return Mathf.Abs(GlobalPosition.Y - _nearbyRail.RailY) <= RailSnapDistance;
     }
 
-    private void EnterRail(GrindRail rail, float inputDirection)
+    private void EnterRail(GrindRail rail, float travelDirection)
     {
         _activeRail = rail;
-        _grindDirection = Mathf.Sign(inputDirection);
+        _grindDirection = Mathf.Sign(travelDirection);
+
+        if (Mathf.IsZeroApprox(_grindDirection))
+        {
+            _grindDirection = 1.0f;
+        }
+
         _railArmorTimeRemaining = Mathf.Max(_railArmorTimeRemaining, _resolvedEffects.RailEntryArmorSeconds);
         GlobalPosition = new Vector2(GlobalPosition.X, rail.RailY);
+        Velocity = new Vector2(_grindDirection * rail.GetSpeed(_resolvedEffects.RailSpeedBonus), 0.0f);
     }
 
     private void ExitRail()
     {
         _activeRail = null;
+        _railAttachCooldownRemaining = RailAttachCooldownSeconds;
     }
 
     public void TakeDamage(int amount)
@@ -191,11 +213,8 @@ public partial class PlayerController : CharacterBody2D
     {
         var rail = _activeRail!;
 
-        if (Input.IsActionJustPressed("ui_accept"))
+        if (TryReleaseJump(ref velocity, inputDirection, false, true))
         {
-            ExitRail();
-            velocity.Y = JumpVelocity - _resolvedEffects.LaunchHeightBonus;
-            velocity.X = _grindDirection * (MoveSpeed + _resolvedEffects.BurstTakeoffSpeedBonus);
             return;
         }
 
@@ -218,5 +237,141 @@ public partial class PlayerController : CharacterBody2D
         {
             ExitRail();
         }
+    }
+
+    private void ApplyHorizontalMovement(ref Vector2 velocity, float inputDirection, float deltaSeconds, bool onFloor)
+    {
+        if (Mathf.IsZeroApprox(inputDirection))
+        {
+            if (onFloor)
+            {
+                velocity.X = Mathf.MoveToward(velocity.X, 0.0f, CoastDeceleration * deltaSeconds);
+            }
+
+            return;
+        }
+
+        var targetSpeed = inputDirection * MoveSpeed;
+        var acceleration = onFloor ? GroundAcceleration : AirAcceleration;
+        velocity.X = Mathf.MoveToward(velocity.X, targetSpeed, acceleration * deltaSeconds);
+    }
+
+    private void UpdateDamageFlash()
+    {
+        if (_invulnerabilityTimeRemaining > 0.0f)
+        {
+            var flashOn = Mathf.PosMod(Time.GetTicksMsec() / 100, 2) == 0;
+            _visual.Color = flashOn ? new Color(1.0f, 0.45f, 0.45f, 1.0f) : _baseColor;
+            return;
+        }
+
+        _visual.Color = _baseColor;
+    }
+
+    private void UpdateJumpCharge(float deltaSeconds, bool onFloor, bool onRail)
+    {
+        if (Input.IsActionJustPressed("ui_accept") && (onFloor || onRail))
+        {
+            _isChargingJump = true;
+            _jumpChargeTime = 0.0f;
+        }
+
+        if (_isChargingJump == false)
+        {
+            return;
+        }
+
+        if (onFloor == false && onRail == false)
+        {
+            CancelJumpCharge();
+            return;
+        }
+
+        _jumpChargeTime = Mathf.Min(_jumpChargeTime + deltaSeconds, MaxJumpHoldTime);
+    }
+
+    private bool TryReleaseJump(ref Vector2 velocity, float inputDirection, bool onFloor, bool onRail)
+    {
+        if (_isChargingJump == false || Input.IsActionJustReleased("ui_accept") == false)
+        {
+            return false;
+        }
+
+        var chargedJumpVelocity = GetChargedJumpVelocity();
+        CancelJumpCharge();
+
+        if (onRail)
+        {
+            ExitRail();
+            velocity.Y = chargedJumpVelocity - _resolvedEffects.LaunchHeightBonus;
+            velocity.X = _grindDirection * (MoveSpeed + _resolvedEffects.BurstTakeoffSpeedBonus);
+            return true;
+        }
+
+        if (onFloor == false)
+        {
+            return false;
+        }
+
+        velocity.Y = chargedJumpVelocity - _resolvedEffects.LaunchHeightBonus;
+        velocity.X = ApplyTakeoffBonus(velocity.X, inputDirection);
+        return true;
+    }
+
+    private float GetChargedJumpVelocity()
+    {
+        if (MaxJumpHoldTime <= 0.0f)
+        {
+            return JumpVelocity;
+        }
+
+        var ratio = Mathf.Clamp(_jumpChargeTime / MaxJumpHoldTime, 0.0f, 1.0f);
+        return Mathf.Lerp(MinimumJumpVelocity, JumpVelocity, ratio);
+    }
+
+    private float ApplyTakeoffBonus(float currentVelocityX, float inputDirection)
+    {
+        var direction = GetRequestedDirection(inputDirection, currentVelocityX);
+        if (Mathf.IsZeroApprox(direction))
+        {
+            return currentVelocityX;
+        }
+
+        return currentVelocityX + (direction * _resolvedEffects.BurstTakeoffSpeedBonus);
+    }
+
+    private float GetRequestedDirection(float inputDirection, float currentVelocityX)
+    {
+        if (!Mathf.IsZeroApprox(inputDirection))
+        {
+            return Mathf.Sign(inputDirection);
+        }
+
+        if (!Mathf.IsZeroApprox(currentVelocityX))
+        {
+            return Mathf.Sign(currentVelocityX);
+        }
+
+        return 0.0f;
+    }
+
+    private void CancelJumpCharge()
+    {
+        _isChargingJump = false;
+        _jumpChargeTime = 0.0f;
+    }
+
+    private static void EnsureGrindInput()
+    {
+        if (InputMap.HasAction(GrindAction))
+        {
+            return;
+        }
+
+        InputMap.AddAction(GrindAction);
+        InputMap.ActionAddEvent(GrindAction, new InputEventKey
+        {
+            PhysicalKeycode = Key.Shift,
+        });
     }
 }

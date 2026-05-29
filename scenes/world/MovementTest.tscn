@@ -1,0 +1,237 @@
+[gd_scene load_steps=20 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/MovementTest.cs" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/player/Player.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/world/GrindRail.tscn" id="3"]
+
+[sub_resource type="RectangleShape2D" id="1"]
+size = Vector2(1280, 32)
+
+[sub_resource type="RectangleShape2D" id="2"]
+size = Vector2(160, 16)
+
+[sub_resource type="RectangleShape2D" id="3"]
+size = Vector2(128, 16)
+
+[sub_resource type="RectangleShape2D" id="4"]
+size = Vector2(96, 16)
+
+[sub_resource type="RectangleShape2D" id="5"]
+size = Vector2(128, 20)
+
+[sub_resource type="RectangleShape2D" id="6"]
+size = Vector2(96, 20)
+
+[sub_resource type="RectangleShape2D" id="7"]
+size = Vector2(64, 20)
+
+[sub_resource type="RectangleShape2D" id="8"]
+size = Vector2(96, 16)
+
+[sub_resource type="RectangleShape2D" id="9"]
+size = Vector2(128, 16)
+
+[node name="MovementTest" type="Node2D"]
+script = ExtResource("1")
+
+[node name="Background" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(0, 0, 1280, 0, 1280, 360, 0, 360)
+color = Color(0.0745098, 0.0901961, 0.117647, 1)
+
+[node name="UpperBand" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(0, 0, 1280, 0, 1280, 70, 0, 70)
+color = Color(0.137255, 0.168627, 0.211765, 1)
+
+[node name="GlowStripe" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(0, 110, 1280, 110, 1280, 126, 0, 126)
+color = Color(0.207843, 0.47451, 0.552941, 0.2)
+
+[node name="BackSilhouetteA" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(70, 180, 230, 180, 230, 296, 70, 296)
+color = Color(0.101961, 0.121569, 0.156863, 1)
+
+[node name="BackSilhouetteB" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(318, 152, 430, 152, 430, 296, 318, 296)
+color = Color(0.101961, 0.121569, 0.156863, 1)
+
+[node name="BackSilhouetteC" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(760, 166, 944, 166, 944, 296, 760, 296)
+color = Color(0.101961, 0.121569, 0.156863, 1)
+
+[node name="BackSilhouetteD" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(1060, 142, 1206, 142, 1206, 296, 1060, 296)
+color = Color(0.101961, 0.121569, 0.156863, 1)
+
+[node name="MidPanelA" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(40, 228, 240, 228, 240, 288, 40, 288)
+color = Color(0.180392, 0.2, 0.239216, 1)
+
+[node name="MidPanelB" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(544, 206, 722, 206, 722, 288, 544, 288)
+color = Color(0.180392, 0.2, 0.239216, 1)
+
+[node name="MidPanelC" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(980, 214, 1180, 214, 1180, 288, 980, 288)
+color = Color(0.180392, 0.2, 0.239216, 1)
+
+[node name="GroundVisual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(0, 296, 1280, 296, 1280, 360, 0, 360)
+color = Color(0.301961, 0.317647, 0.356863, 1)
+
+[node name="GroundTrim" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(0, 288, 1280, 288, 1280, 296, 0, 296)
+color = Color(0.964706, 0.694118, 0.219608, 1)
+
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(640, 312)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+shape = SubResource("1")
+
+[node name="PlatformVisualA" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(160, 236, 320, 236, 320, 256, 160, 256)
+color = Color(0.458824, 0.490196, 0.552941, 1)
+
+[node name="PlatformAEdge" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(160, 232, 320, 232, 320, 236, 160, 236)
+color = Color(0.909804, 0.772549, 0.345098, 1)
+
+[node name="PlatformA" type="StaticBody2D" parent="."]
+position = Vector2(240, 248)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PlatformA"]
+shape = SubResource("2")
+
+[node name="PlatformVisualB" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(404, 190, 532, 190, 532, 210, 404, 210)
+color = Color(0.458824, 0.490196, 0.552941, 1)
+
+[node name="PlatformBEdge" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(404, 186, 532, 186, 532, 190, 404, 190)
+color = Color(0.909804, 0.772549, 0.345098, 1)
+
+[node name="PlatformB" type="StaticBody2D" parent="."]
+position = Vector2(468, 202)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PlatformB"]
+shape = SubResource("3")
+
+[node name="PlatformVisualC" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(642, 156, 738, 156, 738, 176, 642, 176)
+color = Color(0.458824, 0.490196, 0.552941, 1)
+
+[node name="PlatformCEdge" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(642, 152, 738, 152, 738, 156, 642, 156)
+color = Color(0.909804, 0.772549, 0.345098, 1)
+
+[node name="PlatformC" type="StaticBody2D" parent="."]
+position = Vector2(690, 168)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PlatformC"]
+shape = SubResource("4")
+
+[node name="RampVisualA" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(820, 276, 948, 252, 948, 272, 820, 296)
+color = Color(0.388235, 0.411765, 0.462745, 1)
+
+[node name="RampA" type="StaticBody2D" parent="."]
+position = Vector2(884, 274)
+rotation = -0.185348
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RampA"]
+shape = SubResource("5")
+
+[node name="RampVisualB" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(972, 252, 1068, 234, 1068, 254, 972, 272)
+color = Color(0.388235, 0.411765, 0.462745, 1)
+
+[node name="RampB" type="StaticBody2D" parent="."]
+position = Vector2(1020, 253)
+rotation = -0.185348
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RampB"]
+shape = SubResource("6")
+
+[node name="BridgeVisual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(1088, 192, 1152, 192, 1152, 212, 1088, 212)
+color = Color(0.458824, 0.490196, 0.552941, 1)
+
+[node name="BridgeEdge" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(1088, 188, 1152, 188, 1152, 192, 1088, 192)
+color = Color(0.909804, 0.772549, 0.345098, 1)
+
+[node name="Bridge" type="StaticBody2D" parent="."]
+position = Vector2(1120, 204)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Bridge"]
+shape = SubResource("7")
+
+[node name="LandingVisual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(1184, 148, 1280, 148, 1280, 168, 1184, 168)
+color = Color(0.458824, 0.490196, 0.552941, 1)
+
+[node name="LandingEdge" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(1184, 144, 1280, 144, 1280, 148, 1184, 148)
+color = Color(0.909804, 0.772549, 0.345098, 1)
+
+[node name="Landing" type="StaticBody2D" parent="."]
+position = Vector2(1232, 160)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Landing"]
+shape = SubResource("8")
+
+[node name="RailDeckVisual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(566, 214, 694, 214, 694, 230, 566, 230)
+color = Color(0.278431, 0.294118, 0.345098, 1)
+
+[node name="RailDeck" type="StaticBody2D" parent="."]
+position = Vector2(630, 222)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RailDeck"]
+shape = SubResource("9")
+
+[node name="RailA" parent="." instance=ExtResource("3")]
+position = Vector2(630, 210)
+Width = 120.0
+BaseSpeed = 180.0
+
+[node name="SupportA" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(584, 230, 596, 230, 596, 296, 584, 296)
+color = Color(0.243137, 0.258824, 0.305882, 1)
+
+[node name="SupportB" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(664, 230, 676, 230, 676, 296, 664, 296)
+color = Color(0.243137, 0.258824, 0.305882, 1)
+
+[node name="Player" parent="." instance=ExtResource("2")]
+position = Vector2(72, 240)
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+visible = false
+
+[node name="Margin" type="MarginContainer" parent="CanvasLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="InfoPanel" type="PanelContainer" parent="CanvasLayer/Margin"]
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+
+[node name="InfoMargin" type="MarginContainer" parent="CanvasLayer/Margin/InfoPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="InfoLabel" type="Label" parent="CanvasLayer/Margin/InfoPanel/InfoMargin"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "Movement Test\nArrows / A-D: Move\nSpace / Enter: Jump\nJump onto the yellow rail to test grinding\nFalling off the map resets you"
