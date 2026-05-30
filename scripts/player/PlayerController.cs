@@ -12,9 +12,12 @@ public partial class PlayerController : CharacterBody2D
 	[Export] public float GravityScale = 1.0f;
 	[Export] public float SlopeGravityStrength = 900.0f;
 	[Export] public float RotationLerpSpeed = 20.0f;
+	[Export] public float RotationSpeedDegrees = 240.0f;
+	[Export] public float LandingToleranceDegrees = 20.0f;
 	[Export] public float RailFriction = 12.0f;
 	[Export] public float RailGravityStrength = 900.0f;
-	[Export] public float GrindIntentSeconds = 10.0f;
+	[Export] public float MinimumRailEntrySpeed = 20.0f;
+	[Export] public float GrindIntentSeconds = 1.0f;
 	[Export] public float TravelIntentMemorySeconds = 0.15f;
 	[Export] public float RailAttachCooldownSeconds = 0.18f;
 	[Export] public float MaxRailSpeed = 420.0f;
@@ -22,6 +25,10 @@ public partial class PlayerController : CharacterBody2D
 	[Export] public float InvulnerabilityDuration = 0.75f;
 
 	private const string GrindAction = "grind";
+	private const string RotateCounterClockwiseAction = "rotate_ccw";
+	private const string RotateClockwiseAction = "rotate_cw";
+	private const float FailedLandingSeparation = 2.0f;
+	private const float FailedLandingFallSpeed = 90.0f;
 
 	private ResolvedModuleEffects _resolvedEffects = new();
 	private GrindRail? _nearbyRail;
@@ -32,6 +39,8 @@ public partial class PlayerController : CharacterBody2D
 	private float _railAttachCooldownRemaining;
 	private float _jumpChargeTime;
 	private float _groundTilt;
+	private float _airRotation;
+	private float _railRotationOffset;
 	private float _grindIntentTimeRemaining;
 	private float _railProgress;
 	private float _railSpeed;
@@ -65,6 +74,7 @@ public partial class PlayerController : CharacterBody2D
 		_boardContact = GetNode<Marker2D>("BoardContact");
 		_visual = GetNode<Polygon2D>("Visual");
 		_baseColor = _visual.Color;
+		_airRotation = Rotation;
 		_previousBoardContactPoint = GetRailContactPoint();
 		CurrentHealth = MaxHealth;
 	}
@@ -105,6 +115,7 @@ public partial class PlayerController : CharacterBody2D
 		var deltaSeconds = (float)delta;
 		var velocity = Velocity;
 		var inputDirection = Input.GetAxis("ui_left", "ui_right");
+		var rotationInput = Input.GetAxis(RotateCounterClockwiseAction, RotateClockwiseAction);
 		var wasOnFloor = IsOnFloor();
 		var previousBoardContactPoint = GetRailContactPoint();
 		var gravityMultiplier = _resolvedEffects.HangTimeGravityMultiplier;
@@ -119,15 +130,15 @@ public partial class PlayerController : CharacterBody2D
 		UpdateGrindIntent();
 		UpdateTravelIntent(inputDirection, velocity.X);
 		UpdateJumpCharge(deltaSeconds, wasOnFloor, _activeRail != null);
+		UpdateRotationInput(rotationInput, deltaSeconds, wasOnFloor);
 
 		if (_activeRail != null)
 		{
-			var activeRailAngle = _activeRail.Angle;
 			HandleGrinding(ref velocity, inputDirection, deltaSeconds, gravity);
 			Velocity = velocity;
 			MoveAndSlide();
 			_previousBoardContactPoint = GetRailContactPoint();
-			UpdateVisualRotation(deltaSeconds, _activeRail?.Angle ?? activeRailAngle);
+			UpdateVisualRotation(deltaSeconds, GetTargetRotation());
 			return;
 		}
 
@@ -143,12 +154,11 @@ public partial class PlayerController : CharacterBody2D
 
 		if (TryStartBufferedGrinding(previousBoardContactPoint, GetRailContactPoint(), ref velocity, inputDirection, deltaSeconds, gravity))
 		{
-			var activeRailAngle = _activeRail?.Angle ?? GetTargetRotation();
 			Velocity = velocity;
 			_previousBoardContactPoint = GetRailContactPoint();
 			MoveAndSlide();
 			_previousBoardContactPoint = GetRailContactPoint();
-			UpdateVisualRotation(deltaSeconds, activeRailAngle);
+			UpdateVisualRotation(deltaSeconds, GetTargetRotation());
 			return;
 		}
 
@@ -164,6 +174,17 @@ public partial class PlayerController : CharacterBody2D
 
 		Velocity = velocity;
 		MoveAndSlide();
+
+		velocity = Velocity;
+
+		if (RejectInvalidLanding(wasOnFloor, ref velocity))
+		{
+			Velocity = velocity;
+		}
+		else if (IsOnFloor())
+		{
+			UpdateGroundRotationState();
+		}
 
 		if (_activeRail == null && wasOnFloor == false && TryStartBufferedGrinding(previousBoardContactPoint, GetRailContactPoint(), ref velocity, inputDirection, deltaSeconds, gravity))
 		{
@@ -208,18 +229,26 @@ public partial class PlayerController : CharacterBody2D
 
 		_railArmorTimeRemaining = Mathf.Max(_railArmorTimeRemaining, _resolvedEffects.RailEntryArmorSeconds);
 		_railProgress = Mathf.Clamp(railProgress, 0.0f, 1.0f);
-		var railNormal = new Vector2(-rail.Tangent.Y, rail.Tangent.X);
-		_railSpeed = Mathf.Abs(Velocity.Dot(railNormal));
+		_railRotationOffset = GetAngleDifference(rail.Angle, GetBoardAngle());
+		var tangentSpeed = Velocity.Dot(rail.Tangent);
 
-		if (_railSpeed < rail.GetSpeed(_resolvedEffects.RailSpeedBonus))
+		if (!Mathf.IsZeroApprox(tangentSpeed))
 		{
-			_railSpeed = rail.GetSpeed(_resolvedEffects.RailSpeedBonus);
+			_grindDirection = Mathf.Sign(tangentSpeed);
+		}
+
+		_railSpeed = Mathf.Abs(tangentSpeed);
+
+		if (_railSpeed < MinimumRailEntrySpeed)
+		{
+			_railSpeed = MinimumRailEntrySpeed;
 		}
 
 		_railSpeed *= _grindDirection;
-		var boardOffset = _boardContact.Position.Rotated(Rotation);
+		var boardRotation = GetRailBoardAngle(rail);
+		var boardOffset = _boardContact.Position.Rotated(boardRotation);
 		GlobalPosition = rail.GetPointAtProgress(_railProgress) - boardOffset;
-		Rotation = rail.Angle;
+		Rotation = boardRotation;
 		Velocity = rail.Tangent * _railSpeed;
 	}
 
@@ -227,6 +256,7 @@ public partial class PlayerController : CharacterBody2D
 	{
 		_activeRail = null;
 		_railSpeed = 0.0f;
+		_airRotation = GetBoardAngle();
 		_railAttachCooldownRemaining = RailAttachCooldownSeconds;
 	}
 
@@ -271,6 +301,13 @@ public partial class PlayerController : CharacterBody2D
 			_grindDirection = 1.0f;
 		}
 
+		if (Mathf.Abs(_railRotationOffset) > GetLandingToleranceRadians())
+		{
+			ExitRail();
+			velocity = rail.Tangent * _railSpeed;
+			return;
+		}
+
 		var downhillAcceleration = rail.Tangent.Dot(Vector2.Down) * gravity * (RailGravityStrength / gravity);
 		_railSpeed += downhillAcceleration * deltaSeconds;
 		_railSpeed = Mathf.MoveToward(_railSpeed, 0.0f, RailFriction * deltaSeconds);
@@ -281,14 +318,16 @@ public partial class PlayerController : CharacterBody2D
 		if (_railProgress <= 0.0f || _railProgress >= 1.0f)
 		{
 			_railProgress = Mathf.Clamp(_railProgress, 0.0f, 1.0f);
-			var boardOffset = _boardContact.Position.Rotated(Rotation);
+			var boardRotation = GetRailBoardAngle(rail);
+			var boardOffset = _boardContact.Position.Rotated(boardRotation);
 			GlobalPosition = rail.GetPointAtProgress(_railProgress) - boardOffset;
 			velocity = rail.Tangent * _railSpeed;
 			ExitRail();
 			return;
 		}
 
-		var currentBoardOffset = _boardContact.Position.Rotated(Rotation);
+		var currentBoardRotation = GetRailBoardAngle(rail);
+		var currentBoardOffset = _boardContact.Position.Rotated(currentBoardRotation);
 		GlobalPosition = rail.GetPointAtProgress(_railProgress) - currentBoardOffset;
 		velocity = rail.Tangent * _railSpeed;
 	}
@@ -301,11 +340,6 @@ public partial class PlayerController : CharacterBody2D
 			var floorTangent = GetSlopeTangent(floorNormal);
 			var slopeAcceleration = floorTangent.Dot(Vector2.Down) * gravity * (SlopeGravityStrength / gravity);
 			velocity.X += slopeAcceleration * deltaSeconds;
-			_groundTilt = floorTangent.Angle();
-		}
-		else
-		{
-			_groundTilt = 0.0f;
 		}
 
 		if (Mathf.IsZeroApprox(inputDirection))
@@ -476,6 +510,11 @@ public partial class PlayerController : CharacterBody2D
 			return false;
 		}
 
+		if (IsWithinLandingTolerance(rail!.Angle) == false)
+		{
+			return false;
+		}
+
 		EnterRail(rail!, ResolveGrindDirection(rail!, inputDirection, velocity), railProgress);
 		HandleGrinding(ref velocity, inputDirection, deltaSeconds, gravity);
 		return true;
@@ -544,11 +583,82 @@ public partial class PlayerController : CharacterBody2D
 		return tangent.X < 0.0f ? -tangent : tangent;
 	}
 
-	private float GetTargetRotation()
+	private void UpdateRotationInput(float rotationInput, float deltaSeconds, bool wasOnFloor)
+	{
+		var rotationStep = Mathf.DegToRad(RotationSpeedDegrees) * rotationInput * deltaSeconds;
+
+		if (_activeRail != null)
+		{
+			_railRotationOffset = NormalizeAngle(_railRotationOffset + rotationStep);
+			return;
+		}
+
+		if (wasOnFloor)
+		{
+			_railRotationOffset = 0.0f;
+			return;
+		}
+
+		_airRotation = NormalizeAngle(_airRotation + rotationStep);
+	}
+
+	private bool RejectInvalidLanding(bool wasOnFloor, ref Vector2 velocity)
+	{
+		if (wasOnFloor || IsOnFloor() == false)
+		{
+			return false;
+		}
+
+		var floorAngle = GetSlopeTangent(GetFloorNormal()).Angle();
+
+		if (IsWithinLandingTolerance(floorAngle))
+		{
+			return false;
+		}
+
+		var floorNormal = GetFloorNormal();
+		var floorTangent = GetSlopeTangent(floorNormal);
+		var tangentialSpeed = Velocity.Dot(floorTangent);
+		var fallSpeed = Mathf.Max(Velocity.Dot(-floorNormal), FailedLandingFallSpeed);
+		velocity = (floorTangent * tangentialSpeed) + (-floorNormal * fallSpeed);
+		GlobalPosition += floorNormal * FailedLandingSeparation;
+		_airRotation = Rotation;
+		return true;
+	}
+
+	private void UpdateGroundRotationState()
+	{
+		var floorTangent = GetSlopeTangent(GetFloorNormal());
+		_groundTilt = floorTangent.Angle();
+		_airRotation = _groundTilt;
+		_railRotationOffset = 0.0f;
+	}
+
+	private bool IsWithinLandingTolerance(float surfaceAngle)
+	{
+		return Mathf.Abs(GetAngleDifference(surfaceAngle, GetBoardAngle())) <= GetLandingToleranceRadians();
+	}
+
+	private float GetLandingToleranceRadians()
+	{
+		return Mathf.DegToRad(Mathf.Max(0.0f, LandingToleranceDegrees));
+	}
+
+	private static float GetAngleDifference(float targetAngle, float currentAngle)
+	{
+		return NormalizeAngle(currentAngle - targetAngle);
+	}
+
+	private static float NormalizeAngle(float angle)
+	{
+		return Mathf.PosMod(angle + Mathf.Pi, Mathf.Tau) - Mathf.Pi;
+	}
+
+	private float GetBoardAngle()
 	{
 		if (_activeRail != null)
 		{
-			return _activeRail.Angle;
+			return GetRailBoardAngle(_activeRail);
 		}
 
 		if (IsOnFloor())
@@ -556,11 +666,27 @@ public partial class PlayerController : CharacterBody2D
 			return _groundTilt;
 		}
 
-		return 0.0f;
+		return _airRotation;
+	}
+
+	private float GetRailBoardAngle(GrindRail rail)
+	{
+		return NormalizeAngle(rail.Angle + _railRotationOffset);
+	}
+
+	private float GetTargetRotation()
+	{
+		return GetBoardAngle();
 	}
 
 	private void UpdateVisualRotation(float deltaSeconds, float targetRotation)
 	{
+		if (_activeRail != null || IsOnFloor() == false)
+		{
+			Rotation = targetRotation;
+			return;
+		}
+
 		Rotation = Mathf.LerpAngle(Rotation, targetRotation, Mathf.Clamp(RotationLerpSpeed * deltaSeconds, 0.0f, 1.0f));
 	}
 
@@ -579,6 +705,27 @@ public partial class PlayerController : CharacterBody2D
 		InputMap.ActionAddEvent(GrindAction, new InputEventKey
 		{
 			PhysicalKeycode = Key.Shift,
+		});
+
+		EnsureActionKeyBinding(RotateCounterClockwiseAction, Key.Q);
+		EnsureActionKeyBinding(RotateClockwiseAction, Key.E);
+	}
+
+	private static void EnsureActionKeyBinding(string actionName, Key key)
+	{
+		if (InputMap.HasAction(actionName) == false)
+		{
+			InputMap.AddAction(actionName);
+		}
+
+		InputMap.ActionEraseEvents(actionName);
+		InputMap.ActionAddEvent(actionName, new InputEventKey
+		{
+			Keycode = key,
+		});
+		InputMap.ActionAddEvent(actionName, new InputEventKey
+		{
+			PhysicalKeycode = key,
 		});
 	}
 }
