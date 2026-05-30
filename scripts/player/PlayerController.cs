@@ -14,7 +14,7 @@ public partial class PlayerController : CharacterBody2D
 	[Export] public float RotationLerpSpeed = 20.0f;
 	[Export] public float RailFriction = 12.0f;
 	[Export] public float RailGravityStrength = 900.0f;
-	[Export] public float GrindIntentSeconds = 1.0f;
+	[Export] public float GrindIntentSeconds = 10.0f;
 	[Export] public float TravelIntentMemorySeconds = 0.15f;
 	[Export] public float RailAttachCooldownSeconds = 0.18f;
 	[Export] public float MaxRailSpeed = 420.0f;
@@ -41,6 +41,7 @@ public partial class PlayerController : CharacterBody2D
 	private Marker2D _boardContact = null!;
 	private Polygon2D _visual = null!;
 	private Color _baseColor;
+	private Vector2 _previousBoardContactPoint;
 
 	public PlayerLoadout? Loadout { get; private set; }
 
@@ -64,6 +65,7 @@ public partial class PlayerController : CharacterBody2D
 		_boardContact = GetNode<Marker2D>("BoardContact");
 		_visual = GetNode<Polygon2D>("Visual");
 		_baseColor = _visual.Color;
+		_previousBoardContactPoint = GetRailContactPoint();
 		CurrentHealth = MaxHealth;
 	}
 
@@ -104,6 +106,7 @@ public partial class PlayerController : CharacterBody2D
 		var velocity = Velocity;
 		var inputDirection = Input.GetAxis("ui_left", "ui_right");
 		var wasOnFloor = IsOnFloor();
+		var previousBoardContactPoint = GetRailContactPoint();
 		var gravityMultiplier = _resolvedEffects.HangTimeGravityMultiplier;
 		var gravity = (float)ProjectSettings.GetSetting("physics/2d/default_gravity") * GravityScale * gravityMultiplier;
 		_railArmorTimeRemaining = Mathf.Max(0.0f, _railArmorTimeRemaining - deltaSeconds);
@@ -123,6 +126,7 @@ public partial class PlayerController : CharacterBody2D
 			HandleGrinding(ref velocity, inputDirection, deltaSeconds, gravity);
 			Velocity = velocity;
 			MoveAndSlide();
+			_previousBoardContactPoint = GetRailContactPoint();
 			UpdateVisualRotation(deltaSeconds, _activeRail?.Angle ?? activeRailAngle);
 			return;
 		}
@@ -137,11 +141,13 @@ public partial class PlayerController : CharacterBody2D
 			}
 		}
 
-		if (TryStartBufferedGrinding(ref velocity, inputDirection, deltaSeconds, gravity))
+		if (TryStartBufferedGrinding(previousBoardContactPoint, GetRailContactPoint(), ref velocity, inputDirection, deltaSeconds, gravity))
 		{
 			var activeRailAngle = _activeRail?.Angle ?? GetTargetRotation();
 			Velocity = velocity;
+			_previousBoardContactPoint = GetRailContactPoint();
 			MoveAndSlide();
+			_previousBoardContactPoint = GetRailContactPoint();
 			UpdateVisualRotation(deltaSeconds, activeRailAngle);
 			return;
 		}
@@ -150,6 +156,7 @@ public partial class PlayerController : CharacterBody2D
 		{
 			Velocity = velocity;
 			MoveAndSlide();
+			_previousBoardContactPoint = GetRailContactPoint();
 			return;
 		}
 
@@ -157,12 +164,25 @@ public partial class PlayerController : CharacterBody2D
 
 		Velocity = velocity;
 		MoveAndSlide();
+
+		if (_activeRail == null && wasOnFloor == false && TryStartBufferedGrinding(previousBoardContactPoint, GetRailContactPoint(), ref velocity, inputDirection, deltaSeconds, gravity))
+		{
+			Velocity = velocity;
+			_previousBoardContactPoint = GetRailContactPoint();
+			UpdateVisualRotation(deltaSeconds, _activeRail?.Angle ?? GetTargetRotation());
+			return;
+		}
+
+		_previousBoardContactPoint = GetRailContactPoint();
 		UpdateVisualRotation(deltaSeconds, GetTargetRotation());
 	}
 
-	private bool CanStartGrinding(float inputDirection, float currentVelocityX)
+	private bool CanStartGrinding()
 	{
-		if (_nearbyRail == null || _grindIntentTimeRemaining <= 0.0f || _railAttachCooldownRemaining > 0.0f)
+		var grindHeld = Input.IsActionPressed(GrindAction);
+		var grindBuffered = _grindIntentTimeRemaining > 0.0f;
+
+		if ((!grindHeld && !grindBuffered) || _railAttachCooldownRemaining > 0.0f)
 		{
 			return false;
 		}
@@ -172,22 +192,10 @@ public partial class PlayerController : CharacterBody2D
 			return false;
 		}
 
-		var contactPoint = GetRailContactPoint();
-		if (_nearbyRail.TryGetSnapProgress(contactPoint, out _) == false)
-		{
-			return false;
-		}
-
-		var requestedDirection = GetRequestedDirection(inputDirection, currentVelocityX);
-		if (Mathf.IsZeroApprox(requestedDirection))
-		{
-			return false;
-		}
-
 		return true;
 	}
 
-	private void EnterRail(GrindRail rail, float travelDirection)
+	private void EnterRail(GrindRail rail, float travelDirection, float railProgress)
 	{
 		_activeRail = rail;
 		_grindIntentTimeRemaining = 0.0f;
@@ -199,7 +207,7 @@ public partial class PlayerController : CharacterBody2D
 		}
 
 		_railArmorTimeRemaining = Mathf.Max(_railArmorTimeRemaining, _resolvedEffects.RailEntryArmorSeconds);
-		_railProgress = rail.GetProgressAtPoint(GetRailContactPoint());
+		_railProgress = Mathf.Clamp(railProgress, 0.0f, 1.0f);
 		var railNormal = new Vector2(-rail.Tangent.Y, rail.Tangent.X);
 		_railSpeed = Mathf.Abs(Velocity.Dot(railNormal));
 
@@ -434,7 +442,7 @@ public partial class PlayerController : CharacterBody2D
 
 	private void UpdateGrindIntent()
 	{
-		if (Input.IsActionJustPressed(GrindAction))
+		if (Input.IsActionJustReleased(GrindAction))
 		{
 			_grindIntentTimeRemaining = GrindIntentSeconds;
 		}
@@ -456,16 +464,73 @@ public partial class PlayerController : CharacterBody2D
 		}
 	}
 
-	private bool TryStartBufferedGrinding(ref Vector2 velocity, float inputDirection, float deltaSeconds, float gravity)
+	private bool TryStartBufferedGrinding(Vector2 fromBoardContactPoint, Vector2 toBoardContactPoint, ref Vector2 velocity, float inputDirection, float deltaSeconds, float gravity)
 	{
-		if (CanStartGrinding(inputDirection, velocity.X) == false)
+		if (CanStartGrinding() == false)
 		{
 			return false;
 		}
 
-		EnterRail(_nearbyRail!, GetRequestedDirection(inputDirection, velocity.X));
+		if (TryFindGrindRail(fromBoardContactPoint, toBoardContactPoint, out var rail, out var railProgress) == false)
+		{
+			return false;
+		}
+
+		EnterRail(rail!, ResolveGrindDirection(rail!, inputDirection, velocity), railProgress);
 		HandleGrinding(ref velocity, inputDirection, deltaSeconds, gravity);
 		return true;
+	}
+
+	private bool TryFindGrindRail(Vector2 fromBoardContactPoint, Vector2 toBoardContactPoint, out GrindRail? rail, out float railProgress)
+	{
+		rail = null;
+		railProgress = 0.0f;
+
+		if (_nearbyRail != null && _nearbyRail.TryGetSweepSnap(fromBoardContactPoint, toBoardContactPoint, out railProgress))
+		{
+			rail = _nearbyRail;
+			return true;
+		}
+
+		foreach (var node in GetTree().GetNodesInGroup(GrindRail.RailGroupName))
+		{
+			if (node is not GrindRail candidate || candidate == _nearbyRail)
+			{
+				continue;
+			}
+
+			if (candidate.TryGetSweepSnap(fromBoardContactPoint, toBoardContactPoint, out railProgress))
+			{
+				rail = candidate;
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private float ResolveGrindDirection(GrindRail rail, float inputDirection, Vector2 currentVelocity)
+	{
+		var requestedDirection = GetRequestedDirection(inputDirection, currentVelocity.X);
+
+		if (!Mathf.IsZeroApprox(requestedDirection))
+		{
+			return requestedDirection;
+		}
+
+		var tangentVelocity = currentVelocity.Dot(rail.Tangent);
+		if (!Mathf.IsZeroApprox(tangentVelocity))
+		{
+			return Mathf.Sign(tangentVelocity);
+		}
+
+		var downhillDirection = rail.GetDownhillSign();
+		if (!Mathf.IsZeroApprox(downhillDirection))
+		{
+			return downhillDirection;
+		}
+
+		return 1.0f;
 	}
 
 	private Vector2 GetRailContactPoint()
