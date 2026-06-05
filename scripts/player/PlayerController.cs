@@ -23,6 +23,15 @@ public partial class PlayerController : CharacterBody2D
 	[Export] public float TravelIntentMemorySeconds = 0.15f;
 	[Export] public float RailAttachCooldownSeconds = 0.18f;
 	[Export] public float MaxRailSpeed = 420.0f;
+	[Export] public float JumpChargeBoardTiltDegrees = 7.0f;
+	[Export] public float OllieTakeoffTiltDegrees = 12.0f;
+	[Export] public float OllieTiltRecoverSpeed = 10.0f;
+	[Export] public float GrindBoardTiltDegrees = 5.0f;
+	[Export] public float GrindTiltResponseSpeed = 8.0f;
+	[Export] public float GrindBobDegrees = 1.5f;
+	[Export] public float GrindBobSpeed = 7.0f;
+	[Export] public float GrindVisualMinimumStrength = 0.45f;
+	[Export] public float GrindBobOffsetPixels = 0.75f;
 	[Export] public int MaxHealth = 5;
 	[Export] public float InvulnerabilityDuration = 0.75f;
 
@@ -76,11 +85,15 @@ public partial class PlayerController : CharacterBody2D
 	private float _railSpeed;
 	private float _lastTravelDirection;
 	private float _travelIntentTimeRemaining;
+	private float _boardAnimationTilt;
+	private float _ollieTakeoffTilt;
+	private float _grindBobTime;
 	private bool _isChargingJump;
 	private Marker2D _boardContact = null!;
 	private Polygon2D _boardVisual = null!;
 	private Polygon2D _visual = null!;
 	private Color _baseColor;
+	private Vector2 _boardVisualBasePosition;
 	private Vector2 _previousBoardContactPoint;
 	private TrickKind _activeTrick;
 	private TrickPhase _activeTrickPhase;
@@ -132,6 +145,7 @@ public partial class PlayerController : CharacterBody2D
 		_boardVisual = GetNode<Polygon2D>("BoardVisual");
 		_visual = GetNode<Polygon2D>("Visual");
 		_baseColor = _visual.Color;
+		_boardVisualBasePosition = _boardVisual.Position;
 		_airRotation = Rotation;
 		_previousBoardContactPoint = GetRailContactPoint();
 		CurrentHealth = MaxHealth;
@@ -173,6 +187,7 @@ public partial class PlayerController : CharacterBody2D
 			CancelJumpCharge();
 			ResetComboAndFallState();
 			Velocity = Vector2.Zero;
+			UpdateBoardAnimationTilt(deltaSeconds);
 			UpdateFailedLandingVisual(deltaSeconds);
 			return;
 		}
@@ -204,6 +219,7 @@ public partial class PlayerController : CharacterBody2D
 			MoveAndSlide();
 			_previousBoardContactPoint = GetRailContactPoint();
 			UpdateVisualRotation(deltaSeconds, GetTargetRotation());
+			UpdateBoardAnimationTilt(deltaSeconds);
 			UpdateFailedLandingVisual(deltaSeconds);
 			return;
 		}
@@ -225,6 +241,7 @@ public partial class PlayerController : CharacterBody2D
 			MoveAndSlide();
 			_previousBoardContactPoint = GetRailContactPoint();
 			UpdateVisualRotation(deltaSeconds, GetTargetRotation());
+			UpdateBoardAnimationTilt(deltaSeconds);
 			UpdateFailedLandingVisual(deltaSeconds);
 			return;
 		}
@@ -234,6 +251,7 @@ public partial class PlayerController : CharacterBody2D
 			Velocity = velocity;
 			MoveAndSlide();
 			_previousBoardContactPoint = GetRailContactPoint();
+			UpdateBoardAnimationTilt(deltaSeconds);
 			UpdateFailedLandingVisual(deltaSeconds);
 			return;
 		}
@@ -259,12 +277,14 @@ public partial class PlayerController : CharacterBody2D
 			Velocity = velocity;
 			_previousBoardContactPoint = GetRailContactPoint();
 			UpdateVisualRotation(deltaSeconds, _activeRail?.Angle ?? GetTargetRotation());
+			UpdateBoardAnimationTilt(deltaSeconds);
 			UpdateFailedLandingVisual(deltaSeconds);
 			return;
 		}
 
 		_previousBoardContactPoint = GetRailContactPoint();
 		UpdateVisualRotation(deltaSeconds, GetTargetRotation());
+		UpdateBoardAnimationTilt(deltaSeconds);
 		UpdateFailedLandingVisual(deltaSeconds);
 	}
 
@@ -497,6 +517,7 @@ public partial class PlayerController : CharacterBody2D
 			launchVelocity += tangent * (_grindDirection * _resolvedEffects.BurstTakeoffSpeedBonus);
 			velocity.X = launchVelocity.X;
 			velocity.Y += launchVelocity.Y;
+			StartOllieTakeoffTilt(Mathf.Sign(launchVelocity.X));
 			ExitRail();
 			return true;
 		}
@@ -509,6 +530,7 @@ public partial class PlayerController : CharacterBody2D
 		RegisterCompletedTrickName(GetInstalledTrickName(ModuleType.Ollie));
 		velocity.Y = chargedJumpVelocity - _resolvedEffects.LaunchHeightBonus;
 		velocity.X = ApplyTakeoffBonus(velocity.X, inputDirection);
+		StartOllieTakeoffTilt(GetRequestedDirection(inputDirection, velocity.X));
 		return true;
 	}
 
@@ -1068,7 +1090,67 @@ public partial class PlayerController : CharacterBody2D
 	private void ApplyTrickVisual()
 	{
 		var boardFallRotation = Mathf.DegToRad(FailedLandingBoardTiltDegrees) * _failedLandingDirection * _failedLandingVisualBlend;
-		_boardVisual.Rotation = _trickRotationOffset + boardFallRotation;
+		_boardVisual.Rotation = _trickRotationOffset + boardFallRotation + _boardAnimationTilt;
+	}
+
+	private void UpdateBoardAnimationTilt(float deltaSeconds)
+	{
+		_boardVisual.Position = _boardVisualBasePosition;
+		_ollieTakeoffTilt = Mathf.MoveToward(
+			_ollieTakeoffTilt,
+			0.0f,
+			Mathf.DegToRad(OllieTakeoffTiltDegrees) * OllieTiltRecoverSpeed * deltaSeconds);
+
+		var targetTilt = _ollieTakeoffTilt;
+		var responseSpeed = OllieTiltRecoverSpeed;
+
+		if (_activeRail != null)
+		{
+			var speedRatio = Mathf.Clamp(Mathf.Abs(_railSpeed) / Mathf.Max(MaxRailSpeed, 1.0f), 0.0f, 1.0f);
+			var visualStrength = Mathf.Lerp(GrindVisualMinimumStrength, 1.0f, speedRatio);
+			float grindDirection = Mathf.Sign(_grindDirection);
+
+			if (Mathf.IsZeroApprox(grindDirection))
+			{
+				grindDirection = GetVisualTravelDirection();
+			}
+
+			_grindBobTime += deltaSeconds * GrindBobSpeed;
+			var grindBobWave = Mathf.Sin(_grindBobTime);
+			var grindLean = Mathf.DegToRad(GrindBoardTiltDegrees) * grindDirection * visualStrength;
+			var grindBob = Mathf.DegToRad(GrindBobDegrees) * visualStrength * grindBobWave;
+			targetTilt = grindLean + grindBob;
+			_boardVisual.Position = _boardVisualBasePosition + new Vector2(0.0f, grindBobWave * GrindBobOffsetPixels * visualStrength);
+			responseSpeed = GrindTiltResponseSpeed;
+		}
+		else
+		{
+			_grindBobTime = 0.0f;
+
+			if (_isChargingJump)
+			{
+				var chargeRatio = MaxJumpHoldTime <= 0.0f
+					? 1.0f
+					: Mathf.Clamp(_jumpChargeTime / MaxJumpHoldTime, 0.0f, 1.0f);
+				targetTilt += -GetVisualTravelDirection() * Mathf.DegToRad(JumpChargeBoardTiltDegrees) * chargeRatio;
+			}
+		}
+
+		_boardAnimationTilt = Mathf.LerpAngle(
+			_boardAnimationTilt,
+			targetTilt,
+			Mathf.Clamp(responseSpeed * deltaSeconds, 0.0f, 1.0f));
+	}
+
+	private void StartOllieTakeoffTilt(float direction)
+	{
+		if (Mathf.IsZeroApprox(direction))
+		{
+			direction = GetVisualTravelDirection();
+		}
+
+		_boardAnimationTilt = -direction * Mathf.DegToRad(OllieTakeoffTiltDegrees);
+		_ollieTakeoffTilt = _boardAnimationTilt;
 	}
 
 	private void PublishTrickStart(string trickName)
@@ -1186,6 +1268,10 @@ public partial class PlayerController : CharacterBody2D
 		_isFailedLandingFalling = false;
 		_failedLandingVisualBlend = 0.0f;
 		_failedLandingDirection = 0.0f;
+		_boardAnimationTilt = 0.0f;
+		_ollieTakeoffTilt = 0.0f;
+		_grindBobTime = 0.0f;
+		_boardVisual.Position = _boardVisualBasePosition;
 		_visual.Rotation = 0.0f;
 		ApplyTrickVisual();
 	}
@@ -1274,6 +1360,26 @@ public partial class PlayerController : CharacterBody2D
 	private static float NormalizeAngle(float angle)
 	{
 		return Mathf.PosMod(angle + Mathf.Pi, Mathf.Tau) - Mathf.Pi;
+	}
+
+	private float GetVisualTravelDirection()
+	{
+		if (_activeRail != null && !Mathf.IsZeroApprox(_grindDirection))
+		{
+			return Mathf.Sign(_grindDirection);
+		}
+
+		if (Mathf.Abs(Velocity.X) >= 5.0f)
+		{
+			return Mathf.Sign(Velocity.X);
+		}
+
+		if (_travelIntentTimeRemaining > 0.0f && !Mathf.IsZeroApprox(_lastTravelDirection))
+		{
+			return _lastTravelDirection;
+		}
+
+		return 1.0f;
 	}
 
 	private float GetBoardAngle()
