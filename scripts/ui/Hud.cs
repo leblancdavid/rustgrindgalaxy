@@ -2,11 +2,16 @@ using Godot;
 
 public partial class Hud : CanvasLayer
 {
+    private const float TrickPopupSeconds = 2.0f;
+
     private Label _missionLabel = null!;
     private Label _statusLabel = null!;
     private Label _healthLabel = null!;
     private Label _materialsLabel = null!;
     private Label _messageLabel = null!;
+    private Label _trickPopupLabel = null!;
+    private float _trickPopupTimeRemaining;
+    private uint _lastSeenTrickSequence;
 
     public override void _Ready()
     {
@@ -15,16 +20,40 @@ public partial class Hud : CanvasLayer
         _healthLabel = GetNode<Label>("Margin/VBox/HealthLabel");
         _messageLabel = GetNode<Label>("Margin/VBox/MessageLabel");
         _materialsLabel = GetNode<Label>("Margin/VBox/MaterialsLabel");
+        _trickPopupLabel = GetNode<Label>("TrickPopup/TrickLabel");
+        _trickPopupLabel.Visible = false;
+    }
+
+    public override void _Process(double delta)
+    {
+        if (_trickPopupTimeRemaining <= 0.0f)
+        {
+            return;
+        }
+
+        _trickPopupTimeRemaining = Mathf.Max(0.0f, _trickPopupTimeRemaining - (float)delta);
+        if (_trickPopupTimeRemaining <= 0.0f)
+        {
+            _trickPopupLabel.Visible = false;
+        }
     }
 
     public void UpdatePlayerState(PlayerController player)
     {
         var world = GetParentOrNull<World>();
-        var state = player.IsGrinding ? "GRIND" : player.IsNearRail ? "NEAR RAIL" : "GROUND";
+        var state = player.IsGrinding ? "GRIND" : player.IsNearRail ? "NEAR RAIL" : player.IsOnFloor() ? "GROUND" : "AIR";
         var missionTitle = world?.GetMissionTitle() ?? "Industrial Test Run";
         var themeLabel = world?.GetMissionThemeLabel() ?? "Industrial";
         _missionLabel.Text = $"{missionTitle}\n{themeLabel}  T{world?.GetMissionDifficulty() ?? 1}";
         _statusLabel.Text = state;
+
+        if (player.TrickStartSequence != _lastSeenTrickSequence && string.IsNullOrWhiteSpace(player.LastStartedTrickName) == false)
+        {
+            _lastSeenTrickSequence = player.TrickStartSequence;
+            _trickPopupLabel.Text = player.LastStartedTrickName.ToUpperInvariant();
+            _trickPopupLabel.Visible = true;
+            _trickPopupTimeRemaining = TrickPopupSeconds;
+        }
 
         var materialTarget = world?.MissionMaterialTarget ?? 0;
         _messageLabel.Text = string.Empty;

@@ -8,11 +8,16 @@ public partial class MovementTest : Node2D
 
     private PlayerController _player = null!;
     private Camera2D _camera = null!;
+    private Hud _hud = null!;
 
     public override void _Ready()
     {
         _player = GetNode<PlayerController>("Player");
         _camera = _player.GetNode<Camera2D>("Camera2D");
+        _hud = GetNode<Hud>("Hud");
+
+        var generator = new ModuleGenerator();
+        _player.SetLoadout(generator.GenerateDebugLoadout(ModuleRarity.Rare));
 
         _player.GlobalPosition = SpawnPosition;
         ApplyCameraBounds();
@@ -20,6 +25,8 @@ public partial class MovementTest : Node2D
 
     public override void _Process(double delta)
     {
+        _hud.UpdatePlayerState(_player);
+
         if (_player.GlobalPosition.Y > FallRespawnY)
         {
             RespawnPlayer();

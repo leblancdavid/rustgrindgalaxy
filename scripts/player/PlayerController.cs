@@ -27,8 +27,32 @@ public partial class PlayerController : CharacterBody2D
 	private const string GrindAction = "grind";
 	private const string RotateCounterClockwiseAction = "rotate_ccw";
 	private const string RotateClockwiseAction = "rotate_cw";
+	private const string TrickFlipAction = "trick_flip";
+	private const string TrickGrabAction = "trick_grab";
+	private const string TrickAltFlipAction = "trick_alt_flip";
 	private const float FailedLandingSeparation = 2.0f;
 	private const float FailedLandingFallSpeed = 90.0f;
+	private const float FlipDurationSeconds = 0.45f;
+	private const float AltFlipDurationSeconds = 0.30f;
+	private const float GrabSetupDurationSeconds = 0.10f;
+	private const float GrabReleaseDurationSeconds = 0.12f;
+	private static readonly float GrabHoldAngleRadians = Mathf.DegToRad(15.0f);
+
+	private enum TrickKind
+	{
+		None,
+		Flip,
+		Grab,
+		AltFlip,
+	}
+
+	private enum TrickPhase
+	{
+		None,
+		Startup,
+		Active,
+		Recovery,
+	}
 
 	private ResolvedModuleEffects _resolvedEffects = new();
 	private GrindRail? _nearbyRail;
@@ -48,9 +72,16 @@ public partial class PlayerController : CharacterBody2D
 	private float _travelIntentTimeRemaining;
 	private bool _isChargingJump;
 	private Marker2D _boardContact = null!;
+	private Polygon2D _boardVisual = null!;
 	private Polygon2D _visual = null!;
 	private Color _baseColor;
 	private Vector2 _previousBoardContactPoint;
+	private TrickKind _activeTrick;
+	private TrickPhase _activeTrickPhase;
+	private TrickKind _queuedTrick;
+	private float _trickElapsed;
+	private float _trickRotationOffset;
+	private float _trickRecoveryStartRotation;
 
 	public PlayerLoadout? Loadout { get; private set; }
 
@@ -68,10 +99,15 @@ public partial class PlayerController : CharacterBody2D
 
 	public int CurrentHealth { get; private set; }
 
+	public uint TrickStartSequence { get; private set; }
+
+	public string LastStartedTrickName { get; private set; } = string.Empty;
+
 	public override void _Ready()
 	{
 		EnsureGrindInput();
 		_boardContact = GetNode<Marker2D>("BoardContact");
+		_boardVisual = GetNode<Polygon2D>("BoardVisual");
 		_visual = GetNode<Polygon2D>("Visual");
 		_baseColor = _visual.Color;
 		_airRotation = Rotation;
@@ -107,6 +143,8 @@ public partial class PlayerController : CharacterBody2D
 	{
 		if (IsDead)
 		{
+			CancelActiveTrick();
+			ClearQueuedTrick();
 			CancelJumpCharge();
 			Velocity = Vector2.Zero;
 			return;
@@ -131,6 +169,7 @@ public partial class PlayerController : CharacterBody2D
 		UpdateTravelIntent(inputDirection, velocity.X);
 		UpdateJumpCharge(deltaSeconds, wasOnFloor, _activeRail != null);
 		UpdateRotationInput(rotationInput, deltaSeconds, wasOnFloor);
+		UpdateTrickState(deltaSeconds, wasOnFloor);
 
 		if (_activeRail != null)
 		{
@@ -208,6 +247,11 @@ public partial class PlayerController : CharacterBody2D
 			return false;
 		}
 
+		if (HasActiveTrick())
+		{
+			return false;
+		}
+
 		if (_isChargingJump)
 		{
 			return false;
@@ -219,6 +263,7 @@ public partial class PlayerController : CharacterBody2D
 	private void EnterRail(GrindRail rail, float travelDirection, float railProgress)
 	{
 		_activeRail = rail;
+		ClearQueuedTrick();
 		_grindIntentTimeRemaining = 0.0f;
 		_grindDirection = Mathf.Sign(travelDirection);
 
@@ -371,8 +416,15 @@ public partial class PlayerController : CharacterBody2D
 
 	private void UpdateJumpCharge(float deltaSeconds, bool onFloor, bool onRail)
 	{
+		if (HasActiveTrick())
+		{
+			CancelJumpCharge();
+			return;
+		}
+
 		if (Input.IsActionJustPressed("ui_accept") && (onFloor || onRail))
 		{
+			ClearQueuedTrick();
 			_grindIntentTimeRemaining = 0.0f;
 			_isChargingJump = true;
 			_jumpChargeTime = 0.0f;
@@ -609,6 +661,13 @@ public partial class PlayerController : CharacterBody2D
 			return false;
 		}
 
+		if (HasActiveTrick())
+		{
+			CancelActiveTrick();
+			ApplyFailedLanding(ref velocity);
+			return true;
+		}
+
 		var floorAngle = GetSlopeTangent(GetFloorNormal()).Angle();
 
 		if (IsWithinLandingTolerance(floorAngle))
@@ -616,6 +675,292 @@ public partial class PlayerController : CharacterBody2D
 			return false;
 		}
 
+		ApplyFailedLanding(ref velocity);
+		return true;
+	}
+
+	private void UpdateTrickState(float deltaSeconds, bool wasOnFloor)
+	{
+		CaptureQueuedTrickInput(wasOnFloor);
+
+		if (HasActiveTrick())
+		{
+			UpdateActiveTrick(deltaSeconds);
+
+			if (HasActiveTrick() == false)
+			{
+				TryStartQueuedTrick(wasOnFloor);
+			}
+
+			ApplyTrickVisual();
+			return;
+		}
+
+		if (wasOnFloor || _activeRail != null || _isChargingJump)
+		{
+			if (_isChargingJump == false)
+			{
+				ClearQueuedTrick();
+			}
+
+			_trickRotationOffset = 0.0f;
+			ApplyTrickVisual();
+			return;
+		}
+
+		if (TryStartQueuedTrick(wasOnFloor))
+		{
+			ApplyTrickVisual();
+			return;
+		}
+
+		if (Input.IsActionJustPressed(TrickFlipAction))
+		{
+			StartFlipTrick(TrickKind.Flip);
+		}
+		else if (Input.IsActionJustPressed(TrickGrabAction) || Input.IsActionJustPressed("ui_accept"))
+		{
+			StartGrabTrick();
+		}
+		else if (Input.IsActionJustPressed(TrickAltFlipAction))
+		{
+			StartFlipTrick(TrickKind.AltFlip);
+		}
+
+		ApplyTrickVisual();
+	}
+
+	private void UpdateActiveTrick(float deltaSeconds)
+	{
+		_trickElapsed += deltaSeconds;
+
+		switch (_activeTrick)
+		{
+			case TrickKind.Flip:
+			case TrickKind.AltFlip:
+			{
+				var duration = _activeTrick == TrickKind.Flip ? FlipDurationSeconds : AltFlipDurationSeconds;
+				var progress = Mathf.Clamp(_trickElapsed / duration, 0.0f, 1.0f);
+				_trickRotationOffset = progress * Mathf.Tau;
+
+				if (progress >= 1.0f)
+				{
+					CompleteActiveTrick();
+				}
+
+				break;
+			}
+
+			case TrickKind.Grab:
+			{
+				switch (_activeTrickPhase)
+				{
+					case TrickPhase.Startup:
+					{
+						var progress = Mathf.Clamp(_trickElapsed / GrabSetupDurationSeconds, 0.0f, 1.0f);
+						_trickRotationOffset = Mathf.LerpAngle(0.0f, GrabHoldAngleRadians, progress);
+
+					if (progress >= 1.0f)
+					{
+						_activeTrickPhase = IsGrabInputHeld() ? TrickPhase.Active : TrickPhase.Recovery;
+						_trickRecoveryStartRotation = _trickRotationOffset;
+						_trickElapsed = 0.0f;
+					}
+
+						break;
+					}
+
+				case TrickPhase.Active:
+					_trickRotationOffset = GrabHoldAngleRadians;
+
+					if (IsGrabInputHeld() == false)
+					{
+						_activeTrickPhase = TrickPhase.Recovery;
+						_trickRecoveryStartRotation = _trickRotationOffset;
+							_trickElapsed = 0.0f;
+						}
+
+						break;
+
+					case TrickPhase.Recovery:
+					{
+						var progress = Mathf.Clamp(_trickElapsed / GrabReleaseDurationSeconds, 0.0f, 1.0f);
+						_trickRotationOffset = Mathf.LerpAngle(_trickRecoveryStartRotation, 0.0f, progress);
+
+						if (progress >= 1.0f)
+						{
+							CompleteActiveTrick();
+						}
+
+						break;
+					}
+				}
+
+				break;
+			}
+		}
+	}
+
+	private void StartFlipTrick(TrickKind trick)
+	{
+		ClearQueuedTrick();
+		_activeTrick = trick;
+		_activeTrickPhase = TrickPhase.Active;
+		_trickElapsed = 0.0f;
+		_trickRotationOffset = 0.0f;
+		_trickRecoveryStartRotation = 0.0f;
+		PublishTrickStart(GetInstalledTrickName(ModuleType.Flip));
+	}
+
+	private void StartGrabTrick()
+	{
+		ClearQueuedTrick();
+		_activeTrick = TrickKind.Grab;
+		_activeTrickPhase = TrickPhase.Startup;
+		_trickElapsed = 0.0f;
+		_trickRotationOffset = 0.0f;
+		_trickRecoveryStartRotation = 0.0f;
+		PublishTrickStart(GetInstalledTrickName(ModuleType.Grab));
+	}
+
+	private bool HasActiveTrick()
+	{
+		return _activeTrick != TrickKind.None;
+	}
+
+	private void CompleteActiveTrick()
+	{
+		_activeTrick = TrickKind.None;
+		_activeTrickPhase = TrickPhase.None;
+		_trickElapsed = 0.0f;
+		_trickRotationOffset = 0.0f;
+		_trickRecoveryStartRotation = 0.0f;
+		ApplyTrickVisual();
+	}
+
+	private void CancelActiveTrick()
+	{
+		_activeTrick = TrickKind.None;
+		_activeTrickPhase = TrickPhase.None;
+		_trickElapsed = 0.0f;
+		_trickRotationOffset = 0.0f;
+		_trickRecoveryStartRotation = 0.0f;
+		ApplyTrickVisual();
+	}
+
+	private void CaptureQueuedTrickInput(bool wasOnFloor)
+	{
+		if (_isChargingJump)
+		{
+			if (Input.IsActionJustPressed(TrickFlipAction) || Input.IsActionPressed(TrickFlipAction))
+			{
+				_queuedTrick = TrickKind.Flip;
+				return;
+			}
+
+			if (Input.IsActionJustPressed(TrickGrabAction) || Input.IsActionPressed(TrickGrabAction))
+			{
+				_queuedTrick = TrickKind.Grab;
+				return;
+			}
+
+			if (Input.IsActionJustPressed(TrickAltFlipAction) || Input.IsActionPressed(TrickAltFlipAction))
+			{
+				_queuedTrick = TrickKind.AltFlip;
+				return;
+			}
+
+			return;
+		}
+
+		if (wasOnFloor || _activeRail != null || HasActiveTrick() == false)
+		{
+			return;
+		}
+
+		if (Input.IsActionJustPressed(TrickFlipAction))
+		{
+			_queuedTrick = TrickKind.Flip;
+			return;
+		}
+
+		if (Input.IsActionJustPressed(TrickAltFlipAction))
+		{
+			_queuedTrick = TrickKind.AltFlip;
+			return;
+		}
+
+		if (Input.IsActionJustPressed(TrickGrabAction) || Input.IsActionJustPressed("ui_accept"))
+		{
+			_queuedTrick = TrickKind.Grab;
+			return;
+		}
+
+		if (Input.IsActionPressed(TrickFlipAction))
+		{
+			_queuedTrick = TrickKind.Flip;
+			return;
+		}
+
+		if (Input.IsActionPressed(TrickAltFlipAction))
+		{
+			_queuedTrick = TrickKind.AltFlip;
+		}
+	}
+
+	private bool TryStartQueuedTrick(bool wasOnFloor)
+	{
+		if (_queuedTrick == TrickKind.None || wasOnFloor || _activeRail != null || _isChargingJump)
+		{
+			return false;
+		}
+
+		switch (_queuedTrick)
+		{
+			case TrickKind.Flip:
+				StartFlipTrick(TrickKind.Flip);
+				return true;
+
+			case TrickKind.Grab:
+				StartGrabTrick();
+				return true;
+
+			case TrickKind.AltFlip:
+				StartFlipTrick(TrickKind.AltFlip);
+				return true;
+		}
+
+		return false;
+	}
+
+	private bool IsGrabInputHeld()
+	{
+		return Input.IsActionPressed(TrickGrabAction) || Input.IsActionPressed("ui_accept");
+	}
+
+	private void ClearQueuedTrick()
+	{
+		_queuedTrick = TrickKind.None;
+	}
+
+	private void ApplyTrickVisual()
+	{
+		_boardVisual.Rotation = _trickRotationOffset;
+	}
+
+	private void PublishTrickStart(string trickName)
+	{
+		LastStartedTrickName = trickName;
+		TrickStartSequence++;
+	}
+
+	private string GetInstalledTrickName(ModuleType moduleType)
+	{
+		return Loadout?.GetModule(moduleType).DisplayName ?? moduleType.ToString();
+	}
+
+	private void ApplyFailedLanding(ref Vector2 velocity)
+	{
 		var floorNormal = GetFloorNormal();
 		var floorTangent = GetSlopeTangent(floorNormal);
 		var tangentialSpeed = Velocity.Dot(floorTangent);
@@ -623,7 +968,6 @@ public partial class PlayerController : CharacterBody2D
 		velocity = (floorTangent * tangentialSpeed) + (-floorNormal * fallSpeed);
 		GlobalPosition += floorNormal * FailedLandingSeparation;
 		_airRotation = Rotation;
-		return true;
 	}
 
 	private void UpdateGroundRotationState()
@@ -709,6 +1053,9 @@ public partial class PlayerController : CharacterBody2D
 
 		EnsureActionKeyBinding(RotateCounterClockwiseAction, Key.Q);
 		EnsureActionKeyBinding(RotateClockwiseAction, Key.E);
+		EnsureActionKeyBinding(TrickFlipAction, Key.Key1);
+		EnsureActionKeyBinding(TrickGrabAction, Key.Key2);
+		EnsureActionKeyBinding(TrickAltFlipAction, Key.Key3);
 	}
 
 	private static void EnsureActionKeyBinding(string actionName, Key key)

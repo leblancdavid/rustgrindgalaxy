@@ -5,6 +5,24 @@ using System.Linq;
 
 public sealed class ModuleGenerator
 {
+    private static readonly string[] FlipTrickNames =
+    {
+        "Kickflip",
+        "Heelflip",
+        "Hardflip",
+        "Varial Flip",
+        "Laser Flip",
+    };
+
+    private static readonly string[] GrabTrickNames =
+    {
+        "Indy Grab",
+        "Mute Grab",
+        "Melon Grab",
+        "Stalefish",
+        "Method Grab",
+    };
+
     private readonly RandomNumberGenerator _rng;
 
     public ModuleGenerator(RandomNumberGenerator? rng = null)
@@ -35,7 +53,8 @@ public sealed class ModuleGenerator
             Guid.NewGuid().ToString("N"),
             moduleType,
             rarity,
-            properties);
+            properties,
+            GenerateDisplayName(moduleType));
 
         ModuleCategoryResolver.UpdateCategory(module);
         return module;
@@ -90,5 +109,22 @@ public sealed class ModuleGenerator
     private float RollBaseValue()
     {
         return Mathf.Round((0.85f + (_rng.Randf() * 0.30f)) * 100.0f) / 100.0f;
+    }
+
+    private string GenerateDisplayName(ModuleType moduleType)
+    {
+        return moduleType switch
+        {
+            ModuleType.Flip => PickName(FlipTrickNames),
+            ModuleType.Grab => PickName(GrabTrickNames),
+            ModuleType.Ollie => "Launch Core",
+            ModuleType.Grind => "Rail Engine",
+            _ => moduleType.ToString(),
+        };
+    }
+
+    private string PickName(IReadOnlyList<string> names)
+    {
+        return names[_rng.RandiRange(0, names.Count - 1)];
     }
 }

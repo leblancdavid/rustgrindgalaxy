@@ -11,11 +11,13 @@ public sealed class ModuleInstance
         ModuleType moduleType,
         ModuleRarity rarity,
         IEnumerable<RolledModuleProperty> properties,
+        string displayName,
         IDictionary<MineralType, int>? refinementByMineral = null)
     {
         InstanceId = instanceId;
         ModuleType = moduleType;
         Rarity = rarity;
+        DisplayName = displayName;
         _properties = properties.ToList();
         RefinementByMineral = refinementByMineral != null
             ? new Dictionary<MineralType, int>(refinementByMineral)
@@ -32,6 +34,8 @@ public sealed class ModuleInstance
     public ModuleType ModuleType { get; }
 
     public ModuleRarity Rarity { get; }
+
+    public string DisplayName { get; }
 
     public IReadOnlyList<RolledModuleProperty> Properties => _properties;
 
@@ -75,6 +79,6 @@ public sealed class ModuleInstance
                 return $"{definition.DisplayName} [{ModulePropertyCatalog.GetMineralDisplayName(definition.Mineral)} {definition.Variant}] x{property.BaseRollValue:0.00}";
             });
 
-        return $"{Rarity} {ModuleType} Module | {GetCategoryName()} | {string.Join(", ", properties)}";
+        return $"{Rarity} {DisplayName} [{ModuleType}] | {GetCategoryName()} | {string.Join(", ", properties)}";
     }
 }
