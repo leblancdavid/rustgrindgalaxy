@@ -9,7 +9,9 @@ public partial class Hud : CanvasLayer
     private Label _healthLabel = null!;
     private Label _materialsLabel = null!;
     private Label _messageLabel = null!;
+    private Label _comboLabel = null!;
     private Label _trickPopupLabel = null!;
+    private Label _landedComboLabel = null!;
     private float _trickPopupTimeRemaining;
     private uint _lastSeenTrickSequence;
 
@@ -20,8 +22,12 @@ public partial class Hud : CanvasLayer
         _healthLabel = GetNode<Label>("Margin/VBox/HealthLabel");
         _messageLabel = GetNode<Label>("Margin/VBox/MessageLabel");
         _materialsLabel = GetNode<Label>("Margin/VBox/MaterialsLabel");
+        _comboLabel = GetNode<Label>("Margin/VBox/ComboLabel");
         _trickPopupLabel = GetNode<Label>("TrickPopup/TrickLabel");
+        _landedComboLabel = GetNode<Label>("LandedComboPopup/ComboLabel");
         _trickPopupLabel.Visible = false;
+        _landedComboLabel.Visible = false;
+        _comboLabel.Visible = false;
     }
 
     public override void _Process(double delta)
@@ -54,6 +60,16 @@ public partial class Hud : CanvasLayer
             _trickPopupLabel.Visible = true;
             _trickPopupTimeRemaining = TrickPopupSeconds;
         }
+
+        _comboLabel.Visible = string.IsNullOrWhiteSpace(player.CurrentComboSummary) == false;
+        _comboLabel.Text = _comboLabel.Visible
+            ? $"COMBO {player.CurrentComboSummary.ToUpperInvariant()}"
+            : string.Empty;
+
+        _landedComboLabel.Visible = player.LandedComboDisplayTimeRemaining > 0.0f && string.IsNullOrWhiteSpace(player.LastLandedComboSummary) == false;
+        _landedComboLabel.Text = _landedComboLabel.Visible
+            ? $"LANDED {player.LastLandedComboSummary.ToUpperInvariant()}"
+            : string.Empty;
 
         var materialTarget = world?.MissionMaterialTarget ?? 0;
         _messageLabel.Text = string.Empty;

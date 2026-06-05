@@ -43,6 +43,7 @@ public partial class MovementTest : Node2D
 
     private void RespawnPlayer()
     {
+        _player.ResetTransientState();
         _player.GlobalPosition = SpawnPosition;
         _player.Velocity = Vector2.Zero;
     }

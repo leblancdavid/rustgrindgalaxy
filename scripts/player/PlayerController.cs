@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Text;
 using Godot;
 
 public partial class PlayerController : CharacterBody2D
@@ -36,6 +38,10 @@ public partial class PlayerController : CharacterBody2D
 	private const float AltFlipDurationSeconds = 0.30f;
 	private const float GrabSetupDurationSeconds = 0.10f;
 	private const float GrabReleaseDurationSeconds = 0.12f;
+	private const float FailedLandingVisualRecoverSpeed = 7.5f;
+	private const float FailedLandingBodyTiltDegrees = 60.0f;
+	private const float FailedLandingBoardTiltDegrees = 22.0f;
+	private const float LandedComboDisplaySeconds = 2.0f;
 	private static readonly float GrabHoldAngleRadians = Mathf.DegToRad(15.0f);
 
 	private enum TrickKind
@@ -79,9 +85,17 @@ public partial class PlayerController : CharacterBody2D
 	private TrickKind _activeTrick;
 	private TrickPhase _activeTrickPhase;
 	private TrickKind _queuedTrick;
+	private bool _flipQueueReady = true;
+	private bool _grabQueueReady = true;
+	private bool _jumpGrabQueueReady = true;
+	private bool _altFlipQueueReady = true;
 	private float _trickElapsed;
 	private float _trickRotationOffset;
 	private float _trickRecoveryStartRotation;
+	private readonly List<string> _comboTrickSequence = new();
+	private float _failedLandingVisualBlend;
+	private float _failedLandingDirection;
+	private bool _isFailedLandingFalling;
 
 	public PlayerLoadout? Loadout { get; private set; }
 
@@ -102,6 +116,14 @@ public partial class PlayerController : CharacterBody2D
 	public uint TrickStartSequence { get; private set; }
 
 	public string LastStartedTrickName { get; private set; } = string.Empty;
+
+	public IReadOnlyList<string> CurrentComboTrickSequence => _comboTrickSequence;
+
+	public string CurrentComboSummary { get; private set; } = string.Empty;
+
+	public string LastLandedComboSummary { get; private set; } = string.Empty;
+
+	public float LandedComboDisplayTimeRemaining { get; private set; }
 
 	public override void _Ready()
 	{
@@ -141,16 +163,20 @@ public partial class PlayerController : CharacterBody2D
 
 	public override void _PhysicsProcess(double delta)
 	{
+		var deltaSeconds = (float)delta;
+		LandedComboDisplayTimeRemaining = Mathf.Max(0.0f, LandedComboDisplayTimeRemaining - deltaSeconds);
+
 		if (IsDead)
 		{
 			CancelActiveTrick();
 			ClearQueuedTrick();
 			CancelJumpCharge();
+			ResetComboAndFallState();
 			Velocity = Vector2.Zero;
+			UpdateFailedLandingVisual(deltaSeconds);
 			return;
 		}
 
-		var deltaSeconds = (float)delta;
 		var velocity = Velocity;
 		var inputDirection = Input.GetAxis("ui_left", "ui_right");
 		var rotationInput = Input.GetAxis(RotateCounterClockwiseAction, RotateClockwiseAction);
@@ -178,6 +204,7 @@ public partial class PlayerController : CharacterBody2D
 			MoveAndSlide();
 			_previousBoardContactPoint = GetRailContactPoint();
 			UpdateVisualRotation(deltaSeconds, GetTargetRotation());
+			UpdateFailedLandingVisual(deltaSeconds);
 			return;
 		}
 
@@ -198,6 +225,7 @@ public partial class PlayerController : CharacterBody2D
 			MoveAndSlide();
 			_previousBoardContactPoint = GetRailContactPoint();
 			UpdateVisualRotation(deltaSeconds, GetTargetRotation());
+			UpdateFailedLandingVisual(deltaSeconds);
 			return;
 		}
 
@@ -206,6 +234,7 @@ public partial class PlayerController : CharacterBody2D
 			Velocity = velocity;
 			MoveAndSlide();
 			_previousBoardContactPoint = GetRailContactPoint();
+			UpdateFailedLandingVisual(deltaSeconds);
 			return;
 		}
 
@@ -230,11 +259,13 @@ public partial class PlayerController : CharacterBody2D
 			Velocity = velocity;
 			_previousBoardContactPoint = GetRailContactPoint();
 			UpdateVisualRotation(deltaSeconds, _activeRail?.Angle ?? GetTargetRotation());
+			UpdateFailedLandingVisual(deltaSeconds);
 			return;
 		}
 
 		_previousBoardContactPoint = GetRailContactPoint();
 		UpdateVisualRotation(deltaSeconds, GetTargetRotation());
+		UpdateFailedLandingVisual(deltaSeconds);
 	}
 
 	private bool CanStartGrinding()
@@ -264,6 +295,7 @@ public partial class PlayerController : CharacterBody2D
 	{
 		_activeRail = rail;
 		ClearQueuedTrick();
+		RegisterCompletedTrickName(GetInstalledTrickName(ModuleType.Grind));
 		_grindIntentTimeRemaining = 0.0f;
 		_grindDirection = Mathf.Sign(travelDirection);
 
@@ -459,6 +491,7 @@ public partial class PlayerController : CharacterBody2D
 			var rail = _activeRail;
 			var railSpeed = _railSpeed;
 			var tangent = rail?.Tangent ?? new Vector2(_grindDirection, 0.0f);
+			RegisterCompletedTrickName(GetInstalledTrickName(ModuleType.Ollie));
 			velocity.Y = chargedJumpVelocity - _resolvedEffects.LaunchHeightBonus;
 			var launchVelocity = tangent * railSpeed;
 			launchVelocity += tangent * (_grindDirection * _resolvedEffects.BurstTakeoffSpeedBonus);
@@ -473,6 +506,7 @@ public partial class PlayerController : CharacterBody2D
 			return false;
 		}
 
+		RegisterCompletedTrickName(GetInstalledTrickName(ModuleType.Ollie));
 		velocity.Y = chargedJumpVelocity - _resolvedEffects.LaunchHeightBonus;
 		velocity.X = ApplyTakeoffBonus(velocity.X, inputDirection);
 		return true;
@@ -664,7 +698,8 @@ public partial class PlayerController : CharacterBody2D
 		if (HasActiveTrick())
 		{
 			CancelActiveTrick();
-			ApplyFailedLanding(ref velocity);
+			FailCurrentCombo();
+			ApplyFailedLanding(ref velocity, GetBoardAngleDifferenceForSurface(GetFloorNormal()));
 			return true;
 		}
 
@@ -672,15 +707,19 @@ public partial class PlayerController : CharacterBody2D
 
 		if (IsWithinLandingTolerance(floorAngle))
 		{
+			FinalizeSuccessfulLandingCombo();
+			ClearFailedLandingState();
 			return false;
 		}
 
-		ApplyFailedLanding(ref velocity);
+		FailCurrentCombo();
+		ApplyFailedLanding(ref velocity, GetAngleDifference(floorAngle, GetBoardAngle()));
 		return true;
 	}
 
 	private void UpdateTrickState(float deltaSeconds, bool wasOnFloor)
 	{
+		UpdateTrickQueueRearmer();
 		CaptureQueuedTrickInput(wasOnFloor);
 
 		if (HasActiveTrick())
@@ -804,6 +843,7 @@ public partial class PlayerController : CharacterBody2D
 	private void StartFlipTrick(TrickKind trick)
 	{
 		ClearQueuedTrick();
+		ConsumeStartedTrickInput(trick);
 		_activeTrick = trick;
 		_activeTrickPhase = TrickPhase.Active;
 		_trickElapsed = 0.0f;
@@ -815,6 +855,7 @@ public partial class PlayerController : CharacterBody2D
 	private void StartGrabTrick()
 	{
 		ClearQueuedTrick();
+		ConsumeStartedTrickInput(TrickKind.Grab);
 		_activeTrick = TrickKind.Grab;
 		_activeTrickPhase = TrickPhase.Startup;
 		_trickElapsed = 0.0f;
@@ -830,6 +871,7 @@ public partial class PlayerController : CharacterBody2D
 
 	private void CompleteActiveTrick()
 	{
+		RegisterCompletedTrick(_activeTrick);
 		_activeTrick = TrickKind.None;
 		_activeTrickPhase = TrickPhase.None;
 		_trickElapsed = 0.0f;
@@ -852,21 +894,18 @@ public partial class PlayerController : CharacterBody2D
 	{
 		if (_isChargingJump)
 		{
-			if (Input.IsActionJustPressed(TrickFlipAction) || Input.IsActionPressed(TrickFlipAction))
+			if (TryQueueHeldTrickInput(TrickFlipAction, ref _flipQueueReady, TrickKind.Flip))
 			{
-				_queuedTrick = TrickKind.Flip;
 				return;
 			}
 
-			if (Input.IsActionJustPressed(TrickGrabAction) || Input.IsActionPressed(TrickGrabAction))
+			if (TryQueueHeldTrickInput(TrickGrabAction, ref _grabQueueReady, TrickKind.Grab))
 			{
-				_queuedTrick = TrickKind.Grab;
 				return;
 			}
 
-			if (Input.IsActionJustPressed(TrickAltFlipAction) || Input.IsActionPressed(TrickAltFlipAction))
+			if (TryQueueHeldTrickInput(TrickAltFlipAction, ref _altFlipQueueReady, TrickKind.AltFlip))
 			{
-				_queuedTrick = TrickKind.AltFlip;
 				return;
 			}
 
@@ -878,34 +917,59 @@ public partial class PlayerController : CharacterBody2D
 			return;
 		}
 
-		if (Input.IsActionJustPressed(TrickFlipAction))
+		if (TryQueuePressedTrickInput(TrickFlipAction, ref _flipQueueReady, TrickKind.Flip))
 		{
-			_queuedTrick = TrickKind.Flip;
 			return;
 		}
 
-		if (Input.IsActionJustPressed(TrickAltFlipAction))
+		if (TryQueuePressedTrickInput(TrickAltFlipAction, ref _altFlipQueueReady, TrickKind.AltFlip))
 		{
-			_queuedTrick = TrickKind.AltFlip;
 			return;
 		}
 
-		if (Input.IsActionJustPressed(TrickGrabAction) || Input.IsActionJustPressed("ui_accept"))
+		if (TryQueuePressedTrickInput(TrickGrabAction, ref _grabQueueReady, TrickKind.Grab) || TryQueuePressedTrickInput("ui_accept", ref _jumpGrabQueueReady, TrickKind.Grab))
 		{
-			_queuedTrick = TrickKind.Grab;
 			return;
 		}
 
-		if (Input.IsActionPressed(TrickFlipAction))
+		if (TryQueueHeldTrickInput(TrickFlipAction, ref _flipQueueReady, TrickKind.Flip))
 		{
-			_queuedTrick = TrickKind.Flip;
 			return;
 		}
 
-		if (Input.IsActionPressed(TrickAltFlipAction))
+		if (TryQueueHeldTrickInput(TrickAltFlipAction, ref _altFlipQueueReady, TrickKind.AltFlip))
 		{
-			_queuedTrick = TrickKind.AltFlip;
+			return;
 		}
+	}
+
+	private bool TryQueueHeldTrickInput(string actionName, ref bool queueReady, TrickKind trick)
+	{
+		if (queueReady == false)
+		{
+			return false;
+		}
+
+		if (Input.IsActionJustPressed(actionName) || Input.IsActionPressed(actionName))
+		{
+			_queuedTrick = trick;
+			queueReady = false;
+			return true;
+		}
+
+		return false;
+	}
+
+	private bool TryQueuePressedTrickInput(string actionName, ref bool queueReady, TrickKind trick)
+	{
+		if (queueReady == false || Input.IsActionJustPressed(actionName) == false)
+		{
+			return false;
+		}
+
+		_queuedTrick = trick;
+		queueReady = false;
+		return true;
 	}
 
 	private bool TryStartQueuedTrick(bool wasOnFloor)
@@ -938,6 +1002,64 @@ public partial class PlayerController : CharacterBody2D
 		return Input.IsActionPressed(TrickGrabAction) || Input.IsActionPressed("ui_accept");
 	}
 
+	private void ConsumeStartedTrickInput(TrickKind trick)
+	{
+		switch (trick)
+		{
+			case TrickKind.Flip:
+				if (Input.IsActionPressed(TrickFlipAction))
+				{
+					_flipQueueReady = false;
+				}
+
+				break;
+
+			case TrickKind.Grab:
+				if (Input.IsActionPressed(TrickGrabAction))
+				{
+					_grabQueueReady = false;
+				}
+
+				if (Input.IsActionPressed("ui_accept"))
+				{
+					_jumpGrabQueueReady = false;
+				}
+
+				break;
+
+			case TrickKind.AltFlip:
+				if (Input.IsActionPressed(TrickAltFlipAction))
+				{
+					_altFlipQueueReady = false;
+				}
+
+				break;
+		}
+	}
+
+	private void UpdateTrickQueueRearmer()
+	{
+		if (Input.IsActionPressed(TrickFlipAction) == false)
+		{
+			_flipQueueReady = true;
+		}
+
+		if (Input.IsActionPressed(TrickGrabAction) == false)
+		{
+			_grabQueueReady = true;
+		}
+
+		if (Input.IsActionPressed("ui_accept") == false)
+		{
+			_jumpGrabQueueReady = true;
+		}
+
+		if (Input.IsActionPressed(TrickAltFlipAction) == false)
+		{
+			_altFlipQueueReady = true;
+		}
+	}
+
 	private void ClearQueuedTrick()
 	{
 		_queuedTrick = TrickKind.None;
@@ -945,7 +1067,8 @@ public partial class PlayerController : CharacterBody2D
 
 	private void ApplyTrickVisual()
 	{
-		_boardVisual.Rotation = _trickRotationOffset;
+		var boardFallRotation = Mathf.DegToRad(FailedLandingBoardTiltDegrees) * _failedLandingDirection * _failedLandingVisualBlend;
+		_boardVisual.Rotation = _trickRotationOffset + boardFallRotation;
 	}
 
 	private void PublishTrickStart(string trickName)
@@ -959,12 +1082,26 @@ public partial class PlayerController : CharacterBody2D
 		return Loadout?.GetModule(moduleType).DisplayName ?? moduleType.ToString();
 	}
 
-	private void ApplyFailedLanding(ref Vector2 velocity)
+	private void ApplyFailedLanding(ref Vector2 velocity, float landingAngleDifference)
 	{
 		var floorNormal = GetFloorNormal();
 		var floorTangent = GetSlopeTangent(floorNormal);
 		var tangentialSpeed = Velocity.Dot(floorTangent);
 		var fallSpeed = Mathf.Max(Velocity.Dot(-floorNormal), FailedLandingFallSpeed);
+		var failureDirection = Mathf.Sign(landingAngleDifference);
+
+		if (Mathf.IsZeroApprox(failureDirection))
+		{
+			failureDirection = Mathf.Sign(Velocity.X);
+		}
+
+		if (Mathf.IsZeroApprox(failureDirection))
+		{
+			failureDirection = 1;
+		}
+
+		_isFailedLandingFalling = true;
+		_failedLandingDirection = failureDirection;
 		velocity = (floorTangent * tangentialSpeed) + (-floorNormal * fallSpeed);
 		GlobalPosition += floorNormal * FailedLandingSeparation;
 		_airRotation = Rotation;
@@ -976,6 +1113,147 @@ public partial class PlayerController : CharacterBody2D
 		_groundTilt = floorTangent.Angle();
 		_airRotation = _groundTilt;
 		_railRotationOffset = 0.0f;
+		ClearFailedLandingState();
+	}
+
+	private void UpdateFailedLandingVisual(float deltaSeconds)
+	{
+		var targetBlend = _isFailedLandingFalling ? 1.0f : 0.0f;
+		_failedLandingVisualBlend = Mathf.MoveToward(_failedLandingVisualBlend, targetBlend, FailedLandingVisualRecoverSpeed * deltaSeconds);
+
+		if (_isFailedLandingFalling == false && _failedLandingVisualBlend <= 0.0f)
+		{
+			_failedLandingDirection = 0.0f;
+		}
+
+		_visual.Rotation = Mathf.DegToRad(FailedLandingBodyTiltDegrees) * _failedLandingDirection * _failedLandingVisualBlend;
+		ApplyTrickVisual();
+	}
+
+	private void RegisterCompletedTrick(TrickKind trick)
+	{
+		var trickName = GetCompletedTrickName(trick);
+		RegisterCompletedTrickName(trickName);
+	}
+
+	private void RegisterCompletedTrickName(string trickName)
+	{
+
+		if (string.IsNullOrWhiteSpace(trickName))
+		{
+			return;
+		}
+
+		_comboTrickSequence.Add(trickName);
+		CurrentComboSummary = BuildComboSummary(_comboTrickSequence);
+	}
+
+	private void FinalizeSuccessfulLandingCombo()
+	{
+		if (_comboTrickSequence.Count == 0)
+		{
+			return;
+		}
+
+		LastLandedComboSummary = CurrentComboSummary;
+		LandedComboDisplayTimeRemaining = LandedComboDisplaySeconds;
+		ClearCurrentCombo();
+	}
+
+	private void FailCurrentCombo()
+	{
+		ClearCurrentCombo();
+		LastLandedComboSummary = string.Empty;
+		LandedComboDisplayTimeRemaining = 0.0f;
+	}
+
+	private void ClearCurrentCombo()
+	{
+		_comboTrickSequence.Clear();
+		CurrentComboSummary = string.Empty;
+	}
+
+	private void ClearFailedLandingState()
+	{
+		_isFailedLandingFalling = false;
+	}
+
+	private void ResetComboAndFallState()
+	{
+		ClearCurrentCombo();
+		LastLandedComboSummary = string.Empty;
+		LandedComboDisplayTimeRemaining = 0.0f;
+		_isFailedLandingFalling = false;
+		_failedLandingVisualBlend = 0.0f;
+		_failedLandingDirection = 0.0f;
+		_visual.Rotation = 0.0f;
+		ApplyTrickVisual();
+	}
+
+	public void ResetTransientState()
+	{
+		CancelActiveTrick();
+		ClearQueuedTrick();
+		CancelJumpCharge();
+		ResetComboAndFallState();
+	}
+
+	private string GetCompletedTrickName(TrickKind trick)
+	{
+		return trick switch
+		{
+			TrickKind.Flip => GetInstalledTrickName(ModuleType.Flip),
+			TrickKind.AltFlip => GetInstalledTrickName(ModuleType.Flip),
+			TrickKind.Grab => GetInstalledTrickName(ModuleType.Grab),
+			_ => string.Empty,
+		};
+	}
+
+	private static string BuildComboSummary(IReadOnlyList<string> trickSequence)
+	{
+		if (trickSequence.Count == 0)
+		{
+			return string.Empty;
+		}
+
+		var orderedNames = new List<string>();
+		var counts = new Dictionary<string, int>();
+		foreach (var trickName in trickSequence)
+		{
+			if (counts.TryGetValue(trickName, out var count))
+			{
+				counts[trickName] = count + 1;
+				continue;
+			}
+
+			counts[trickName] = 1;
+			orderedNames.Add(trickName);
+		}
+
+		var summary = new StringBuilder();
+		for (var i = 0; i < orderedNames.Count; i++)
+		{
+			var trickName = orderedNames[i];
+			if (i > 0)
+			{
+				summary.Append(", ");
+			}
+
+			summary.Append(trickName);
+			var count = counts[trickName];
+			if (count > 1)
+			{
+				summary.Append(" x");
+				summary.Append(count);
+			}
+		}
+
+		return summary.ToString();
+	}
+
+	private float GetBoardAngleDifferenceForSurface(Vector2 floorNormal)
+	{
+		return GetAngleDifference(GetSlopeTangent(floorNormal).Angle(), GetBoardAngle());
 	}
 
 	private bool IsWithinLandingTolerance(float surfaceAngle)
