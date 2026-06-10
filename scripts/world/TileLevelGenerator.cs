@@ -1,7 +1,5 @@
 using Godot;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 
 public partial class TileLevelGenerator : Node2D
 {
@@ -14,21 +12,22 @@ public partial class TileLevelGenerator : Node2D
     private const string MultiLevelPath = "res://scenes/world/tiles/industrial/MultiLevelTile.tscn";
     private const string HighFlatPath = "res://scenes/world/tiles/industrial/HighFlatTile.tscn";
 
+    private const string GentleRisePath = "res://scenes/world/tiles/industrial/GentleRiseTile.tscn";
+    private const string GentleDropPath = "res://scenes/world/tiles/industrial/GentleDropTile.tscn";
+    private const string MidFlatPath = "res://scenes/world/tiles/industrial/MidFlatTile.tscn";
+    private const string MidRisePath = "res://scenes/world/tiles/industrial/MidRiseTile.tscn";
+    private const string MidDropPath = "res://scenes/world/tiles/industrial/MidDropTile.tscn";
+
     [Export] public int MinLevelTiles = 15;
     [Export] public int TilesAheadOfPlayer = 5;
     [Export] public float RemoveBehindDistance = 2560.0f;
 
     private const float TileW = 1280.0f;
-    private const float GroundY = 164.0f;
-    private const float HighY = 60.0f;
 
     private PlayerController _player = null!;
     private RandomNumberGenerator _rng = new();
     private readonly List<LevelTile> _activeTiles = new();
-    private readonly List<PackedScene> _groundTiles = new();
-    private readonly List<PackedScene> _risingTiles = new();
-    private readonly List<PackedScene> _descendingTiles = new();
-    private readonly List<PackedScene> _highTiles = new();
+    private readonly List<TileEntry> _tilePool = new();
     private bool _levelComplete;
     private bool _started;
     private ExtractionZone _extractionZone = null!;
@@ -37,6 +36,15 @@ public partial class TileLevelGenerator : Node2D
     public int GeneratedTileCount { get; private set; }
 
     public IReadOnlyList<LevelTile> ActiveTiles => _activeTiles;
+
+    private struct TileEntry
+    {
+        public PackedScene Scene;
+        public string Name;
+        public float LeftGroundY;
+        public float RightGroundY;
+        public float Weight;
+    }
 
     public void Initialize(PlayerController player, long seed)
     {
@@ -133,7 +141,12 @@ public partial class TileLevelGenerator : Node2D
     {
         var tile = tileScene.Instantiate<LevelTile>();
         AddChild(tile);
-        tile.Position = new Vector2(offsetX, 0.0f);
+
+        var tileY = _activeTiles.Count > 0
+            ? _activeTiles[^1].Position.Y + _activeTiles[^1].RightGroundY - tile.LeftGroundY
+            : 0f;
+
+        tile.Position = new Vector2(offsetX, tileY);
         _activeTiles.Add(tile);
         GeneratedTileCount++;
         offsetX = tile.GetTileRightX();
@@ -142,9 +155,11 @@ public partial class TileLevelGenerator : Node2D
 
     private void PlaceExtractionZone(float offsetX)
     {
-        if (_extractionZone != null)
+        if (_extractionZone != null && _activeTiles.Count > 0)
         {
-            _extractionZone.Position = new Vector2(offsetX - 20.0f, 80.0f);
+            var lastTile = _activeTiles[^1];
+            var surfaceY = lastTile.Position.Y + lastTile.RightGroundY;
+            _extractionZone.Position = new Vector2(offsetX - 20.0f, surfaceY - 84.0f);
         }
     }
 
@@ -162,99 +177,47 @@ public partial class TileLevelGenerator : Node2D
 
     private PackedScene PickStartTile()
     {
-        return _groundTiles[(int)(_rng.Randi() % (uint)_groundTiles.Count)];
+        return GD.Load<PackedScene>(FlatRunPath);
     }
 
     private PackedScene PickEndCapTile()
     {
-        var currentConnector = _activeTiles.Count > 0
-            ? _activeTiles[^1].GetRightConnector()
-            : new LevelTileConnector { GroundY = GroundY };
-
-        var pool = GetTilesForConnector(currentConnector);
-        return pool.Count > 0 ? pool[(int)(_rng.Randi() % (uint)pool.Count)] : _groundTiles[0];
+        return GD.Load<PackedScene>(FlatRunPath);
     }
 
     private PackedScene PickNextTile()
     {
-        var currentConnector = _activeTiles.Count > 0
-            ? _activeTiles[^1].GetRightConnector()
-            : new LevelTileConnector { GroundY = GroundY };
-
-        var candidates = GetTilesForConnector(currentConnector);
-        if (candidates.Count == 0)
-            return null;
-
-        var flatWeight = 0.08f;
-        var halfPipeWeight = 0.12f;
-        var gapWeight = 0.05f;
-        var multiWeight = 0.10f;
-        var rampWeight = 0.24f;
-        var stairWeight = 0.21f;
-        var dropWeight = 0.10f;
-        var highFlatWeight = 0.10f;
-
         var totalWeight = 0.0f;
-        var weights = new float[candidates.Count];
-
-        for (var i = 0; i < candidates.Count; i++)
-        {
-            var scenePath = candidates[i].ResourcePath;
-            var weight = 1.0f;
-
-            if (scenePath.Contains("FlatRun"))
-                weight = flatWeight;
-            else if (scenePath.Contains("HalfPipe"))
-                weight = halfPipeWeight;
-            else if (scenePath.Contains("GapJump"))
-                weight = gapWeight;
-            else if (scenePath.Contains("MultiLevel"))
-                weight = multiWeight;
-            else if (scenePath.Contains("RampSection"))
-                weight = rampWeight;
-            else if (scenePath.Contains("StairClimb"))
-                weight = stairWeight;
-            else if (scenePath.Contains("DropSection"))
-                weight = dropWeight;
-            else if (scenePath.Contains("HighFlat"))
-                weight = highFlatWeight;
-
-            totalWeight += weight;
-            weights[i] = weight;
-        }
+        foreach (var entry in _tilePool)
+            totalWeight += entry.Weight;
 
         var roll = _rng.Randf() * totalWeight;
-        for (var i = 0; i < candidates.Count; i++)
+        foreach (var entry in _tilePool)
         {
-            roll -= weights[i];
+            roll -= entry.Weight;
             if (roll <= 0.0f)
-                return candidates[i];
+                return entry.Scene;
         }
 
-        return candidates[^1];
-    }
-
-    private List<PackedScene> GetTilesForConnector(LevelTileConnector connector)
-    {
-        if (Mathf.Abs(connector.GroundY - HighY) <= 0.01f)
-            return _descendingTiles.Concat(_highTiles).ToList();
-
-        return _groundTiles.Concat(_risingTiles).ToList();
+        return _tilePool[^1].Scene;
     }
 
     private void LoadTilePool()
     {
-        _groundTiles.Add(GD.Load<PackedScene>(FlatRunPath));
-        _groundTiles.Add(GD.Load<PackedScene>(HalfPipePath));
-        _groundTiles.Add(GD.Load<PackedScene>(GapJumpPath));
-        _groundTiles.Add(GD.Load<PackedScene>(MultiLevelPath));
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(FlatRunPath), Name = "FlatRun", LeftGroundY = 164, RightGroundY = 164, Weight = 0.08f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(HalfPipePath), Name = "HalfPipe", LeftGroundY = 164, RightGroundY = 164, Weight = 0.12f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(GapJumpPath), Name = "GapJump", LeftGroundY = 164, RightGroundY = 164, Weight = 0.05f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(MultiLevelPath), Name = "MultiLevel", LeftGroundY = 164, RightGroundY = 164, Weight = 0.10f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(RampSectionPath), Name = "RampSection", LeftGroundY = 164, RightGroundY = 60, Weight = 0.16f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(StairClimbPath), Name = "StairClimb", LeftGroundY = 164, RightGroundY = 60, Weight = 0.14f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(DropSectionPath), Name = "DropSection", LeftGroundY = 60, RightGroundY = 164, Weight = 0.08f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(HighFlatPath), Name = "HighFlat", LeftGroundY = 60, RightGroundY = 60, Weight = 0.07f });
 
-        _risingTiles.Add(GD.Load<PackedScene>(RampSectionPath));
-        _risingTiles.Add(GD.Load<PackedScene>(StairClimbPath));
-
-        _descendingTiles.Add(GD.Load<PackedScene>(DropSectionPath));
-
-        _highTiles.Add(GD.Load<PackedScene>(HighFlatPath));
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(GentleRisePath), Name = "GentleRise", LeftGroundY = 164, RightGroundY = 100, Weight = 0.06f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(GentleDropPath), Name = "GentleDrop", LeftGroundY = 100, RightGroundY = 164, Weight = 0.05f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(MidFlatPath), Name = "MidFlat", LeftGroundY = 100, RightGroundY = 100, Weight = 0.04f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(MidRisePath), Name = "MidRise", LeftGroundY = 100, RightGroundY = 60, Weight = 0.03f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(MidDropPath), Name = "MidDrop", LeftGroundY = 60, RightGroundY = 100, Weight = 0.02f });
     }
 
     public void CollectRails(List<GrindRail> rails)

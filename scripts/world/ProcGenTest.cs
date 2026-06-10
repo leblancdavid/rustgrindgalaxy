@@ -1,5 +1,4 @@
 using Godot;
-using System.Linq;
 
 public partial class ProcGenTest : Node2D
 {
@@ -25,7 +24,8 @@ public partial class ProcGenTest : Node2D
         _player.SetLoadout(generator.GenerateDebugLoadout(ModuleRarity.Rare));
         _player.GlobalPosition = SpawnPosition;
 
-        _tileGenerator.Initialize(_player, 42);
+        var seed = (long)(GD.Randi() | ((ulong)GD.Randi() << 32));
+        _tileGenerator.Initialize(_player, seed);
         _tileGenerator.BuildInitial();
         _tileGenerator.UpdateStreaming();
     }
@@ -61,8 +61,8 @@ public partial class ProcGenTest : Node2D
     {
         var spaceState = GetWorld2D().DirectSpaceState;
         var query = PhysicsRayQueryParameters2D.Create(
-            new Vector2(SpawnPosition.X, -50),
-            new Vector2(SpawnPosition.X, FallRespawnY + 100),
+            new Vector2(SpawnPosition.X, -500),
+            new Vector2(SpawnPosition.X, FallRespawnY + 500),
             1);
         var result = spaceState.IntersectRay(query);
         if (result.Count > 0)
@@ -76,14 +76,16 @@ public partial class ProcGenTest : Node2D
             var tileX = tile.GlobalPosition.X;
             if (SpawnPosition.X >= tileX && SpawnPosition.X < tileX + tile.TileWidth)
             {
-                return new Vector2(SpawnPosition.X, tile.LeftGroundY - 30);
+                var surfaceY = tile.Position.Y + tile.LeftGroundY;
+                return new Vector2(SpawnPosition.X, surfaceY - 30);
             }
         }
 
         if (_tileGenerator.ActiveTiles.Count > 0)
         {
             var tile = _tileGenerator.ActiveTiles[0];
-            return new Vector2(tile.GlobalPosition.X + 80, tile.LeftGroundY - 30);
+            var surfaceY = tile.Position.Y + tile.LeftGroundY;
+            return new Vector2(tile.GlobalPosition.X + 80, surfaceY - 30);
         }
 
         return SpawnPosition;
