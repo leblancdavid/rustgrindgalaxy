@@ -1,4 +1,5 @@
 using Godot;
+using System.Linq;
 
 public partial class ProcGenTest : Node2D
 {
@@ -18,6 +19,7 @@ public partial class ProcGenTest : Node2D
         _tileGenerator = GetNode<TileLevelGenerator>("TileGenerator");
 
         RemoveCameraBounds();
+        _camera.Position = new Vector2(0, -30);
 
         var generator = new ModuleGenerator();
         _player.SetLoadout(generator.GenerateDebugLoadout(ModuleRarity.Rare));
@@ -31,6 +33,7 @@ public partial class ProcGenTest : Node2D
     public override void _Process(double delta)
     {
         _hud.UpdatePlayerState(_player);
+        _hud.UpdateTileName(GetTileLabelText());
         _tileGenerator.UpdateStreaming();
 
         if (_player.GlobalPosition.Y > FallRespawnY)
@@ -50,7 +53,53 @@ public partial class ProcGenTest : Node2D
     private void RespawnPlayer()
     {
         _player.ResetTransientState();
-        _player.GlobalPosition = SpawnPosition;
         _player.Velocity = Vector2.Zero;
+        _player.GlobalPosition = FindSafeSpawn();
+    }
+
+    private Vector2 FindSafeSpawn()
+    {
+        var spaceState = GetWorld2D().DirectSpaceState;
+        var query = PhysicsRayQueryParameters2D.Create(
+            new Vector2(SpawnPosition.X, -50),
+            new Vector2(SpawnPosition.X, FallRespawnY + 100),
+            1);
+        var result = spaceState.IntersectRay(query);
+        if (result.Count > 0)
+        {
+            var hitPos = (Vector2)result["position"];
+            return new Vector2(SpawnPosition.X, hitPos.Y - 30);
+        }
+
+        foreach (var tile in _tileGenerator.ActiveTiles)
+        {
+            var tileX = tile.GlobalPosition.X;
+            if (SpawnPosition.X >= tileX && SpawnPosition.X < tileX + tile.TileWidth)
+            {
+                return new Vector2(SpawnPosition.X, tile.LeftGroundY - 30);
+            }
+        }
+
+        if (_tileGenerator.ActiveTiles.Count > 0)
+        {
+            var tile = _tileGenerator.ActiveTiles[0];
+            return new Vector2(tile.GlobalPosition.X + 80, tile.LeftGroundY - 30);
+        }
+
+        return SpawnPosition;
+    }
+
+    private string GetTileLabelText()
+    {
+        var px = _player.GlobalPosition.X;
+        for (var i = 0; i < _tileGenerator.ActiveTiles.Count; i++)
+        {
+            var tile = _tileGenerator.ActiveTiles[i];
+            if (px >= tile.GlobalPosition.X && px < tile.GetTileRightX())
+            {
+                return $"Tile [{i}/{_tileGenerator.GeneratedTileCount}]: {tile.Name}";
+            }
+        }
+        return "Tile: —";
     }
 }

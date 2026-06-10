@@ -65,6 +65,11 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 10
 text = "State"
 
+[node name="TileLabel" type="Label" parent="Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = ""
+
 [node name="HealthLabel" type="Label" parent="Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 10

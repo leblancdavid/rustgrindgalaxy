@@ -10,6 +10,7 @@ public partial class Hud : CanvasLayer
     private Label _materialsLabel = null!;
     private Label _messageLabel = null!;
     private Label _comboLabel = null!;
+    private Label _tileLabel = null!;
     private Label _trickPopupLabel = null!;
     private Label _landedComboLabel = null!;
     private float _trickPopupTimeRemaining;
@@ -23,6 +24,7 @@ public partial class Hud : CanvasLayer
         _messageLabel = GetNode<Label>("Margin/VBox/MessageLabel");
         _materialsLabel = GetNode<Label>("Margin/VBox/MaterialsLabel");
         _comboLabel = GetNode<Label>("Margin/VBox/ComboLabel");
+        _tileLabel = GetNode<Label>("Margin/VBox/TileLabel");
         _trickPopupLabel = GetNode<Label>("TrickPopup/TrickLabel");
         _landedComboLabel = GetNode<Label>("LandedComboPopup/ComboLabel");
         _trickPopupLabel.Visible = false;
@@ -42,6 +44,11 @@ public partial class Hud : CanvasLayer
         {
             _trickPopupLabel.Visible = false;
         }
+    }
+
+    public void UpdateTileName(string text)
+    {
+        _tileLabel.Text = text;
     }
 
     public void UpdatePlayerState(PlayerController player)
