@@ -22,9 +22,6 @@ color = Color(0.301961, 0.317647, 0.356863, 1)
 polygon = PackedVector2Array(0, 60, 1280, 60, 1280, 63, 0, 63)
 color = Color(0.909804, 0.772549, 0.345098, 1)
 
-[node name="SupportVisual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(0, 164, 1280, 164, 1280, 180, 0, 180)
-color = Color(0.101961, 0.121569, 0.156863, 0.4)
 
 [node name="Ground" type="StaticBody2D" parent="."]
 position = Vector2(640, 120)

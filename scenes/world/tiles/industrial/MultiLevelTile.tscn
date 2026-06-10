@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" path="res://scenes/world/GrindRail.tscn" id="2"]
 
 [sub_resource type="RectangleShape2D" id="1"]
-size = Vector2(640, 16)
+size = Vector2(1280, 16)
 
 [sub_resource type="RectangleShape2D" id="2"]
 size = Vector2(640, 12)
@@ -39,16 +39,10 @@ color = Color(0.388235, 0.411765, 0.462745, 1)
 polygon = PackedVector2Array(960, 105, 962, 105, 962, 164, 960, 164)
 color = Color(0.388235, 0.411765, 0.462745, 1)
 
-[node name="LowerGroundL" type="StaticBody2D" parent="."]
-position = Vector2(160, 172)
+[node name="LowerGround" type="StaticBody2D" parent="."]
+position = Vector2(640, 172)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="LowerGroundL"]
-shape = SubResource("1")
-
-[node name="LowerGroundR" type="StaticBody2D" parent="."]
-position = Vector2(1120, 172)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="LowerGroundR"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LowerGround"]
 shape = SubResource("1")
 
 [node name="UpperPlatform" type="StaticBody2D" parent="."]

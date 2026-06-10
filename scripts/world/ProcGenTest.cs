@@ -97,7 +97,9 @@ public partial class ProcGenTest : Node2D
             var tile = _tileGenerator.ActiveTiles[i];
             if (px >= tile.GlobalPosition.X && px < tile.GetTileRightX())
             {
-                return $"Tile [{i}/{_tileGenerator.GeneratedTileCount}]: {tile.Name}";
+                var fileName = tile.SceneFilePath.GetFile().GetBaseName();
+                var typeName = fileName.EndsWith("Tile") ? fileName[..^4] : fileName;
+                return $"Tile [{i}/{_tileGenerator.GeneratedTileCount}]: {typeName}";
             }
         }
         return "Tile: —";
