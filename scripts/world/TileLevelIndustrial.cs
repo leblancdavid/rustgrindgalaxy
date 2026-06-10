@@ -2,12 +2,8 @@ using Godot;
 using System.Collections.Generic;
 using System.Linq;
 
-public partial class LevelIndustrial01 : MissionLevel
+public partial class TileLevelIndustrial : MissionLevel
 {
-    private const string IndustrialChunkStartScenePath = "res://scenes/world/chunks/industrial/IndustrialChunkStart.tscn";
-    private const string IndustrialChunkMidHighScenePath = "res://scenes/world/chunks/industrial/IndustrialChunkMidHigh.tscn";
-    private const string IndustrialChunkMidLowScenePath = "res://scenes/world/chunks/industrial/IndustrialChunkMidLow.tscn";
-    private const string IndustrialChunkEndScenePath = "res://scenes/world/chunks/industrial/IndustrialChunkEnd.tscn";
     private const string RaiderScenePath = "res://scenes/enemies/Raider.tscn";
     private const string DroneScenePath = "res://scenes/enemies/Drone.tscn";
     private const string PickupScenePath = "res://scenes/world/MineralPickup.tscn";
@@ -16,16 +12,12 @@ public partial class LevelIndustrial01 : MissionLevel
     private ColorRect _backdrop = null!;
     private ColorRect _upperWall = null!;
     private ColorRect _midStripe = null!;
-    private PackedScene _chunkStartScene = null!;
-    private PackedScene _chunkMidHighScene = null!;
-    private PackedScene _chunkMidLowScene = null!;
-    private PackedScene _chunkEndScene = null!;
+    private TileLevelGenerator _tileGenerator = null!;
+    private Node2D _spawnedActors = null!;
     private PackedScene _raiderScene = null!;
     private PackedScene _droneScene = null!;
     private PackedScene _pickupScene = null!;
     private PackedScene _shockHazardScene = null!;
-    private Node2D _chunkRoot = null!;
-    private Node2D _spawnedActors = null!;
     private readonly List<GrindRail> _rails = new();
     private readonly List<Marker2D> _raiderSpawnMarkers = new();
     private readonly List<Marker2D> _droneSpawnMarkers = new();
@@ -37,29 +29,46 @@ public partial class LevelIndustrial01 : MissionLevel
         _backdrop = GetNode<ColorRect>("Backdrop");
         _upperWall = GetNode<ColorRect>("UpperWall");
         _midStripe = GetNode<ColorRect>("MidStripe");
-        _chunkStartScene = GD.Load<PackedScene>(IndustrialChunkStartScenePath);
-        _chunkMidHighScene = GD.Load<PackedScene>(IndustrialChunkMidHighScenePath);
-        _chunkMidLowScene = GD.Load<PackedScene>(IndustrialChunkMidLowScenePath);
-        _chunkEndScene = GD.Load<PackedScene>(IndustrialChunkEndScenePath);
+        _tileGenerator = GetNode<TileLevelGenerator>("TileGenerator");
+        _spawnedActors = GetNode<Node2D>("SpawnedActors");
         _raiderScene = GD.Load<PackedScene>(RaiderScenePath);
         _droneScene = GD.Load<PackedScene>(DroneScenePath);
         _pickupScene = GD.Load<PackedScene>(PickupScenePath);
         _shockHazardScene = GD.Load<PackedScene>(ShockHazardScenePath);
-        _chunkRoot = GetNode<Node2D>("ChunkRoot");
-        _spawnedActors = GetNode<Node2D>("SpawnedActors");
     }
 
-    public override void ApplyMission(MissionRunData mission)
+    public override void _Process(double delta)
     {
-        ApplyPalette(mission.PaletteKey);
-        AssembleChunks(mission);
-        ApplyModifiers(mission);
-        SpawnMissionContent(mission);
+        _tileGenerator.UpdateStreaming();
+        RefreshTileCaches();
     }
 
     public override ExtractionZone GetExtractionZone()
     {
         return GetNode<ExtractionZone>("ExtractionZone");
+    }
+
+    public override void ApplyMission(MissionRunData mission)
+    {
+        ApplyPalette(mission.PaletteKey);
+
+        var player = GetTree().Root.GetNodeOrNull<PlayerController>("World/Player");
+        _tileGenerator.Initialize(player!, mission.RunSeed ^ 0x51F15EED);
+        _tileGenerator.SetExtractionZone(GetExtractionZone());
+        _tileGenerator.BuildInitial();
+
+        RefreshTileCaches();
+        ApplyModifiers(mission);
+        SpawnMissionContent(mission);
+    }
+
+    private void RefreshTileCaches()
+    {
+        _tileGenerator.CollectRails(_rails);
+        _tileGenerator.CollectSpawnMarkers("SpawnMarkers/Raiders", _raiderSpawnMarkers);
+        _tileGenerator.CollectSpawnMarkers("SpawnMarkers/Drones", _droneSpawnMarkers);
+        _tileGenerator.CollectSpawnMarkers("SpawnMarkers/PickupMarkers", _pickupSpawnMarkers);
+        _tileGenerator.CollectSpawnMarkers("SpawnMarkers/Hazards", _hazardSpawnMarkers);
     }
 
     private void ApplyPalette(string paletteKey)
@@ -89,19 +98,6 @@ public partial class LevelIndustrial01 : MissionLevel
         }
     }
 
-    private void SpawnMissionContent(MissionRunData mission)
-    {
-        foreach (var child in _spawnedActors.GetChildren())
-        {
-            child.QueueFree();
-        }
-
-        var rng = new RandomNumberGenerator { Seed = (ulong)mission.RunSeed };
-        SpawnEnemies(rng, mission.EnemyDensity);
-        SpawnPickups(rng, mission.PickupDensity, mission.PrimaryMineral, mission.SecondaryMineral);
-        SpawnHazards(rng, mission.HazardDensity, mission.PaletteKey);
-    }
-
     private void ApplyModifiers(MissionRunData mission)
     {
         var lowVisibility = mission.Modifiers.Contains(MissionModifierType.LowVisibility);
@@ -118,40 +114,18 @@ public partial class LevelIndustrial01 : MissionLevel
         }
     }
 
-    private void AssembleChunks(MissionRunData mission)
+    private void SpawnMissionContent(MissionRunData mission)
     {
-        foreach (var child in _chunkRoot.GetChildren())
+        foreach (var child in _spawnedActors.GetChildren())
         {
             child.QueueFree();
         }
 
-        _rails.Clear();
-        _raiderSpawnMarkers.Clear();
-        _droneSpawnMarkers.Clear();
-        _pickupSpawnMarkers.Clear();
-        _hazardSpawnMarkers.Clear();
-
-        var rng = new RandomNumberGenerator { Seed = (ulong)(mission.RunSeed ^ 0x51F15EED) };
-        var chunks = new List<PackedScene>
-        {
-            _chunkStartScene,
-            rng.Randf() < 0.5f ? _chunkMidHighScene : _chunkMidLowScene,
-            rng.Randf() < 0.5f ? _chunkMidLowScene : _chunkMidHighScene,
-            _chunkEndScene,
-        };
-
-        var offsetX = 0.0f;
-        foreach (var chunkScene in chunks)
-        {
-            var chunk = chunkScene.Instantiate<IndustrialChunk>();
-            _chunkRoot.AddChild(chunk);
-            chunk.Position = new Vector2(offsetX, 0.0f);
-            CacheChunkReferences(chunk);
-            offsetX += chunk.GetChunkWidth();
-        }
-
-        var extractionOffset = new Vector2(offsetX - 84.0f, 144.0f);
-        GetExtractionZone().Position = extractionOffset;
+        RefreshTileCaches();
+        var rng = new RandomNumberGenerator { Seed = (ulong)mission.RunSeed };
+        SpawnEnemies(rng, mission.EnemyDensity);
+        SpawnPickups(rng, mission.PickupDensity, mission.PrimaryMineral, mission.SecondaryMineral);
+        SpawnHazards(rng, mission.HazardDensity, mission.PaletteKey);
     }
 
     private void SpawnEnemies(RandomNumberGenerator rng, float enemyDensity)
@@ -225,38 +199,5 @@ public partial class LevelIndustrial01 : MissionLevel
 
         shuffled.Sort((left, right) => left.GlobalPosition.X.CompareTo(right.GlobalPosition.X));
         return shuffled;
-    }
-
-    private void CacheChunkReferences(IndustrialChunk chunk)
-    {
-        foreach (var child in chunk.GetChildren())
-        {
-            if (child is GrindRail rail)
-            {
-                _rails.Add(rail);
-            }
-        }
-
-        CacheMarkerChildren(chunk, "SpawnMarkers/Raiders", _raiderSpawnMarkers);
-        CacheMarkerChildren(chunk, "SpawnMarkers/Drones", _droneSpawnMarkers);
-        CacheMarkerChildren(chunk, "SpawnMarkers/PickupMarkers", _pickupSpawnMarkers);
-        CacheMarkerChildren(chunk, "SpawnMarkers/Hazards", _hazardSpawnMarkers);
-    }
-
-    private void CacheMarkerChildren(Node chunk, string path, List<Marker2D> target)
-    {
-        var parent = chunk.GetNodeOrNull<Node>(path);
-        if (parent == null)
-        {
-            return;
-        }
-
-        foreach (var child in parent.GetChildren())
-        {
-            if (child is Marker2D marker)
-            {
-                target.Add(marker);
-            }
-        }
     }
 }

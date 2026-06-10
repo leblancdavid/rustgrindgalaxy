@@ -4,7 +4,7 @@ using System.Linq;
 
 public partial class World : Node2D
 {
-    private const string IndustrialLevelScenePath = "res://scenes/world/levels/LevelIndustrial01.tscn";
+    private const string IndustrialLevelScenePath = "res://scenes/world/levels/TileLevelIndustrial.tscn";
     private const string DerelictLevelScenePath = "res://scenes/world/levels/LevelDerelict01.tscn";
     private const string SurfaceLevelScenePath = "res://scenes/world/levels/LevelSurface01.tscn";
 

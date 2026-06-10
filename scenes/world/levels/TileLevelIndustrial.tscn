@@ -1,9 +1,10 @@
 [gd_scene load_steps=5 format=3]
 
-[ext_resource type="Script" path="res://scripts/world/LevelIndustrial01.cs" id="1"]
-[ext_resource type="PackedScene" path="res://scenes/world/ExtractionZone.tscn" id="6"]
+[ext_resource type="Script" path="res://scripts/world/TileLevelIndustrial.cs" id="1"]
+[ext_resource type="Script" path="res://scripts/world/TileLevelGenerator.cs" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/world/ExtractionZone.tscn" id="3"]
 
-[node name="LevelIndustrial01" type="Node2D"]
+[node name="TileLevelIndustrial" type="Node2D"]
 script = ExtResource("1")
 
 [node name="Backdrop" type="ColorRect" parent="."]
@@ -22,9 +23,10 @@ offset_right = 320.0
 offset_bottom = 90.0
 color = Color(0.227451, 0.447059, 0.529412, 0.4)
 
-[node name="ChunkRoot" type="Node2D" parent="."]
+[node name="TileGenerator" type="Node2D"]
+script = ExtResource("2")
 
 [node name="SpawnedActors" type="Node2D" parent="."]
 
-[node name="ExtractionZone" parent="." instance=ExtResource("6")]
+[node name="ExtractionZone" parent="." instance=ExtResource("3")]
 position = Vector2(300, 144)

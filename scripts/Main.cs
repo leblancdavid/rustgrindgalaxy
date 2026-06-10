@@ -4,8 +4,8 @@ public partial class Main : Node
 {
     public override void _Ready()
     {
-        var movementTestScene = GD.Load<PackedScene>("res://scenes/world/MovementTest.tscn");
-        var movementTest = movementTestScene.Instantiate();
-        AddChild(movementTest);
+        var procGenTestScene = GD.Load<PackedScene>("res://scenes/world/ProcGenTest.tscn");
+        var procGenTest = procGenTestScene.Instantiate();
+        AddChild(procGenTest);
     }
 }
