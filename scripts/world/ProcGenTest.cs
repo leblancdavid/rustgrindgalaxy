@@ -48,7 +48,7 @@ public partial class ProcGenTest : Node2D
     {
         _camera.LimitLeft = -10000;
         _camera.LimitTop = -10000;
-        _camera.LimitRight = 10000;
+        _camera.LimitRight = 25000;
         _camera.LimitBottom = 10000;
     }
 
