@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/world/LevelTile.cs" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/world/GrindRail.tscn" id="2"]
@@ -7,16 +7,16 @@
 size = Vector2(320, 16)
 
 [sub_resource type="RectangleShape2D" id="2"]
-size = Vector2(256, 16)
+size = Vector2(160, 16)
 
 [sub_resource type="RectangleShape2D" id="3"]
-size = Vector2(120, 10)
+size = Vector2(960, 10)
 
 [node name="StairClimbTile" type="Node2D"]
 script = ExtResource("1")
 TileWidth = 1280
 LeftGroundY = 164.0
-RightGroundY = 100.0
+RightGroundY = 60.0
 
 [node name="ApproachVisual" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(0, 164, 160, 164, 160, 180, 0, 180)
@@ -27,59 +27,83 @@ polygon = PackedVector2Array(0, 164, 160, 164, 160, 167, 0, 167)
 color = Color(0.964706, 0.694118, 0.219608, 1)
 
 [node name="Step1Visual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(160, 148, 416, 148, 416, 180, 160, 180)
+polygon = PackedVector2Array(160, 147, 320, 147, 320, 180, 160, 180)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
 [node name="Step1Edge" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(160, 148, 416, 148, 416, 151, 160, 151)
+polygon = PackedVector2Array(160, 147, 320, 147, 320, 150, 160, 150)
 color = Color(0.909804, 0.772549, 0.345098, 1)
 
 [node name="Step1Rise" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(160, 148, 416, 148, 416, 164, 160, 164)
+polygon = PackedVector2Array(160, 147, 320, 147, 320, 164, 160, 164)
 color = Color(0.388235, 0.411765, 0.462745, 1)
 
 [node name="Step2Visual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(416, 132, 672, 132, 672, 180, 416, 180)
+polygon = PackedVector2Array(320, 130, 480, 130, 480, 180, 320, 180)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
 [node name="Step2Edge" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(416, 132, 672, 132, 672, 135, 416, 135)
+polygon = PackedVector2Array(320, 130, 480, 130, 480, 133, 320, 133)
 color = Color(0.909804, 0.772549, 0.345098, 1)
 
 [node name="Step2Rise" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(416, 132, 672, 132, 672, 148, 416, 148)
+polygon = PackedVector2Array(320, 130, 480, 130, 480, 147, 320, 147)
 color = Color(0.388235, 0.411765, 0.462745, 1)
 
 [node name="Step3Visual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(672, 116, 928, 116, 928, 180, 672, 180)
+polygon = PackedVector2Array(480, 113, 640, 113, 640, 180, 480, 180)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
 [node name="Step3Edge" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(672, 116, 928, 116, 928, 119, 672, 119)
+polygon = PackedVector2Array(480, 113, 640, 113, 640, 116, 480, 116)
 color = Color(0.909804, 0.772549, 0.345098, 1)
 
 [node name="Step3Rise" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(672, 116, 928, 116, 928, 132, 672, 132)
+polygon = PackedVector2Array(480, 113, 640, 113, 640, 130, 480, 130)
 color = Color(0.388235, 0.411765, 0.462745, 1)
 
 [node name="Step4Visual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(928, 100, 1184, 100, 1184, 180, 928, 180)
+polygon = PackedVector2Array(640, 96, 800, 96, 800, 180, 640, 180)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
 [node name="Step4Edge" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(928, 100, 1184, 100, 1184, 103, 928, 103)
+polygon = PackedVector2Array(640, 96, 800, 96, 800, 99, 640, 99)
 color = Color(0.909804, 0.772549, 0.345098, 1)
 
 [node name="Step4Rise" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(928, 100, 1184, 100, 1184, 116, 928, 116)
+polygon = PackedVector2Array(640, 96, 800, 96, 800, 113, 640, 113)
+color = Color(0.388235, 0.411765, 0.462745, 1)
+
+[node name="Step5Visual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(800, 79, 960, 79, 960, 180, 800, 180)
+color = Color(0.301961, 0.317647, 0.356863, 1)
+
+[node name="Step5Edge" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(800, 79, 960, 79, 960, 82, 800, 82)
+color = Color(0.909804, 0.772549, 0.345098, 1)
+
+[node name="Step5Rise" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(800, 79, 960, 79, 960, 96, 800, 96)
+color = Color(0.388235, 0.411765, 0.462745, 1)
+
+[node name="Step6Visual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(960, 60, 1120, 60, 1120, 180, 960, 180)
+color = Color(0.301961, 0.317647, 0.356863, 1)
+
+[node name="Step6Edge" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(960, 60, 1120, 60, 1120, 63, 960, 63)
+color = Color(0.909804, 0.772549, 0.345098, 1)
+
+[node name="Step6Rise" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(960, 60, 1120, 60, 1120, 79, 960, 79)
 color = Color(0.388235, 0.411765, 0.462745, 1)
 
 [node name="LandingVisual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(1184, 100, 1280, 100, 1280, 180, 1184, 180)
+polygon = PackedVector2Array(1120, 60, 1280, 60, 1280, 180, 1120, 180)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
 [node name="LandingEdge" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(1184, 100, 1280, 100, 1280, 103, 1184, 103)
+polygon = PackedVector2Array(1120, 60, 1280, 60, 1280, 63, 1120, 63)
 color = Color(0.909804, 0.772549, 0.345098, 1)
 
 [node name="ApproachGround" type="StaticBody2D" parent="."]
@@ -89,38 +113,50 @@ position = Vector2(80, 172)
 shape = SubResource("1")
 
 [node name="Step1" type="StaticBody2D" parent="."]
-position = Vector2(288, 156)
+position = Vector2(240, 155)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Step1"]
 shape = SubResource("2")
 
 [node name="Step2" type="StaticBody2D" parent="."]
-position = Vector2(544, 140)
+position = Vector2(400, 138)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Step2"]
 shape = SubResource("2")
 
 [node name="Step3" type="StaticBody2D" parent="."]
-position = Vector2(800, 124)
+position = Vector2(560, 121)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Step3"]
 shape = SubResource("2")
 
 [node name="Step4" type="StaticBody2D" parent="."]
-position = Vector2(1056, 108)
+position = Vector2(720, 104)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Step4"]
 shape = SubResource("2")
 
+[node name="Step5" type="StaticBody2D" parent="."]
+position = Vector2(880, 87)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Step5"]
+shape = SubResource("2")
+
+[node name="Step6" type="StaticBody2D" parent="."]
+position = Vector2(1040, 68)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Step6"]
+shape = SubResource("2")
+
 [node name="LandingGround" type="StaticBody2D" parent="."]
-position = Vector2(1232, 108)
+position = Vector2(1200, 68)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="LandingGround"]
 shape = SubResource("1")
 
 [node name="Rail" parent="." instance=ExtResource("2")]
-position = Vector2(720, 65)
-Width = 1120.0
+position = Vector2(640, 30)
+Width = 960.0
 BaseSpeed = 200.0
 
 [node name="SpawnMarkers" type="Node2D" parent="."]

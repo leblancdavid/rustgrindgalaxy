@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/world/LevelTile.cs" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/world/GrindRail.tscn" id="2"]
@@ -13,7 +13,7 @@ size = Vector2(320, 16)
 size = Vector2(640, 16)
 
 [sub_resource type="RectangleShape2D" id="4"]
-size = Vector2(640, 10)
+size = Vector2(320, 10)
 
 [node name="HalfPipeTile" type="Node2D"]
 script = ExtResource("1")
@@ -73,21 +73,23 @@ position = Vector2(1120, 172)
 [node name="CollisionShape2D" type="CollisionShape2D" parent="RightFlat"]
 shape = SubResource("2")
 
-[node name="BottomCollision" type="StaticBody2D" parent="."]
+[node name="BottomFlat" type="StaticBody2D" parent="."]
 position = Vector2(640, 192)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="BottomCollision"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="BottomFlat"]
 shape = SubResource("3")
 
-[node name="LeftSlopeCollision" type="CollisionPolygon2D" parent="."]
+[node name="SlopeBody" type="StaticBody2D" parent="."]
+
+[node name="LeftSlopeCollision" type="CollisionPolygon2D" parent="SlopeBody"]
 polygon = PackedVector2Array(320, 164, 480, 184, 480, 200, 320, 180)
 
-[node name="RightSlopeCollision" type="CollisionPolygon2D" parent="."]
+[node name="RightSlopeCollision" type="CollisionPolygon2D" parent="SlopeBody"]
 polygon = PackedVector2Array(800, 184, 960, 164, 960, 180, 800, 200)
 
 [node name="Rail" parent="." instance=ExtResource("2")]
-position = Vector2(640, 108)
-Width = 1280.0
+position = Vector2(640, 150)
+Width = 320.0
 BaseSpeed = 200.0
 
 [node name="SpawnMarkers" type="Node2D" parent="."]

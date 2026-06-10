@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/world/LevelTile.cs" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/world/GrindRail.tscn" id="2"]
@@ -15,27 +15,27 @@ size = Vector2(640, 10)
 [node name="DropSectionTile" type="Node2D"]
 script = ExtResource("1")
 TileWidth = 1280
-LeftGroundY = 100.0
+LeftGroundY = 60.0
 RightGroundY = 164.0
 
 [node name="HighLandingVisual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(0, 100, 320, 100, 320, 180, 0, 180)
+polygon = PackedVector2Array(0, 60, 320, 60, 320, 180, 0, 180)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
 [node name="HighLandingTrim" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(0, 100, 320, 100, 320, 103, 0, 103)
+polygon = PackedVector2Array(0, 60, 320, 60, 320, 63, 0, 63)
 color = Color(0.909804, 0.772549, 0.345098, 1)
 
 [node name="DropRampVisual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(320, 100, 960, 164, 960, 180, 320, 180)
+polygon = PackedVector2Array(320, 60, 960, 164, 960, 180, 320, 180)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
 [node name="DropRampTrim" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(320, 100, 960, 164, 960, 167, 320, 103)
+polygon = PackedVector2Array(320, 60, 960, 164, 960, 167, 320, 63)
 color = Color(0.964706, 0.694118, 0.219608, 1)
 
 [node name="DropRampRise" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(320, 100, 322, 100, 322, 180, 320, 180)
+polygon = PackedVector2Array(320, 60, 322, 60, 322, 180, 320, 180)
 color = Color(0.388235, 0.411765, 0.462745, 1)
 
 [node name="FlatLandingVisual" type="Polygon2D" parent="."]
@@ -51,7 +51,7 @@ polygon = PackedVector2Array(0, 164, 1280, 164, 1280, 180, 0, 180)
 color = Color(0.101961, 0.121569, 0.156863, 0.4)
 
 [node name="HighGround" type="StaticBody2D" parent="."]
-position = Vector2(160, 108)
+position = Vector2(160, 68)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="HighGround"]
 shape = SubResource("1")
@@ -62,11 +62,13 @@ position = Vector2(1120, 172)
 [node name="CollisionShape2D" type="CollisionShape2D" parent="LowGround"]
 shape = SubResource("2")
 
-[node name="DropCollision" type="CollisionPolygon2D" parent="."]
-polygon = PackedVector2Array(320, 100, 960, 164, 960, 180, 320, 180)
+[node name="DropBody" type="StaticBody2D" parent="."]
+
+[node name="DropCollision" type="CollisionPolygon2D" parent="DropBody"]
+polygon = PackedVector2Array(320, 60, 960, 164, 960, 180, 320, 180)
 
 [node name="Rail" parent="." instance=ExtResource("2")]
-position = Vector2(640, 65)
+position = Vector2(640, 30)
 Width = 640.0
 BaseSpeed = 240.0
 

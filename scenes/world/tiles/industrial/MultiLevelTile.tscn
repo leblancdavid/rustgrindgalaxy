@@ -9,9 +9,6 @@ size = Vector2(640, 16)
 [sub_resource type="RectangleShape2D" id="2"]
 size = Vector2(640, 12)
 
-[sub_resource type="RectangleShape2D" id="3"]
-size = Vector2(640, 10)
-
 [node name="MultiLevelTile" type="Node2D"]
 script = ExtResource("1")
 TileWidth = 1280
@@ -42,14 +39,14 @@ color = Color(0.388235, 0.411765, 0.462745, 1)
 polygon = PackedVector2Array(960, 105, 962, 105, 962, 164, 960, 164)
 color = Color(0.388235, 0.411765, 0.462745, 1)
 
-[node name="LowerGround" type="StaticBody2D" parent="."]
-position = Vector2(320, 172)
+[node name="LowerGroundL" type="StaticBody2D" parent="."]
+position = Vector2(160, 172)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="LowerGround"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LowerGroundL"]
 shape = SubResource("1")
 
 [node name="LowerGroundR" type="StaticBody2D" parent="."]
-position = Vector2(960, 172)
+position = Vector2(1120, 172)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="LowerGroundR"]
 shape = SubResource("1")

@@ -12,14 +12,15 @@ public partial class TileLevelGenerator : Node2D
     private const string HalfPipePath = "res://scenes/world/tiles/industrial/HalfPipeTile.tscn";
     private const string GapJumpPath = "res://scenes/world/tiles/industrial/GapJumpTile.tscn";
     private const string MultiLevelPath = "res://scenes/world/tiles/industrial/MultiLevelTile.tscn";
+    private const string HighFlatPath = "res://scenes/world/tiles/industrial/HighFlatTile.tscn";
 
-    [Export] public int MinLevelTiles = 6;
-    [Export] public int TilesAheadOfPlayer = 3;
+    [Export] public int MinLevelTiles = 15;
+    [Export] public int TilesAheadOfPlayer = 5;
     [Export] public float RemoveBehindDistance = 2560.0f;
 
-    private const float TileWidth = 1280.0f;
-    private const float GroundConnectorY = 164.0f;
-    private const float HighConnectorY = 100.0f;
+    private const float TileW = 1280.0f;
+    private const float GroundY = 164.0f;
+    private const float HighY = 60.0f;
 
     private PlayerController _player = null!;
     private RandomNumberGenerator _rng = new();
@@ -27,6 +28,7 @@ public partial class TileLevelGenerator : Node2D
     private readonly List<PackedScene> _groundTiles = new();
     private readonly List<PackedScene> _risingTiles = new();
     private readonly List<PackedScene> _descendingTiles = new();
+    private readonly List<PackedScene> _highTiles = new();
     private bool _levelComplete;
     private bool _started;
     private ExtractionZone _extractionZone = null!;
@@ -82,7 +84,7 @@ public partial class TileLevelGenerator : Node2D
             ? _activeTiles[^1].GetTileRightX()
             : 0.0f;
 
-        while (frontierX - playerX < TilesAheadOfPlayer * TileWidth && !_levelComplete)
+        while (frontierX - playerX < TilesAheadOfPlayer * TileW && !_levelComplete)
         {
             var offsetX = _activeTiles.Count > 0
                 ? _activeTiles[^1].GetTileRightX()
@@ -167,7 +169,7 @@ public partial class TileLevelGenerator : Node2D
     {
         var currentConnector = _activeTiles.Count > 0
             ? _activeTiles[^1].GetRightConnector()
-            : new LevelTileConnector { GroundY = GroundConnectorY };
+            : new LevelTileConnector { GroundY = GroundY };
 
         var pool = GetTilesForConnector(currentConnector);
         return pool.Count > 0 ? pool[(int)(_rng.Randi() % (uint)pool.Count)] : _groundTiles[0];
@@ -177,19 +179,20 @@ public partial class TileLevelGenerator : Node2D
     {
         var currentConnector = _activeTiles.Count > 0
             ? _activeTiles[^1].GetRightConnector()
-            : new LevelTileConnector { GroundY = GroundConnectorY };
+            : new LevelTileConnector { GroundY = GroundY };
 
         var candidates = GetTilesForConnector(currentConnector);
         if (candidates.Count == 0)
             return null;
 
-        var flatWeight = 0.40f;
-        var halfPipeWeight = 0.10f;
-        var gapWeight = 0.08f;
-        var multiWeight = 0.06f;
-        var rampWeight = 0.14f;
-        var stairWeight = 0.12f;
+        var flatWeight = 0.08f;
+        var halfPipeWeight = 0.12f;
+        var gapWeight = 0.05f;
+        var multiWeight = 0.10f;
+        var rampWeight = 0.24f;
+        var stairWeight = 0.21f;
         var dropWeight = 0.10f;
+        var highFlatWeight = 0.10f;
 
         var totalWeight = 0.0f;
         var weights = new float[candidates.Count];
@@ -213,6 +216,8 @@ public partial class TileLevelGenerator : Node2D
                 weight = stairWeight;
             else if (scenePath.Contains("DropSection"))
                 weight = dropWeight;
+            else if (scenePath.Contains("HighFlat"))
+                weight = highFlatWeight;
 
             totalWeight += weight;
             weights[i] = weight;
@@ -231,8 +236,8 @@ public partial class TileLevelGenerator : Node2D
 
     private List<PackedScene> GetTilesForConnector(LevelTileConnector connector)
     {
-        if (Mathf.Abs(connector.GroundY - HighConnectorY) <= 0.01f)
-            return _descendingTiles;
+        if (Mathf.Abs(connector.GroundY - HighY) <= 0.01f)
+            return _descendingTiles.Concat(_highTiles).ToList();
 
         return _groundTiles.Concat(_risingTiles).ToList();
     }
@@ -248,6 +253,8 @@ public partial class TileLevelGenerator : Node2D
         _risingTiles.Add(GD.Load<PackedScene>(StairClimbPath));
 
         _descendingTiles.Add(GD.Load<PackedScene>(DropSectionPath));
+
+        _highTiles.Add(GD.Load<PackedScene>(HighFlatPath));
     }
 
     public void CollectRails(List<GrindRail> rails)
