@@ -14,7 +14,7 @@ public partial class PlayerController : CharacterBody2D
 	[Export] public float GravityScale = 1.0f;
 	[Export] public float SlopeGravityStrength = 900.0f;
 	[Export] public float RotationLerpSpeed = 20.0f;
-	[Export] public float RotationSpeedDegrees = 240.0f;
+	[Export] public float RotationSpeedDegrees = 480.0f;
 	[Export] public float LandingToleranceDegrees = 20.0f;
 	[Export] public float RailFriction = 12.0f;
 	[Export] public float RailGravityStrength = 900.0f;
@@ -32,12 +32,22 @@ public partial class PlayerController : CharacterBody2D
 	[Export] public float GrindBobSpeed = 7.0f;
 	[Export] public float GrindVisualMinimumStrength = 0.45f;
 	[Export] public float GrindBobOffsetPixels = 0.75f;
+	[Export] public float BalanceMaxOffset = 1.0f;
+	[Export] public float BalanceDriftRate = 0.8f;
+	[Export] public float BalanceDriftChangeInterval = 1.8f;
+	[Export] public float BalanceCorrectionSpeed = 2.5f;
+	[Export] public float BalanceRecoverySpeed = 1.0f;
+	[Export] public float BalancePhysicsForce = 35.0f;
+	[Export] public float BalanceVisualTiltDegrees = 10.0f;
+	[Export] public float BalanceIndicatorWidth = 24.0f;
+	[Export] public float BalanceIndicatorHeight = 5.0f;
+	[Export] public float BalanceIndicatorY = -36.0f;
+	[Export] public float AirRotationRampUpTime = 0.5f;
 	[Export] public int MaxHealth = 5;
 	[Export] public float InvulnerabilityDuration = 0.75f;
 
 	private const string GrindAction = "grind";
-	private const string RotateCounterClockwiseAction = "rotate_ccw";
-	private const string RotateClockwiseAction = "rotate_cw";
+	// Rotation now uses left/right arrows directly via inputDirection
 	private const string TrickFlipAction = "trick_flip";
 	private const string TrickGrabAction = "trick_grab";
 	private const string TrickAltFlipAction = "trick_alt_flip";
@@ -88,6 +98,13 @@ public partial class PlayerController : CharacterBody2D
 	private float _boardAnimationTilt;
 	private float _ollieTakeoffTilt;
 	private float _grindBobTime;
+	private float _balanceValue;
+	private float _balanceDriftTarget;
+	private float _balanceDriftTimer;
+	private float _airRotationRamp;
+	private float _airRotationRampDirection;
+	private Node2D _balanceIndicator = null!;
+	private Polygon2D _balanceArrow = null!;
 	private bool _isChargingJump;
 	private Marker2D _boardContact = null!;
 	private Polygon2D _boardVisual = null!;
@@ -149,6 +166,56 @@ public partial class PlayerController : CharacterBody2D
 		_airRotation = Rotation;
 		_previousBoardContactPoint = GetRailContactPoint();
 		CurrentHealth = MaxHealth;
+		CreateBalanceIndicator();
+	}
+
+	private void CreateBalanceIndicator()
+	{
+		_balanceIndicator = new Node2D();
+		_balanceIndicator.Name = "BalanceIndicator";
+		_balanceIndicator.Position = new Vector2(0.0f, BalanceIndicatorY);
+		_balanceIndicator.Visible = false;
+		AddChild(_balanceIndicator);
+
+		var bar = new Polygon2D();
+		bar.Name = "Bar";
+		var halfW = BalanceIndicatorWidth * 0.5f;
+		var halfH = BalanceIndicatorHeight * 0.5f;
+		bar.Polygon = new Vector2[]
+		{
+			new Vector2(-halfW, -halfH),
+			new Vector2(halfW, -halfH),
+			new Vector2(halfW, halfH),
+			new Vector2(-halfW, halfH),
+		};
+		bar.Color = new Color(0.15f, 0.15f, 0.15f, 0.85f);
+		bar.ZIndex = 2;
+		_balanceIndicator.AddChild(bar);
+
+		var centerMark = new Polygon2D();
+		centerMark.Name = "CenterMark";
+		centerMark.Polygon = new Vector2[]
+		{
+			new Vector2(-0.5f, -halfH),
+			new Vector2(0.5f, -halfH),
+			new Vector2(0.5f, halfH),
+			new Vector2(-0.5f, halfH),
+		};
+		centerMark.Color = new Color(0.6f, 0.6f, 0.6f, 0.9f);
+		centerMark.ZIndex = 3;
+		_balanceIndicator.AddChild(centerMark);
+
+		_balanceArrow = new Polygon2D();
+		_balanceArrow.Name = "Arrow";
+		_balanceArrow.Polygon = new Vector2[]
+		{
+			new Vector2(0.0f, halfH + 2.0f),
+			new Vector2(-2.5f, -halfH),
+			new Vector2(2.5f, -halfH),
+		};
+		_balanceArrow.Color = new Color(0.96f, 0.81f, 0.30f, 1.0f);
+		_balanceArrow.ZIndex = 3;
+		_balanceIndicator.AddChild(_balanceArrow);
 	}
 
 	public void SetLoadout(PlayerLoadout loadout)
@@ -194,7 +261,6 @@ public partial class PlayerController : CharacterBody2D
 
 		var velocity = Velocity;
 		var inputDirection = Input.GetAxis("ui_left", "ui_right");
-		var rotationInput = Input.GetAxis(RotateCounterClockwiseAction, RotateClockwiseAction);
 		var wasOnFloor = IsOnFloor();
 		var previousBoardContactPoint = GetRailContactPoint();
 		var gravityMultiplier = _resolvedEffects.HangTimeGravityMultiplier;
@@ -209,7 +275,7 @@ public partial class PlayerController : CharacterBody2D
 		UpdateGrindIntent();
 		UpdateTravelIntent(inputDirection, velocity.X);
 		UpdateJumpCharge(deltaSeconds, wasOnFloor, _activeRail != null);
-		UpdateRotationInput(rotationInput, deltaSeconds, wasOnFloor);
+		UpdateRotationInput(inputDirection, deltaSeconds, wasOnFloor);
 		UpdateTrickState(deltaSeconds, wasOnFloor);
 
 		if (_activeRail != null)
@@ -317,6 +383,14 @@ public partial class PlayerController : CharacterBody2D
 		ClearQueuedTrick();
 		RegisterCompletedTrickName(GetInstalledTrickName(ModuleType.Grind));
 		_grindIntentTimeRemaining = 0.0f;
+		_balanceValue = 0.0f;
+		_balanceDriftTarget = (float)GD.RandRange(-0.6, 0.6);
+		_balanceDriftTimer = BalanceDriftChangeInterval * (float)GD.RandRange(0.5f, 1.5f);
+		if (_balanceIndicator != null)
+		{
+			_balanceIndicator.Visible = true;
+			_balanceArrow.Position = new Vector2(0.0f, 0.0f);
+		}
 		_grindDirection = Mathf.Sign(travelDirection);
 
 		if (Mathf.IsZeroApprox(_grindDirection))
@@ -355,6 +429,13 @@ public partial class PlayerController : CharacterBody2D
 		_railSpeed = 0.0f;
 		_airRotation = GetBoardAngle();
 		_railAttachCooldownRemaining = RailAttachCooldownSeconds;
+		_balanceValue = 0.0f;
+		_balanceDriftTarget = 0.0f;
+		_balanceDriftTimer = 0.0f;
+		if (_balanceIndicator != null)
+		{
+			_balanceIndicator.Visible = false;
+		}
 	}
 
 	public void TakeDamage(int amount)
@@ -393,6 +474,14 @@ public partial class PlayerController : CharacterBody2D
 			return;
 		}
 
+		UpdateGrindBalance(deltaSeconds, inputDirection);
+
+		if (_balanceIndicator.Visible && (Mathf.Abs(_balanceValue) >= BalanceMaxOffset - 0.001f))
+		{
+			FailGrindBalance(ref velocity, rail);
+			return;
+		}
+
 		if (Mathf.IsZeroApprox(_grindDirection))
 		{
 			_grindDirection = 1.0f;
@@ -408,7 +497,7 @@ public partial class PlayerController : CharacterBody2D
 		var downhillAcceleration = rail.Tangent.Dot(Vector2.Down) * gravity * (RailGravityStrength / gravity);
 		_railSpeed += downhillAcceleration * deltaSeconds;
 		_railSpeed = Mathf.MoveToward(_railSpeed, 0.0f, RailFriction * deltaSeconds);
-
+		_railSpeed += _balanceValue * BalancePhysicsForce * deltaSeconds;
 		_railSpeed = Mathf.Clamp(_railSpeed, -MaxRailSpeed, MaxRailSpeed);
 		_railProgress += (_railSpeed * deltaSeconds) / Mathf.Max(rail.Length, 0.001f);
 
@@ -697,7 +786,6 @@ public partial class PlayerController : CharacterBody2D
 
 		if (_activeRail != null)
 		{
-			_railRotationOffset = NormalizeAngle(_railRotationOffset + rotationStep);
 			return;
 		}
 
@@ -707,7 +795,18 @@ public partial class PlayerController : CharacterBody2D
 			return;
 		}
 
-		_airRotation = NormalizeAngle(_airRotation + rotationStep);
+		float currentDirection = rotationInput > 0.0f ? 1.0f : (rotationInput < 0.0f ? -1.0f : 0.0f);
+		if (currentDirection != 0.0f && currentDirection == _airRotationRampDirection)
+		{
+			_airRotationRamp = Mathf.Min(_airRotationRamp + deltaSeconds / AirRotationRampUpTime, 1.0f);
+		}
+		else
+		{
+			_airRotationRamp = 0.0f;
+		}
+		_airRotationRampDirection = currentDirection;
+
+		_airRotation = NormalizeAngle(_airRotation + rotationStep * _airRotationRamp);
 	}
 
 	private bool RejectInvalidLanding(bool wasOnFloor, ref Vector2 velocity)
@@ -1153,6 +1252,69 @@ public partial class PlayerController : CharacterBody2D
 		_ollieTakeoffTilt = _boardAnimationTilt;
 	}
 
+	private void UpdateGrindBalance(float deltaSeconds, float inputDirection)
+	{
+		_balanceDriftTimer -= deltaSeconds;
+
+		if (_balanceDriftTimer <= 0.0f)
+		{
+			_balanceDriftTarget = (float)GD.RandRange(-1.0, 1.0);
+			_balanceDriftTimer = BalanceDriftChangeInterval * (float)GD.RandRange(0.5f, 1.5f);
+		}
+
+		var drift = _balanceDriftTarget * BalanceDriftRate * deltaSeconds;
+		var correction = inputDirection * BalanceCorrectionSpeed * deltaSeconds;
+
+		_balanceValue += drift + correction;
+
+		if (Mathf.IsZeroApprox(drift) && Mathf.IsZeroApprox(correction))
+		{
+			var recovery = -Mathf.Sign(_balanceValue) * BalanceRecoverySpeed * deltaSeconds;
+			if (Mathf.Abs(recovery) >= Mathf.Abs(_balanceValue))
+			{
+				_balanceValue = 0.0f;
+			}
+			else
+			{
+				_balanceValue += recovery;
+			}
+		}
+
+		_balanceValue = Mathf.Clamp(_balanceValue, -BalanceMaxOffset, BalanceMaxOffset);
+
+		var halfW = BalanceIndicatorWidth * 0.5f;
+		var arrowX = (_balanceValue / Mathf.Max(BalanceMaxOffset, 0.01f)) * halfW;
+		_balanceArrow.Position = new Vector2(arrowX, 0.0f);
+
+		var severity = Mathf.Abs(_balanceValue) / Mathf.Max(BalanceMaxOffset, 0.01f);
+		_balanceArrow.Color = new Color(
+			Mathf.Lerp(0.96f, 1.0f, severity),
+			Mathf.Lerp(0.81f, 0.3f, severity),
+			Mathf.Lerp(0.30f, 0.1f, severity),
+			1.0f);
+	}
+
+	private void FailGrindBalance(ref Vector2 velocity, GrindRail rail)
+	{
+		float failureDirection = Mathf.Sign(_balanceValue);
+		if (Mathf.IsZeroApprox(failureDirection))
+		{
+			failureDirection = 1.0f;
+		}
+
+		FailCurrentCombo();
+		_isFailedLandingFalling = true;
+		_failedLandingDirection = failureDirection;
+
+		var railTangent = rail.Tangent;
+		velocity = railTangent * _railSpeed;
+		velocity += railTangent * (_balanceValue * BalancePhysicsForce);
+		velocity += Vector2.Down * FailedLandingFallSpeed;
+		_airRotation = Rotation;
+
+		ExitRail();
+	}
+
 	private void PublishTrickStart(string trickName)
 	{
 		LastStartedTrickName = trickName;
@@ -1208,7 +1370,10 @@ public partial class PlayerController : CharacterBody2D
 			_failedLandingDirection = 0.0f;
 		}
 
-		_visual.Rotation = Mathf.DegToRad(FailedLandingBodyTiltDegrees) * _failedLandingDirection * _failedLandingVisualBlend;
+		var balanceTilt = _activeRail != null
+			? Mathf.DegToRad(BalanceVisualTiltDegrees) * (_balanceValue / Mathf.Max(BalanceMaxOffset, 0.01f))
+			: 0.0f;
+		_visual.Rotation = Mathf.DegToRad(FailedLandingBodyTiltDegrees) * _failedLandingDirection * _failedLandingVisualBlend + balanceTilt;
 		ApplyTrickVisual();
 	}
 
@@ -1271,8 +1436,17 @@ public partial class PlayerController : CharacterBody2D
 		_boardAnimationTilt = 0.0f;
 		_ollieTakeoffTilt = 0.0f;
 		_grindBobTime = 0.0f;
+		_balanceValue = 0.0f;
+		_balanceDriftTarget = 0.0f;
+		_balanceDriftTimer = 0.0f;
+		_airRotationRamp = 0.0f;
+		_airRotationRampDirection = 0.0f;
 		_boardVisual.Position = _boardVisualBasePosition;
 		_visual.Rotation = 0.0f;
+		if (_balanceIndicator != null)
+		{
+			_balanceIndicator.Visible = false;
+		}
 		ApplyTrickVisual();
 	}
 
@@ -1435,8 +1609,6 @@ public partial class PlayerController : CharacterBody2D
 			PhysicalKeycode = Key.Shift,
 		});
 
-		EnsureActionKeyBinding(RotateCounterClockwiseAction, Key.Q);
-		EnsureActionKeyBinding(RotateClockwiseAction, Key.E);
 		EnsureActionKeyBinding(TrickFlipAction, Key.Key1);
 		EnsureActionKeyBinding(TrickGrabAction, Key.Key2);
 		EnsureActionKeyBinding(TrickAltFlipAction, Key.Key3);
