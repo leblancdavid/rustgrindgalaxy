@@ -36,7 +36,9 @@ public partial class ProcGenTest : Node2D
         _hud.UpdateTileName(GetTileLabelText());
         _tileGenerator.UpdateStreaming();
 
-        if (_player.GlobalPosition.Y > FallRespawnY)
+        var surfaceY = GetSurfaceYAtX(_player.GlobalPosition.X);
+        var threshold = surfaceY < float.MaxValue ? surfaceY + 500f : FallRespawnY;
+        if (_player.GlobalPosition.Y > threshold)
         {
             RespawnPlayer();
         }
@@ -73,8 +75,7 @@ public partial class ProcGenTest : Node2D
 
         foreach (var tile in _tileGenerator.ActiveTiles)
         {
-            var tileX = tile.GlobalPosition.X;
-            if (SpawnPosition.X >= tileX && SpawnPosition.X < tileX + tile.TileWidth)
+            if (SpawnPosition.X >= tile.GetTileLeftX() && SpawnPosition.X < tile.GetTileRightX())
             {
                 var surfaceY = tile.Position.Y + tile.LeftGroundY;
                 return new Vector2(SpawnPosition.X, surfaceY - 30);
@@ -85,10 +86,25 @@ public partial class ProcGenTest : Node2D
         {
             var tile = _tileGenerator.ActiveTiles[0];
             var surfaceY = tile.Position.Y + tile.LeftGroundY;
-            return new Vector2(tile.GlobalPosition.X + 80, surfaceY - 30);
+            return new Vector2(tile.GetTileLeftX() + 80, surfaceY - 30);
         }
 
         return SpawnPosition;
+    }
+
+    private float GetSurfaceYAtX(float worldX)
+    {
+        foreach (var tile in _tileGenerator.ActiveTiles)
+        {
+            if (worldX >= tile.GetTileLeftX() && worldX < tile.GetTileRightX())
+            {
+                var t = (worldX - tile.GetTileLeftX()) / tile.TileWidth;
+                var leftSurface = tile.Position.Y + tile.LeftGroundY;
+                var rightSurface = tile.Position.Y + tile.RightGroundY;
+                return Mathf.Lerp(leftSurface, rightSurface, t);
+            }
+        }
+        return float.MaxValue;
     }
 
     private string GetTileLabelText()
@@ -97,10 +113,12 @@ public partial class ProcGenTest : Node2D
         for (var i = 0; i < _tileGenerator.ActiveTiles.Count; i++)
         {
             var tile = _tileGenerator.ActiveTiles[i];
-            if (px >= tile.GlobalPosition.X && px < tile.GetTileRightX())
+            if (px >= tile.GetTileLeftX() && px < tile.GetTileRightX())
             {
                 var fileName = tile.SceneFilePath.GetFile().GetBaseName();
                 var typeName = fileName.EndsWith("Tile") ? fileName[..^4] : fileName;
+                if (tile.Scale.X < 0)
+                    typeName += " (mirrored)";
                 return $"Tile [{i}/{_tileGenerator.GeneratedTileCount}]: {typeName}";
             }
         }

@@ -52,11 +52,11 @@ public partial class PlayerController : CharacterBody2D
 		{
 			var speedRatio = Mathf.Clamp(Mathf.Abs(_railSpeed) / Mathf.Max(MaxRailSpeed, 1.0f), 0.0f, 1.0f);
 			var visualStrength = Mathf.Lerp(GrindVisualMinimumStrength, 1.0f, speedRatio);
-			float grindDirection = Mathf.Sign(_grindDirection);
+			float grindDirection = Mathf.Sign(Velocity.X);
 
 			if (Mathf.IsZeroApprox(grindDirection))
 			{
-				grindDirection = GetVisualTravelDirection();
+				grindDirection = Mathf.Sign(_grindDirection);
 			}
 
 			_grindBobTime += deltaSeconds * GrindBobSpeed;
@@ -151,7 +151,8 @@ public partial class PlayerController : CharacterBody2D
 
 	private float GetRailBoardAngle(GrindRail rail)
 	{
-		return NormalizeAngle(rail.Angle + _railRotationOffset);
+		var effectiveAngle = rail.Angle * Mathf.Sign(_grindDirection);
+		return NormalizeAngle(effectiveAngle + _railRotationOffset);
 	}
 
 	private float GetTargetRotation()

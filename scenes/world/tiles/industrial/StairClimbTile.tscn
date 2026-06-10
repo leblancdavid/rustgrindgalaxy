@@ -172,7 +172,7 @@ shape = SubResource("1")
 [node name="Rail" parent="." instance=ExtResource("2")]
 position = Vector2(640, 73)
 rotation = -0.108
-Width = 480.0
+Width = 960.0
 BaseSpeed = 200.0
 
 [node name="SpawnMarkers" type="Node2D" parent="."]

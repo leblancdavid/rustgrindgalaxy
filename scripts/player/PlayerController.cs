@@ -4,7 +4,7 @@ using Godot;
 
 public partial class PlayerController : CharacterBody2D
 {
-	[Export] public float MoveSpeed = 150.0f;
+	[Export] public float MoveSpeed = 225.0f;
 	[Export] public float GroundAcceleration = 720.0f;
 	[Export] public float CoastDeceleration = 80.0f;
 	[Export] public float AirAcceleration = 320.0f;

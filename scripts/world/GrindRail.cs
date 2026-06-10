@@ -22,7 +22,7 @@ public partial class GrindRail : Node2D
 
     public float Length => Width;
 
-    public float Angle => Tangent.Angle();
+    public float Angle => Mathf.Atan2(Tangent.Y, Mathf.Abs(Tangent.X));
 
     public override void _Ready()
     {

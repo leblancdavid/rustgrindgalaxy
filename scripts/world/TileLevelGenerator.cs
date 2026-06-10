@@ -6,17 +6,14 @@ public partial class TileLevelGenerator : Node2D
     private const string FlatRunPath = "res://scenes/world/tiles/industrial/FlatRunTile.tscn";
     private const string RampSectionPath = "res://scenes/world/tiles/industrial/RampSectionTile.tscn";
     private const string StairClimbPath = "res://scenes/world/tiles/industrial/StairClimbTile.tscn";
-    private const string DropSectionPath = "res://scenes/world/tiles/industrial/DropSectionTile.tscn";
     private const string HalfPipePath = "res://scenes/world/tiles/industrial/HalfPipeTile.tscn";
     private const string GapJumpPath = "res://scenes/world/tiles/industrial/GapJumpTile.tscn";
     private const string MultiLevelPath = "res://scenes/world/tiles/industrial/MultiLevelTile.tscn";
     private const string HighFlatPath = "res://scenes/world/tiles/industrial/HighFlatTile.tscn";
 
     private const string GentleRisePath = "res://scenes/world/tiles/industrial/GentleRiseTile.tscn";
-    private const string GentleDropPath = "res://scenes/world/tiles/industrial/GentleDropTile.tscn";
     private const string MidFlatPath = "res://scenes/world/tiles/industrial/MidFlatTile.tscn";
     private const string MidRisePath = "res://scenes/world/tiles/industrial/MidRiseTile.tscn";
-    private const string MidDropPath = "res://scenes/world/tiles/industrial/MidDropTile.tscn";
 
     [Export] public int MinLevelTiles = 15;
     [Export] public int TilesAheadOfPlayer = 5;
@@ -121,7 +118,6 @@ public partial class TileLevelGenerator : Node2D
             frontierX = offsetX;
         }
 
-        RemoveTilesBehind(playerX);
     }
 
     public void ClearAllTiles()
@@ -142,11 +138,26 @@ public partial class TileLevelGenerator : Node2D
         var tile = tileScene.Instantiate<LevelTile>();
         AddChild(tile);
 
+        var shouldMirror = _activeTiles.Count > 0 && _rng.Randf() < 0.5f;
+        if (shouldMirror)
+        {
+            tile.Scale = new Vector2(-1, 1);
+
+            var temp = tile.LeftGroundY;
+            tile.LeftGroundY = tile.RightGroundY;
+            tile.RightGroundY = temp;
+
+            var tempRail = tile.LeftRailY;
+            tile.LeftRailY = tile.RightRailY;
+            tile.RightRailY = tempRail;
+        }
+
         var tileY = _activeTiles.Count > 0
             ? _activeTiles[^1].Position.Y + _activeTiles[^1].RightGroundY - tile.LeftGroundY
             : 0f;
 
-        tile.Position = new Vector2(offsetX, tileY);
+        tile.Position = new Vector2(offsetX + (shouldMirror ? tile.TileWidth : 0f), tileY);
+
         _activeTiles.Add(tile);
         GeneratedTileCount++;
         offsetX = tile.GetTileRightX();
@@ -160,18 +171,6 @@ public partial class TileLevelGenerator : Node2D
             var lastTile = _activeTiles[^1];
             var surfaceY = lastTile.Position.Y + lastTile.RightGroundY;
             _extractionZone.Position = new Vector2(offsetX - 20.0f, surfaceY - 84.0f);
-        }
-    }
-
-    private void RemoveTilesBehind(float playerX)
-    {
-        var removeThreshold = playerX - RemoveBehindDistance;
-
-        while (_activeTiles.Count > 2 && _activeTiles[0].GetTileRightX() < removeThreshold)
-        {
-            var oldTile = _activeTiles[0];
-            _activeTiles.RemoveAt(0);
-            oldTile.QueueFree();
         }
     }
 
@@ -204,20 +203,16 @@ public partial class TileLevelGenerator : Node2D
 
     private void LoadTilePool()
     {
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(FlatRunPath), Name = "FlatRun", LeftGroundY = 164, RightGroundY = 164, Weight = 0.08f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(HalfPipePath), Name = "HalfPipe", LeftGroundY = 164, RightGroundY = 164, Weight = 0.12f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(GapJumpPath), Name = "GapJump", LeftGroundY = 164, RightGroundY = 164, Weight = 0.05f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(MultiLevelPath), Name = "MultiLevel", LeftGroundY = 164, RightGroundY = 164, Weight = 0.10f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(RampSectionPath), Name = "RampSection", LeftGroundY = 164, RightGroundY = 60, Weight = 0.16f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(StairClimbPath), Name = "StairClimb", LeftGroundY = 164, RightGroundY = 60, Weight = 0.14f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(DropSectionPath), Name = "DropSection", LeftGroundY = 60, RightGroundY = 164, Weight = 0.08f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(HighFlatPath), Name = "HighFlat", LeftGroundY = 60, RightGroundY = 60, Weight = 0.07f });
-
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(GentleRisePath), Name = "GentleRise", LeftGroundY = 164, RightGroundY = 100, Weight = 0.06f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(GentleDropPath), Name = "GentleDrop", LeftGroundY = 100, RightGroundY = 164, Weight = 0.05f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(MidFlatPath), Name = "MidFlat", LeftGroundY = 100, RightGroundY = 100, Weight = 0.04f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(MidRisePath), Name = "MidRise", LeftGroundY = 100, RightGroundY = 60, Weight = 0.03f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(MidDropPath), Name = "MidDrop", LeftGroundY = 60, RightGroundY = 100, Weight = 0.02f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(FlatRunPath), Name = "FlatRun", LeftGroundY = 164, RightGroundY = 164, Weight = 0.0941f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(HalfPipePath), Name = "HalfPipe", LeftGroundY = 164, RightGroundY = 164, Weight = 0.1412f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(GapJumpPath), Name = "GapJump", LeftGroundY = 164, RightGroundY = 164, Weight = 0.0588f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(MultiLevelPath), Name = "MultiLevel", LeftGroundY = 164, RightGroundY = 164, Weight = 0.1176f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(RampSectionPath), Name = "RampSection", LeftGroundY = 164, RightGroundY = 60, Weight = 0.1882f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(StairClimbPath), Name = "StairClimb", LeftGroundY = 164, RightGroundY = 60, Weight = 0.1647f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(HighFlatPath), Name = "HighFlat", LeftGroundY = 60, RightGroundY = 60, Weight = 0.0824f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(GentleRisePath), Name = "GentleRise", LeftGroundY = 164, RightGroundY = 100, Weight = 0.0706f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(MidFlatPath), Name = "MidFlat", LeftGroundY = 100, RightGroundY = 100, Weight = 0.0471f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(MidRisePath), Name = "MidRise", LeftGroundY = 100, RightGroundY = 60, Weight = 0.0353f });
     }
 
     public void CollectRails(List<GrindRail> rails)

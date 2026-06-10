@@ -18,8 +18,13 @@ public partial class LevelTile : Node2D
         return new LevelTileConnector { GroundY = RightGroundY, RailY = RightRailY };
     }
 
+    public float GetTileLeftX()
+    {
+        return Scale.X < 0 ? Position.X - TileWidth : Position.X;
+    }
+
     public float GetTileRightX()
     {
-        return Position.X + TileWidth;
+        return Scale.X < 0 ? Position.X : Position.X + TileWidth;
     }
 }

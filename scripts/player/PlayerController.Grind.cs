@@ -48,13 +48,15 @@ public partial class PlayerController : CharacterBody2D
 
 		_railArmorTimeRemaining = Mathf.Max(_railArmorTimeRemaining, _resolvedEffects.RailEntryArmorSeconds);
 		_railProgress = Mathf.Clamp(railProgress, 0.0f, 1.0f);
-		_railRotationOffset = GetAngleDifference(rail.Angle, GetBoardAngle());
 		var tangentSpeed = Velocity.Dot(rail.Tangent);
 
 		if (!Mathf.IsZeroApprox(tangentSpeed))
 		{
 			_grindDirection = Mathf.Sign(tangentSpeed);
 		}
+
+		var grindSign = Mathf.Sign(_grindDirection);
+		_railRotationOffset = GetAngleDifference(rail.Angle * grindSign, GetBoardAngle());
 
 		_railSpeed = Mathf.Abs(tangentSpeed);
 

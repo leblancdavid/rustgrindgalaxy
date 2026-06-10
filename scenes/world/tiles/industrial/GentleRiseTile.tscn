@@ -63,7 +63,7 @@ polygon = PackedVector2Array(320, 164, 960, 100, 960, 180, 320, 180)
 [node name="Rail" parent="." instance=ExtResource("2")]
 position = Vector2(640, 92)
 rotation = -0.0997
-Width = 480.0
+Width = 640.0
 BaseSpeed = 220.0
 
 [node name="SpawnMarkers" type="Node2D" parent="."]
