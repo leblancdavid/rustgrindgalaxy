@@ -127,6 +127,14 @@ public partial class PlayerController : CharacterBody2D
 		if (_railProgress <= 0.0f || _railProgress >= 1.0f)
 		{
 			_railProgress = Mathf.Clamp(_railProgress, 0.0f, 1.0f);
+
+			if (TryFindConnectingRail(rail, _grindDirection, out var nextRail, out var nextProgress))
+			{
+				EnterRail(nextRail, _grindDirection, nextProgress);
+				HandleGrinding(ref velocity, inputDirection, deltaSeconds, gravity);
+				return;
+			}
+
 			var boardRotation = GetRailBoardAngle(rail);
 			var boardOffset = _boardContact.Position.Rotated(boardRotation);
 			GlobalPosition = rail.GetPointAtProgress(_railProgress) - boardOffset;
@@ -237,6 +245,32 @@ public partial class PlayerController : CharacterBody2D
 		}
 
 		return 1.0f;
+	}
+
+	private bool TryFindConnectingRail(GrindRail current, float direction, out GrindRail? nextRail, out float nextProgress)
+	{
+		nextRail = null;
+		nextProgress = 0.0f;
+
+		var searchPoint = direction > 0 ? current.EndPoint : current.StartPoint;
+
+		foreach (var node in GetTree().GetNodesInGroup(GrindRail.RailGroupName))
+		{
+			if (node is not GrindRail candidate || candidate == current)
+				continue;
+
+			if (candidate.TryGetSnapProgress(searchPoint, out nextProgress))
+			{
+				var angleDiff = Mathf.Abs(current.Tangent.AngleTo(candidate.Tangent));
+				if (angleDiff > Mathf.DegToRad(90.0f))
+					continue;
+
+				nextRail = candidate;
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	private Vector2 GetRailContactPoint()
