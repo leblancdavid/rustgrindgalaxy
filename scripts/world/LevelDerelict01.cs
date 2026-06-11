@@ -180,8 +180,9 @@ public partial class LevelDerelict01 : MissionLevel
 
                 var template = PickPropTemplate(palette, rng);
                 var prop = new Prop();
+                prop.Layer = template.Layer;
                 prop.Initialize(template.Width, template.Height, template.Color, template.IsLighting, template.Layer, template.GlowYOffset, template.GlowScaleX, template.GlowScaleY);
-                var baseSink = 3f;
+                var baseSink = 5f;
                 var fgExtra = template.Layer == Prop.PropLayer.Foreground ? 9f : 0f;
                 var groundOffset = baseSink + fgExtra;
                 prop.Position = new Vector2(localX, seg.StartY - template.Height / 2f + groundOffset);

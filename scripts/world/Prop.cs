@@ -2,6 +2,8 @@ using Godot;
 
 public partial class Prop : Node2D
 {
+    private const bool DebugLabels = false;
+
     public enum PropLayer { Background, Default, Foreground }
 
     [Export] public float PropWidth = 16.0f;
@@ -15,10 +17,13 @@ public partial class Prop : Node2D
 
     private Polygon2D _visual;
     private Polygon2D _glow;
+    private Label _debugLabel;
 
     public override void _Ready()
     {
-        CreateVisual();
+        ZIndex = Layer switch { PropLayer.Background => -2, PropLayer.Foreground => 4, _ => 0 };
+        if (_visual == null)
+            CreateVisual();
     }
 
     public void Initialize(float width, float height, Color color, bool lighting, PropLayer layer = PropLayer.Default, float glowYOffset = 0f, float glowScaleX = 0f, float glowScaleY = 0f)
@@ -32,6 +37,8 @@ public partial class Prop : Node2D
         GlowScaleX = glowScaleX;
         GlowScaleY = glowScaleY;
 
+        ZIndex = Layer switch { PropLayer.Background => -2, PropLayer.Foreground => 4, _ => 0 };
+
         if (_visual == null)
             CreateVisual();
         else
@@ -42,13 +49,6 @@ public partial class Prop : Node2D
 
     private void CreateVisual()
     {
-        ZIndex = Layer switch
-        {
-            PropLayer.Background => -2,
-            PropLayer.Foreground => 4,
-            _ => 0,
-        };
-
         _visual = new Polygon2D();
         BuildRectPolygon(_visual, PropWidth, PropHeight);
         _visual.Color = PropColor;
@@ -63,19 +63,38 @@ public partial class Prop : Node2D
             _glow.Position = new Vector2(0, GlowYOffset);
             AddChild(_glow);
         }
+
+        if (DebugLabels)
+            CreateDebugLabel();
+    }
+
+    private void CreateDebugLabel()
+    {
+        _debugLabel = new Label();
+        _debugLabel.Text = GetDebugLabelText();
+        _debugLabel.Position = new Vector2(-8, -PropHeight / 2f - 14);
+        _debugLabel.Size = new Vector2(16, 12);
+        _debugLabel.Modulate = Colors.Yellow;
+        _debugLabel.ZIndex = int.MaxValue;
+        AddChild(_debugLabel);
+    }
+
+    private string GetDebugLabelText()
+    {
+        var layerChar = Layer switch { PropLayer.Background => "B", PropLayer.Foreground => "F", _ => "D" };
+        return $"{layerChar}({ZIndex})";
     }
 
     private void UpdateVisual()
     {
-        ZIndex = Layer switch
-        {
-            PropLayer.Background => -2,
-            PropLayer.Foreground => 4,
-            _ => 0,
-        };
-
         BuildRectPolygon(_visual, PropWidth, PropHeight);
         _visual.Color = PropColor;
+
+        if (DebugLabels && _debugLabel != null)
+        {
+            _debugLabel.Text = GetDebugLabelText();
+            _debugLabel.Position = new Vector2(-8, -PropHeight / 2f - 14);
+        }
 
         if (IsLighting)
         {

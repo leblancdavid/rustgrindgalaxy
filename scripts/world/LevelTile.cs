@@ -50,19 +50,18 @@ public partial class LevelTile : Node2D
             var floorY = Mathf.Lerp(segment.Value.StartY, segment.Value.EndY, t);
 
             var template = PickPropTemplate(palette, rng);
-            var prop = new Node2D();
             var visual = new Prop();
-            prop.AddChild(visual);
-            AddChild(prop);
+            visual.Layer = template.Layer;
+            AddChild(visual);
             visual.Initialize(template.Width, template.Height, template.Color, template.IsLighting, template.Layer, template.GlowYOffset, template.GlowScaleX, template.GlowScaleY);
-            var baseSink = 3f;
+            var baseSink = 5f;
             var slope = segment.Value.EndX != segment.Value.StartX
                 ? Mathf.Abs((segment.Value.EndY - segment.Value.StartY) / (segment.Value.EndX - segment.Value.StartX))
                 : 0f;
             var rampSink = slope * template.Width * 0.5f;
             var fgExtra = template.Layer == Prop.PropLayer.Foreground ? 9f : 0f;
             var groundOffset = baseSink + rampSink + fgExtra;
-            prop.Position = new Vector2(localX, floorY - template.Height / 2f + groundOffset);
+            visual.Position = new Vector2(localX, floorY - template.Height / 2f + groundOffset);
         }
     }
 
@@ -144,9 +143,17 @@ public partial class LevelTile : Node2D
             new FloorSegment(1120, 1280, 60, 60),
         },
         ["HighFlat"] = new[] { new FloorSegment(0, 1280, 60, 60) },
-        ["GentleRise"] = new[] { new FloorSegment(0, 1280, 164, 100) },
+        ["GentleRise"] = new[] {
+            new FloorSegment(0, 320, 164, 164),
+            new FloorSegment(320, 960, 164, 100),
+            new FloorSegment(960, 1280, 100, 100),
+        },
         ["MidFlat"] = new[] { new FloorSegment(0, 1280, 100, 100) },
-        ["MidRise"] = new[] { new FloorSegment(0, 1280, 100, 60) },
+        ["MidRise"] = new[] {
+            new FloorSegment(0, 320, 100, 100),
+            new FloorSegment(320, 960, 100, 60),
+            new FloorSegment(960, 1280, 60, 60),
+        },
     };
 
 }
