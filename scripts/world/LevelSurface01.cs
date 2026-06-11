@@ -100,6 +100,7 @@ public partial class LevelSurface01 : MissionLevel
         SpawnEnemies(rng, mission.EnemyDensity);
         SpawnPickups(rng, mission.PickupDensity, mission.PrimaryMineral, mission.SecondaryMineral);
         SpawnHazards(rng, mission.HazardDensity, mission.PaletteKey);
+        SpawnLevelProps(rng);
     }
 
     private void SpawnEnemies(RandomNumberGenerator rng, float enemyDensity)
@@ -150,6 +151,55 @@ public partial class LevelSurface01 : MissionLevel
             hazard.GlobalPosition = marker.GlobalPosition;
             hazard.SetTheme(paletteKey);
         }
+    }
+
+    public override void SpawnLevelProps(RandomNumberGenerator rng)
+    {
+        var palette = PropPalettes.Surface;
+        var segments = new[]
+        {
+            new FloorSegment(0, 320, 156, 156),
+            new FloorSegment(49, 107, 129, 129),
+            new FloorSegment(144, 196, 103, 103),
+            new FloorSegment(231, 277, 79, 79),
+        };
+
+        foreach (var seg in segments)
+        {
+            var count = rng.RandiRange(1, 3);
+            for (var i = 0; i < count; i++)
+            {
+                var localX = rng.RandfRange(seg.StartX + 8, seg.EndX - 8);
+                if (seg.EndX - seg.StartX <= 16)
+                    continue;
+
+                var template = PickPropTemplate(palette, rng);
+                var prop = new Prop();
+                prop.Initialize(template.Width, template.Height, template.Color, template.IsLighting, template.Layer, template.GlowYOffset, template.GlowScaleX, template.GlowScaleY);
+                var baseSink = 3f;
+                var fgExtra = template.Layer == Prop.PropLayer.Foreground ? 9f : 0f;
+                var groundOffset = baseSink + fgExtra;
+                prop.Position = new Vector2(localX, seg.StartY - template.Height / 2f + groundOffset);
+                _spawnedActors.AddChild(prop);
+            }
+        }
+    }
+
+    private static PropTemplate PickPropTemplate(List<PropTemplate> palette, RandomNumberGenerator rng)
+    {
+        var totalWeight = 0.0f;
+        foreach (var t in palette)
+            totalWeight += t.Weight;
+
+        var roll = rng.Randf() * totalWeight;
+        foreach (var t in palette)
+        {
+            roll -= t.Weight;
+            if (roll <= 0)
+                return t;
+        }
+
+        return palette[^1];
     }
 
     private static List<Marker2D> PickMarkers(List<Marker2D> markers, int count, RandomNumberGenerator rng)

@@ -53,7 +53,7 @@ public partial class TileLevelIndustrial : MissionLevel
         ApplyPalette(mission.PaletteKey);
 
         var player = GetTree().Root.GetNodeOrNull<PlayerController>("World/Player");
-        _tileGenerator.Initialize(player!, mission.RunSeed ^ 0x51F15EED);
+        _tileGenerator.Initialize(player!, this, mission.RunSeed ^ 0x51F15EED);
         _tileGenerator.SetExtractionZone(GetExtractionZone());
         _tileGenerator.BuildInitial();
 

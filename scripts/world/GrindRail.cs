@@ -30,6 +30,7 @@ public partial class GrindRail : Node2D
         _area = GetNode<Area2D>("Area2D");
         _collisionShape = _area.GetNode<CollisionShape2D>("CollisionShape2D");
         _line = GetNode<Line2D>("Line2D");
+        _line.ZIndex = 1;
 
         UpdateVisuals();
         _area.BodyEntered += OnBodyEntered;

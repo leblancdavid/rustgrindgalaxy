@@ -22,6 +22,7 @@ public partial class TileLevelGenerator : Node2D
     private const float TileW = 1280.0f;
 
     private PlayerController _player = null!;
+    private MissionLevel _missionLevel = null!;
     private RandomNumberGenerator _rng = new();
     private readonly List<LevelTile> _activeTiles = new();
     private readonly List<TileEntry> _tilePool = new();
@@ -41,11 +42,13 @@ public partial class TileLevelGenerator : Node2D
         public float LeftGroundY;
         public float RightGroundY;
         public float Weight;
+        public FloorSegment[] FloorSegments;
     }
 
-    public void Initialize(PlayerController player, long seed)
+    public void Initialize(PlayerController player, MissionLevel level, long seed)
     {
         _player = player;
+        _missionLevel = level;
         _rng = new RandomNumberGenerator { Seed = (ulong)seed };
         LoadTilePool();
     }
@@ -69,13 +72,13 @@ public partial class TileLevelGenerator : Node2D
         }
 
         var offsetX = worldOffsetX;
-        AppendAndPlaceTile(PickStartTile(), ref offsetX);
+        AppendAndPlaceTile(PickStartEntry(), ref offsetX);
 
         for (var i = 0; i < TilesAheadOfPlayer; i++)
         {
-            var nextTile = PickNextTile();
-            if (nextTile != null)
-                AppendAndPlaceTile(nextTile, ref offsetX);
+            var nextEntry = PickNextEntry();
+            if (nextEntry != null)
+                AppendAndPlaceTile(nextEntry.Value, ref offsetX);
         }
     }
 
@@ -95,8 +98,8 @@ public partial class TileLevelGenerator : Node2D
                 ? _activeTiles[^1].GetTileRightX()
                 : 0.0f;
 
-            var nextTile = PickNextTile();
-            if (nextTile == null)
+            var nextEntry = PickNextEntry();
+            if (nextEntry == null)
             {
                 _levelComplete = true;
                 break;
@@ -104,17 +107,14 @@ public partial class TileLevelGenerator : Node2D
 
             if (GeneratedTileCount >= MinLevelTiles)
             {
-                var cappedTile = PickEndCapTile();
-                if (cappedTile != null)
-                {
-                    AppendAndPlaceTile(cappedTile, ref offsetX);
-                    PlaceExtractionZone(offsetX);
-                }
+                var cappedEntry = PickEndCapEntry();
+                AppendAndPlaceTile(cappedEntry, ref offsetX);
+                PlaceExtractionZone(offsetX);
                 _levelComplete = true;
                 break;
             }
 
-            AppendAndPlaceTile(nextTile, ref offsetX);
+            AppendAndPlaceTile(nextEntry.Value, ref offsetX);
             frontierX = offsetX;
         }
 
@@ -133,10 +133,12 @@ public partial class TileLevelGenerator : Node2D
         _started = false;
     }
 
-    private void AppendAndPlaceTile(PackedScene tileScene, ref float offsetX)
+    private void AppendAndPlaceTile(TileEntry entry, ref float offsetX)
     {
-        var tile = tileScene.Instantiate<LevelTile>();
+        var tile = entry.Scene.Instantiate<LevelTile>();
         AddChild(tile);
+
+        tile.FloorSegments = LevelTile.GetDefaultFloorSegments(entry.Name);
 
         var shouldMirror = _activeTiles.Count > 0 && _rng.Randf() < 0.5f;
         if (shouldMirror)
@@ -158,6 +160,7 @@ public partial class TileLevelGenerator : Node2D
 
         tile.Position = new Vector2(offsetX + (shouldMirror ? tile.TileWidth : 0f), tileY);
 
+        tile.SpawnFloorProps(_rng, _missionLevel?.GetPropPalette() ?? PropPalettes.Industrial);
         _activeTiles.Add(tile);
         GeneratedTileCount++;
         offsetX = tile.GetTileRightX();
@@ -174,17 +177,17 @@ public partial class TileLevelGenerator : Node2D
         }
     }
 
-    private PackedScene PickStartTile()
+    private TileEntry PickStartEntry()
     {
-        return GD.Load<PackedScene>(FlatRunPath);
+        return _tilePool[0];
     }
 
-    private PackedScene PickEndCapTile()
+    private TileEntry PickEndCapEntry()
     {
-        return GD.Load<PackedScene>(FlatRunPath);
+        return _tilePool[0];
     }
 
-    private PackedScene PickNextTile()
+    private TileEntry? PickNextEntry()
     {
         var totalWeight = 0.0f;
         foreach (var entry in _tilePool)
@@ -195,10 +198,10 @@ public partial class TileLevelGenerator : Node2D
         {
             roll -= entry.Weight;
             if (roll <= 0.0f)
-                return entry.Scene;
+                return entry;
         }
 
-        return _tilePool[^1].Scene;
+        return _tilePool[^1];
     }
 
     private void LoadTilePool()
