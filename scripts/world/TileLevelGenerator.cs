@@ -161,6 +161,7 @@ public partial class TileLevelGenerator : Node2D
         tile.Position = new Vector2(offsetX + (shouldMirror ? tile.TileWidth : 0f), tileY);
 
         tile.SpawnFloorProps(_rng, _missionLevel?.GetPropPalette() ?? PropPalettes.Industrial);
+        tile.SpawnRailSupports();
         _activeTiles.Add(tile);
         GeneratedTileCount++;
         offsetX = tile.GetTileRightX();

@@ -86,6 +86,57 @@ public partial class LevelTile : Node2D
         return segments[^1];
     }
 
+    private static readonly Color RailSupportColor = new Color(0.35f, 0.35f, 0.38f);
+    private const float RailSupportWidth = 6.0f;
+
+    public void SpawnRailSupports()
+    {
+        foreach (var child in GetChildren())
+        {
+            if (child is not GrindRail rail)
+                continue;
+
+            SpawnSupportAt(rail.StartPoint);
+            SpawnSupportAt(rail.EndPoint);
+        }
+    }
+
+    private void SpawnSupportAt(Vector2 globalPoint)
+    {
+        var localPoint = ToLocal(globalPoint);
+        var groundY = GetGroundYAt(localPoint.X);
+        if (groundY < 0f)
+            return;
+
+        var height = groundY - localPoint.Y;
+        if (height <= 1f)
+            return;
+
+        var midY = (localPoint.Y + groundY) * 0.5f;
+        var support = new Prop();
+        support.Initialize(RailSupportWidth, height, RailSupportColor, false);
+        support.ZIndex = -1;
+        support.Position = new Vector2(localPoint.X, midY);
+        AddChild(support);
+    }
+
+    private float GetGroundYAt(float localX)
+    {
+        if (FloorSegments == null || FloorSegments.Length == 0)
+            return -1f;
+
+        foreach (var seg in FloorSegments)
+        {
+            if (localX >= seg.StartX && localX <= seg.EndX)
+            {
+                var t = Mathf.InverseLerp(seg.StartX, seg.EndX, localX);
+                return Mathf.Lerp(seg.StartY, seg.EndY, t);
+            }
+        }
+
+        return -1f;
+    }
+
     private static PropTemplate PickPropTemplate(List<PropTemplate> palette, RandomNumberGenerator rng)
     {
         var totalWeight = 0.0f;
