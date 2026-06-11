@@ -4,9 +4,9 @@
 [ext_resource type="PackedScene" path="res://scenes/world/GrindRail.tscn" id="2"]
 
 [sub_resource type="RectangleShape2D" id="1"]
-size = Vector2(1280, 236)
+size = Vector2(1280, 16)
 
-[node name="FlatRunTile" type="Node2D"]
+[node name="CatwalkFlatRunTile" type="Node2D"]
 script = ExtResource("1")
 TileWidth = 1280
 LeftGroundY = 164.0
@@ -15,7 +15,7 @@ RightGroundY = 164.0
 RightRailY = 108.0
 
 [node name="GroundVisual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(0, 164, 1280, 164, 1280, 400, 0, 400)
+polygon = PackedVector2Array(0, 164, 1280, 164, 1280, 180, 0, 180)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
 [node name="GroundTrim" type="Polygon2D" parent="."]
@@ -23,7 +23,7 @@ polygon = PackedVector2Array(0, 164, 1280, 164, 1280, 167, 0, 167)
 color = Color(0.964706, 0.694118, 0.219608, 1)
 
 [node name="Ground" type="StaticBody2D" parent="."]
-position = Vector2(640, 282)
+position = Vector2(640, 172)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
 shape = SubResource("1")

@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" path="res://scenes/world/GrindRail.tscn" id="2"]
 
 [sub_resource type="RectangleShape2D" id="1"]
-size = Vector2(1280, 120)
+size = Vector2(1280, 340)
 
 [node name="HighFlatTile" type="Node2D"]
 script = ExtResource("1")
@@ -15,7 +15,7 @@ RightGroundY = 60.0
 RightRailY = 30.0
 
 [node name="GroundVisual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(0, 60, 1280, 60, 1280, 180, 0, 180)
+polygon = PackedVector2Array(0, 60, 1280, 60, 1280, 400, 0, 400)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
 [node name="GroundTrim" type="Polygon2D" parent="."]
@@ -24,7 +24,7 @@ color = Color(0.909804, 0.772549, 0.345098, 1)
 
 
 [node name="Ground" type="StaticBody2D" parent="."]
-position = Vector2(640, 120)
+position = Vector2(640, 230)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
 shape = SubResource("1")

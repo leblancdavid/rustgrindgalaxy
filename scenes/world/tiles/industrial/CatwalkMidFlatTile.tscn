@@ -4,34 +4,32 @@
 [ext_resource type="PackedScene" path="res://scenes/world/GrindRail.tscn" id="2"]
 
 [sub_resource type="RectangleShape2D" id="1"]
-size = Vector2(1280, 236)
+size = Vector2(1280, 80)
 
-[node name="FlatRunTile" type="Node2D"]
+[node name="CatwalkMidFlatTile" type="Node2D"]
 script = ExtResource("1")
 TileWidth = 1280
-LeftGroundY = 164.0
-LeftRailY = 108.0
-RightGroundY = 164.0
-RightRailY = 108.0
+LeftGroundY = 100.0
+RightGroundY = 100.0
 
 [node name="GroundVisual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(0, 164, 1280, 164, 1280, 400, 0, 400)
+polygon = PackedVector2Array(0, 100, 1280, 100, 1280, 180, 0, 180)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
 [node name="GroundTrim" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(0, 164, 1280, 164, 1280, 167, 0, 167)
+polygon = PackedVector2Array(0, 100, 1280, 100, 1280, 103, 0, 103)
 color = Color(0.964706, 0.694118, 0.219608, 1)
 
 [node name="Ground" type="StaticBody2D" parent="."]
-position = Vector2(640, 282)
+position = Vector2(640, 140)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
 shape = SubResource("1")
 
 [node name="Rail" parent="." instance=ExtResource("2")]
-position = Vector2(640, 108)
+position = Vector2(640, 70)
 Width = 480.0
-BaseSpeed = 200.0
+BaseSpeed = 210.0
 
 [node name="SpawnMarkers" type="Node2D" parent="."]
 

@@ -4,19 +4,19 @@
 [ext_resource type="PackedScene" path="res://scenes/world/GrindRail.tscn" id="2"]
 
 [sub_resource type="RectangleShape2D" id="1"]
-size = Vector2(352, 236)
+size = Vector2(352, 16)
 
 [sub_resource type="RectangleShape2D" id="2"]
-size = Vector2(320, 340)
+size = Vector2(320, 120)
 
-[node name="RampSectionTile" type="Node2D"]
+[node name="CatwalkRampSectionTile" type="Node2D"]
 script = ExtResource("1")
 TileWidth = 1280
 LeftGroundY = 164.0
 RightGroundY = 60.0
 
 [node name="FlatVisual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(0, 164, 320, 164, 320, 400, 0, 400)
+polygon = PackedVector2Array(0, 164, 320, 164, 320, 180, 0, 180)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
 [node name="FlatTrim" type="Polygon2D" parent="."]
@@ -24,7 +24,7 @@ polygon = PackedVector2Array(0, 164, 320, 164, 320, 167, 0, 167)
 color = Color(0.964706, 0.694118, 0.219608, 1)
 
 [node name="RampVisual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(320, 164, 960, 60, 960, 400, 320, 400)
+polygon = PackedVector2Array(320, 164, 960, 60, 960, 180, 320, 180)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
 [node name="RampTrim" type="Polygon2D" parent="."]
@@ -36,7 +36,7 @@ polygon = PackedVector2Array(320, 164, 322, 164, 322, 180, 320, 180)
 color = Color(0.388235, 0.411765, 0.462745, 1)
 
 [node name="LandingVisual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(960, 60, 1280, 60, 1280, 400, 960, 400)
+polygon = PackedVector2Array(960, 60, 1280, 60, 1280, 180, 960, 180)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
 [node name="LandingTrim" type="Polygon2D" parent="."]
@@ -44,13 +44,13 @@ polygon = PackedVector2Array(960, 60, 1280, 60, 1280, 63, 960, 63)
 color = Color(0.964706, 0.694118, 0.219608, 1)
 
 [node name="FlatGround" type="StaticBody2D" parent="."]
-position = Vector2(160, 282)
+position = Vector2(160, 172)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="FlatGround"]
 shape = SubResource("1")
 
 [node name="LandingGround" type="StaticBody2D" parent="."]
-position = Vector2(1120, 230)
+position = Vector2(1120, 120)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="LandingGround"]
 shape = SubResource("2")
@@ -58,7 +58,7 @@ shape = SubResource("2")
 [node name="RampBody" type="StaticBody2D" parent="."]
 
 [node name="RampCollision" type="CollisionPolygon2D" parent="RampBody"]
-polygon = PackedVector2Array(320, 164, 960, 60, 960, 400, 320, 400)
+polygon = PackedVector2Array(320, 164, 960, 60, 960, 180, 320, 180)
 
 [node name="Rail" parent="." instance=ExtResource("2")]
 position = Vector2(640, 72)

@@ -3,19 +3,19 @@
 [ext_resource type="Script" path="res://scripts/world/LevelTile.cs" id="1"]
 
 [sub_resource type="RectangleShape2D" id="1"]
-size = Vector2(560, 236)
+size = Vector2(560, 16)
 
 [sub_resource type="RectangleShape2D" id="2"]
-size = Vector2(560, 236)
+size = Vector2(560, 16)
 
-[node name="GapJumpTile" type="Node2D"]
+[node name="CatwalkGapJumpTile" type="Node2D"]
 script = ExtResource("1")
 TileWidth = 1280
 LeftGroundY = 164.0
 RightGroundY = 164.0
 
 [node name="LeftPlatformVisual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(0, 164, 560, 164, 560, 400, 0, 400)
+polygon = PackedVector2Array(0, 164, 560, 164, 560, 180, 0, 180)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
 [node name="LeftTrim" type="Polygon2D" parent="."]
@@ -23,11 +23,11 @@ polygon = PackedVector2Array(0, 164, 560, 164, 560, 167, 0, 167)
 color = Color(0.964706, 0.694118, 0.219608, 1)
 
 [node name="LeftEdgeRise" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(560, 164, 562, 164, 562, 400, 560, 400)
+polygon = PackedVector2Array(560, 164, 562, 164, 562, 180, 560, 180)
 color = Color(0.388235, 0.411765, 0.462745, 1)
 
 [node name="RightPlatformVisual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(720, 164, 1280, 164, 1280, 400, 720, 400)
+polygon = PackedVector2Array(720, 164, 1280, 164, 1280, 180, 720, 180)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
 [node name="RightTrim" type="Polygon2D" parent="."]
@@ -35,17 +35,17 @@ polygon = PackedVector2Array(720, 164, 1280, 164, 1280, 167, 720, 167)
 color = Color(0.964706, 0.694118, 0.219608, 1)
 
 [node name="RightEdgeRise" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(720, 164, 722, 164, 722, 400, 720, 400)
+polygon = PackedVector2Array(720, 164, 722, 164, 722, 180, 720, 180)
 color = Color(0.388235, 0.411765, 0.462745, 1)
 
 [node name="LeftGround" type="StaticBody2D" parent="."]
-position = Vector2(280, 282)
+position = Vector2(280, 172)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="LeftGround"]
 shape = SubResource("1")
 
 [node name="RightGround" type="StaticBody2D" parent="."]
-position = Vector2(1000, 282)
+position = Vector2(1000, 172)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="RightGround"]
 shape = SubResource("2")

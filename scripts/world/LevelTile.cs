@@ -59,7 +59,7 @@ public partial class LevelTile : Node2D
                 ? Mathf.Abs((segment.Value.EndY - segment.Value.StartY) / (segment.Value.EndX - segment.Value.StartX))
                 : 0f;
             var rampSink = slope * template.Width * 0.5f;
-            var fgExtra = template.Layer == Prop.PropLayer.Foreground ? 9f : 0f;
+            var fgExtra = template.Layer == Prop.PropLayer.Foreground ? 3f : 0f;
             var groundOffset = baseSink + rampSink + fgExtra;
             visual.Position = new Vector2(localX, floorY - template.Height / 2f + groundOffset);
         }
@@ -115,7 +115,6 @@ public partial class LevelTile : Node2D
         var midY = (localPoint.Y + groundY) * 0.5f;
         var support = new Prop();
         support.Initialize(RailSupportWidth, height, RailSupportColor, false);
-        support.ZIndex = -1;
         support.Position = new Vector2(localPoint.X, midY);
         AddChild(support);
     }
@@ -170,8 +169,8 @@ public partial class LevelTile : Node2D
             new FloorSegment(960, 1280, 164, 164),
         },
         ["GapJump"] = new[] {
-            new FloorSegment(0, 320, 164, 164),
-            new FloorSegment(960, 1280, 164, 164),
+            new FloorSegment(0, 560, 164, 164),
+            new FloorSegment(720, 1280, 164, 164),
         },
         ["MultiLevel"] = new[] {
             new FloorSegment(0, 320, 164, 164),

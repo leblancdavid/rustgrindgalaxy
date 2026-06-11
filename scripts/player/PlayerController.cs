@@ -185,11 +185,6 @@ public partial class PlayerController : CharacterBody2D
 		{
 			_nearbyRail = null;
 		}
-
-		if (_activeRail == rail)
-		{
-			ExitRail();
-		}
 	}
 
 	public override void _PhysicsProcess(double delta)

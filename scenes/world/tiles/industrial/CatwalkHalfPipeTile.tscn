@@ -4,25 +4,25 @@
 [ext_resource type="PackedScene" path="res://scenes/world/GrindRail.tscn" id="2"]
 
 [sub_resource type="RectangleShape2D" id="1"]
-size = Vector2(320, 236)
+size = Vector2(320, 16)
 
 [sub_resource type="RectangleShape2D" id="2"]
-size = Vector2(320, 236)
+size = Vector2(320, 16)
 
 [sub_resource type="RectangleShape2D" id="3"]
-size = Vector2(640, 216)
+size = Vector2(640, 16)
 
 [sub_resource type="RectangleShape2D" id="4"]
 size = Vector2(320, 10)
 
-[node name="HalfPipeTile" type="Node2D"]
+[node name="CatwalkHalfPipeTile" type="Node2D"]
 script = ExtResource("1")
 TileWidth = 1280
 LeftGroundY = 164.0
 RightGroundY = 164.0
 
 [node name="LeftFlatVisual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(0, 164, 320, 164, 320, 400, 0, 400)
+polygon = PackedVector2Array(0, 164, 320, 164, 320, 180, 0, 180)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
 [node name="LeftFlatTrim" type="Polygon2D" parent="."]
@@ -30,7 +30,7 @@ polygon = PackedVector2Array(0, 164, 320, 164, 320, 167, 0, 167)
 color = Color(0.964706, 0.694118, 0.219608, 1)
 
 [node name="LeftSlopeVisual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(320, 164, 480, 184, 480, 400, 320, 400)
+polygon = PackedVector2Array(320, 164, 480, 184, 480, 200, 320, 180)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
 [node name="LeftSlopeTrim" type="Polygon2D" parent="."]
@@ -38,7 +38,7 @@ polygon = PackedVector2Array(320, 164, 480, 184, 480, 187, 320, 167)
 color = Color(0.964706, 0.694118, 0.219608, 1)
 
 [node name="BottomVisual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(480, 184, 800, 184, 800, 400, 480, 400)
+polygon = PackedVector2Array(480, 184, 800, 184, 800, 200, 480, 200)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
 [node name="BottomTrim" type="Polygon2D" parent="."]
@@ -46,7 +46,7 @@ polygon = PackedVector2Array(480, 184, 800, 184, 800, 187, 480, 187)
 color = Color(0.964706, 0.694118, 0.219608, 1)
 
 [node name="RightSlopeVisual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(800, 184, 960, 164, 960, 400, 800, 400)
+polygon = PackedVector2Array(800, 184, 960, 164, 960, 180, 800, 200)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
 [node name="RightSlopeTrim" type="Polygon2D" parent="."]
@@ -54,7 +54,7 @@ polygon = PackedVector2Array(800, 187, 960, 167, 960, 164, 800, 184)
 color = Color(0.964706, 0.694118, 0.219608, 1)
 
 [node name="RightFlatVisual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(960, 164, 1280, 164, 1280, 400, 960, 400)
+polygon = PackedVector2Array(960, 164, 1280, 164, 1280, 180, 960, 180)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
 [node name="RightFlatTrim" type="Polygon2D" parent="."]
@@ -62,19 +62,19 @@ polygon = PackedVector2Array(960, 164, 1280, 164, 1280, 167, 960, 167)
 color = Color(0.964706, 0.694118, 0.219608, 1)
 
 [node name="LeftFlat" type="StaticBody2D" parent="."]
-position = Vector2(160, 282)
+position = Vector2(160, 172)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="LeftFlat"]
 shape = SubResource("1")
 
 [node name="RightFlat" type="StaticBody2D" parent="."]
-position = Vector2(1120, 282)
+position = Vector2(1120, 172)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="RightFlat"]
 shape = SubResource("2")
 
 [node name="BottomFlat" type="StaticBody2D" parent="."]
-position = Vector2(640, 292)
+position = Vector2(640, 192)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="BottomFlat"]
 shape = SubResource("3")
@@ -82,10 +82,10 @@ shape = SubResource("3")
 [node name="SlopeBody" type="StaticBody2D" parent="."]
 
 [node name="LeftSlopeCollision" type="CollisionPolygon2D" parent="SlopeBody"]
-polygon = PackedVector2Array(320, 164, 480, 184, 480, 400, 320, 400)
+polygon = PackedVector2Array(320, 164, 480, 184, 480, 200, 320, 180)
 
 [node name="RightSlopeCollision" type="CollisionPolygon2D" parent="SlopeBody"]
-polygon = PackedVector2Array(800, 184, 960, 164, 960, 400, 800, 400)
+polygon = PackedVector2Array(800, 184, 960, 164, 960, 180, 800, 200)
 
 [node name="Rail" parent="." instance=ExtResource("2")]
 position = Vector2(640, 150)
