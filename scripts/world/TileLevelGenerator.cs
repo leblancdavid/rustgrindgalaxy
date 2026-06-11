@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 public partial class TileLevelGenerator : Node2D
 {
+    private const string BeaconScenePath = "res://scenes/world/RespawnBeacon.tscn";
     private const string FlatRunPath = "res://scenes/world/tiles/industrial/FlatRunTile.tscn";
     private const string RampSectionPath = "res://scenes/world/tiles/industrial/RampSectionTile.tscn";
     private const string StairClimbPath = "res://scenes/world/tiles/industrial/StairClimbTile.tscn";
@@ -29,12 +30,14 @@ public partial class TileLevelGenerator : Node2D
     [Export] public int MinLevelTiles = 15;
     [Export] public int TilesAheadOfPlayer = 5;
     [Export] public float RemoveBehindDistance = 2560.0f;
+    [Export] public int BeaconInterval = 5;
 
     private const float TileW = 1280.0f;
 
     private PlayerController _player = null!;
     private MissionLevel _missionLevel = null!;
     private RandomNumberGenerator _rng = new();
+    private PackedScene _beaconScene = null!;
     private readonly List<LevelTile> _activeTiles = new();
     private readonly List<TileEntry> _tilePool = new();
     private bool _levelComplete;
@@ -173,10 +176,24 @@ public partial class TileLevelGenerator : Node2D
 
         tile.SpawnFloorProps(_rng, _missionLevel?.GetPropPalette() ?? PropPalettes.Industrial);
         tile.SpawnRailSupports();
+
+        if (GeneratedTileCount > 0 && GeneratedTileCount % BeaconInterval == BeaconInterval - 1)
+            PlaceBeacon(tile);
+
         _activeTiles.Add(tile);
         GeneratedTileCount++;
         offsetX = tile.GetTileRightX();
         LevelEndX = offsetX;
+    }
+
+    private void PlaceBeacon(LevelTile tile)
+    {
+        var beacon = _beaconScene.Instantiate<RespawnBeacon>();
+        AddChild(beacon);
+        beacon.SetPlayer(_player);
+        var leftX = tile.GetTileLeftX();
+        var surfaceY = tile.Position.Y + tile.LeftGroundY;
+        beacon.Position = new Vector2(leftX + 40f, surfaceY);
     }
 
     private void PlaceExtractionZone(float offsetX)
@@ -218,6 +235,7 @@ public partial class TileLevelGenerator : Node2D
 
     private void LoadTilePool()
     {
+        _beaconScene = GD.Load<PackedScene>(BeaconScenePath);
         _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(FlatRunPath), Name = "FlatRun", LeftGroundY = 164, RightGroundY = 164, Weight = 0.0941f });
         _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(HalfPipePath), Name = "HalfPipe", LeftGroundY = 164, RightGroundY = 164, Weight = 0.1412f });
         _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(GapJumpPath), Name = "GapJump", LeftGroundY = 164, RightGroundY = 164, Weight = 0.0588f });

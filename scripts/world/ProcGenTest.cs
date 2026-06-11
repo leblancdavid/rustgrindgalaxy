@@ -5,6 +5,7 @@ public partial class ProcGenTest : Node2D
     [Export] public Vector2 SpawnPosition = new(200.0f, 96.0f);
     [Export] public float FallRespawnY = 420.0f;
 
+    private Vector2 _respawnPosition;
     private PlayerController _player = null!;
     private Camera2D _camera = null!;
     private Hud _hud = null!;
@@ -23,6 +24,8 @@ public partial class ProcGenTest : Node2D
         var generator = new ModuleGenerator();
         _player.SetLoadout(generator.GenerateDebugLoadout(ModuleRarity.Rare));
         _player.GlobalPosition = SpawnPosition;
+
+        _respawnPosition = SpawnPosition;
 
         var seed = (long)(GD.Randi() | ((ulong)GD.Randi() << 32));
         _tileGenerator.Initialize(_player, null!, seed);
@@ -52,11 +55,16 @@ public partial class ProcGenTest : Node2D
         _camera.LimitBottom = 10000;
     }
 
+    public void SetRespawnPoint(Vector2 position)
+    {
+        _respawnPosition = position;
+    }
+
     private void RespawnPlayer()
     {
         _player.ResetTransientState();
         _player.Velocity = Vector2.Zero;
-        _player.GlobalPosition = FindSafeSpawn();
+        _player.GlobalPosition = _respawnPosition;
     }
 
     private Vector2 FindSafeSpawn()

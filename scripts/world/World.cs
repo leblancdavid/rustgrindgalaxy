@@ -10,6 +10,7 @@ public partial class World : Node2D
 
     [Export] public PackedScene? ReturnScene;
     [Export] public float RestartDelaySeconds = 0.75f;
+    [Export] public float FallRespawnThreshold = 500.0f;
     [Export] public int MissionMaterialTarget = 4;
 
     public PlayerController Player { get; private set; } = null!;
@@ -32,6 +33,8 @@ public partial class World : Node2D
 
     private bool _missionComplete;
 
+    private Vector2 _respawnPosition;
+
     public override void _Ready()
     {
         _gameState = GetNode<GameState>("/root/GameState");
@@ -40,6 +43,7 @@ public partial class World : Node2D
         HudLayer = GetNode<Hud>("Hud");
         ActiveLevel = InstantiateMissionLevel(_mission.LevelTemplateId);
         ExtractionZone = ActiveLevel.GetExtractionZone();
+        _respawnPosition = Player.GlobalPosition;
 
         var generator = new ModuleGenerator();
         DebugLoadout = generator.GenerateDebugLoadout(ModuleRarity.Rare);
@@ -66,6 +70,12 @@ public partial class World : Node2D
     public override void _Process(double delta)
     {
         HudLayer.UpdatePlayerState(Player);
+
+        if (!Player.IsDead && !_missionComplete && Player.GlobalPosition.Y > FallRespawnThreshold)
+        {
+            RespawnAtLastTile();
+            return;
+        }
 
         if (_missionComplete)
         {
@@ -223,5 +233,18 @@ public partial class World : Node2D
 
         var targetScene = ReturnScene ?? GD.Load<PackedScene>("res://scenes/ui/MissionResults.tscn");
         GetTree().ChangeSceneToPacked(targetScene);
+    }
+
+    private void RespawnAtLastTile()
+    {
+        Player.ResetTransientState();
+        Player.Velocity = Vector2.Zero;
+        Player.GlobalPosition = _respawnPosition;
+        HudLayer.ShowRespawnMessage();
+    }
+
+    public void SetRespawnPoint(Vector2 position)
+    {
+        _respawnPosition = position;
     }
 }

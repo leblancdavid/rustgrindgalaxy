@@ -3,6 +3,7 @@ using Godot;
 public partial class Hud : CanvasLayer
 {
     private const float TrickPopupSeconds = 2.0f;
+    private const float RespawnMessageDuration = 2.0f;
 
     private Label _missionLabel = null!;
     private Label _statusLabel = null!;
@@ -14,6 +15,7 @@ public partial class Hud : CanvasLayer
     private Label _trickPopupLabel = null!;
     private Label _landedComboLabel = null!;
     private float _trickPopupTimeRemaining;
+    private float _respawnMessageTimeRemaining;
     private uint _lastSeenTrickSequence;
 
     public override void _Ready()
@@ -34,21 +36,31 @@ public partial class Hud : CanvasLayer
 
     public override void _Process(double delta)
     {
-        if (_trickPopupTimeRemaining <= 0.0f)
+        var dt = (float)delta;
+
+        if (_trickPopupTimeRemaining > 0.0f)
         {
-            return;
+            _trickPopupTimeRemaining = Mathf.Max(0.0f, _trickPopupTimeRemaining - dt);
+            if (_trickPopupTimeRemaining <= 0.0f)
+            {
+                _trickPopupLabel.Visible = false;
+            }
         }
 
-        _trickPopupTimeRemaining = Mathf.Max(0.0f, _trickPopupTimeRemaining - (float)delta);
-        if (_trickPopupTimeRemaining <= 0.0f)
+        if (_respawnMessageTimeRemaining > 0.0f)
         {
-            _trickPopupLabel.Visible = false;
+            _respawnMessageTimeRemaining = Mathf.Max(0.0f, _respawnMessageTimeRemaining - dt);
         }
     }
 
     public void UpdateTileName(string text)
     {
         _tileLabel.Text = text;
+    }
+
+    public void ShowRespawnMessage()
+    {
+        _respawnMessageTimeRemaining = RespawnMessageDuration;
     }
 
     public void UpdatePlayerState(PlayerController player)
@@ -108,5 +120,10 @@ public partial class Hud : CanvasLayer
         _messageLabel.Text = world != null && world.CanExtract()
             ? "Extract Ready"
             : "Collect";
+
+        if (_respawnMessageTimeRemaining > 0.0f)
+        {
+            _messageLabel.Text = "Respawned";
+        }
     }
 }

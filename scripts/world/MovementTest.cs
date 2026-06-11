@@ -6,6 +6,7 @@ public partial class MovementTest : Node2D
     [Export] public float FallRespawnY = 420.0f;
     [Export] public Rect2I CameraBounds = new(0, 0, 1280, 360);
 
+    private Vector2 _respawnPosition;
     private PlayerController _player = null!;
     private Camera2D _camera = null!;
     private Hud _hud = null!;
@@ -20,6 +21,7 @@ public partial class MovementTest : Node2D
         _player.SetLoadout(generator.GenerateDebugLoadout(ModuleRarity.Rare));
 
         _player.GlobalPosition = SpawnPosition;
+        _respawnPosition = SpawnPosition;
         ApplyCameraBounds();
     }
 
@@ -41,10 +43,15 @@ public partial class MovementTest : Node2D
         _camera.LimitBottom = CameraBounds.End.Y;
     }
 
+    public void SetRespawnPoint(Vector2 position)
+    {
+        _respawnPosition = position;
+    }
+
     private void RespawnPlayer()
     {
         _player.ResetTransientState();
-        _player.GlobalPosition = SpawnPosition;
+        _player.GlobalPosition = _respawnPosition;
         _player.Velocity = Vector2.Zero;
     }
 }

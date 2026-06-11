@@ -13,6 +13,8 @@ public partial class TileLevelIndustrial : MissionLevel
     private ColorRect _upperWall = null!;
     private ColorRect _midStripe = null!;
     private TileLevelGenerator _tileGenerator = null!;
+
+    public TileLevelGenerator TileGenerator => _tileGenerator;
     private Node2D _spawnedActors = null!;
     private PackedScene _raiderScene = null!;
     private PackedScene _droneScene = null!;
