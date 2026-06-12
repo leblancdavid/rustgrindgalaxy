@@ -40,6 +40,7 @@ public partial class TileLevelGenerator : Node2D
     [Export] public int TilesAheadOfPlayer = 5;
     [Export] public float RemoveBehindDistance = 2560.0f;
     [Export] public int BeaconInterval = 5;
+    [Export] public bool CycleAllTilesBeforeRepeat = false;
 
     private const float TileW = 1280.0f;
 
@@ -52,6 +53,8 @@ public partial class TileLevelGenerator : Node2D
     private bool _levelComplete;
     private bool _started;
     private ExtractionZone _extractionZone = null!;
+    private readonly List<int> _cycleQueue = new();
+    private int _cycleIndex;
 
     public float LevelEndX { get; private set; }
     public int GeneratedTileCount { get; private set; }
@@ -87,6 +90,9 @@ public partial class TileLevelGenerator : Node2D
         GeneratedTileCount = 0;
         _levelComplete = false;
         _started = true;
+
+        if (CycleAllTilesBeforeRepeat)
+            ShuffleCycleQueue();
 
         foreach (var child in GetChildren())
         {
@@ -219,6 +225,13 @@ public partial class TileLevelGenerator : Node2D
 
     private TileEntry? PickNextEntry()
     {
+        if (CycleAllTilesBeforeRepeat)
+        {
+            if (_cycleIndex >= _cycleQueue.Count)
+                ShuffleCycleQueue();
+            return _tilePool[_cycleQueue[_cycleIndex++]];
+        }
+
         var totalWeight = 0.0f;
         foreach (var entry in _tilePool)
             totalWeight += entry.Weight;
@@ -232,6 +245,21 @@ public partial class TileLevelGenerator : Node2D
         }
 
         return _tilePool[^1];
+    }
+
+    private void ShuffleCycleQueue()
+    {
+        _cycleQueue.Clear();
+        for (var i = 1; i < _tilePool.Count; i++)
+            _cycleQueue.Add(i);
+
+        for (var i = _cycleQueue.Count - 1; i > 0; i--)
+        {
+            var j = _rng.RandiRange(0, i);
+            (_cycleQueue[i], _cycleQueue[j]) = (_cycleQueue[j], _cycleQueue[i]);
+        }
+
+        _cycleIndex = 0;
     }
 
     private void LoadTilePool()
