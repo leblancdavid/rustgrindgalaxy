@@ -46,7 +46,14 @@ public partial class LevelTile : Node2D
             if (segment == null)
                 continue;
 
-            var localX = rng.RandfRange(segment.Value.StartX, segment.Value.EndX);
+            var template = PickPropTemplate(palette, rng);
+            var halfWidth = template.Width * 0.5f + 2f;
+            var minX = segment.Value.StartX + halfWidth;
+            var maxX = segment.Value.EndX - halfWidth;
+            if (minX >= maxX)
+                continue;
+
+            var localX = rng.RandfRange(minX, maxX);
             var t = Mathf.InverseLerp(segment.Value.StartX, segment.Value.EndX, localX);
             var floorY = Mathf.Lerp(segment.Value.StartY, segment.Value.EndY, t);
 
@@ -64,7 +71,6 @@ public partial class LevelTile : Node2D
             if (isExcluded)
                 continue;
 
-            var template = PickPropTemplate(palette, rng);
             var visual = new Prop();
             visual.Layer = template.Layer;
             AddChild(visual);
@@ -267,6 +273,24 @@ public partial class LevelTile : Node2D
 				var dist = prop.Position.DistanceTo(localPoint);
 				if (dist < PropExclusionRadius)
 					prop.QueueFree();
+			}
+			if (child is BoostPad boostPad)
+			{
+				var dist = boostPad.Position.DistanceTo(localPoint);
+				if (dist < PropExclusionRadius)
+					boostPad.QueueFree();
+			}
+			if (child is LaunchPad launchPad)
+			{
+				var dist = launchPad.Position.DistanceTo(localPoint);
+				if (dist < PropExclusionRadius)
+					launchPad.QueueFree();
+			}
+			if (child is GrindBoost grindBoost)
+			{
+				var dist = grindBoost.Position.DistanceTo(localPoint);
+				if (dist < PropExclusionRadius)
+					grindBoost.QueueFree();
 			}
 		}
 	}
