@@ -11,6 +11,7 @@ public partial class Prop : Node2D
     [Export] public Color PropColor = Colors.White;
     [Export] public bool IsLighting;
     [Export] public PropLayer Layer = PropLayer.Default;
+    [Export] public PaletteSlot Slot = PaletteSlot.PrimaryMedium;
     [Export] public float GlowYOffset;
     [Export] public float GlowScaleX;
     [Export] public float GlowScaleY;
@@ -18,6 +19,8 @@ public partial class Prop : Node2D
     private Polygon2D _visual;
     private Polygon2D _glow;
     private Label _debugLabel;
+    private LevelColorPalette _palette;
+    private bool _paletteApplied;
 
     public override void _Ready()
     {
@@ -26,13 +29,14 @@ public partial class Prop : Node2D
             CreateVisual();
     }
 
-    public void Initialize(float width, float height, Color color, bool lighting, PropLayer layer = PropLayer.Default, float glowYOffset = 0f, float glowScaleX = 0f, float glowScaleY = 0f)
+    public void Initialize(float width, float height, Color color, bool lighting, PropLayer layer = PropLayer.Default, PaletteSlot slot = PaletteSlot.PrimaryMedium, float glowYOffset = 0f, float glowScaleX = 0f, float glowScaleY = 0f)
     {
         PropWidth = width;
         PropHeight = height;
         PropColor = color;
         IsLighting = lighting;
         Layer = layer;
+        Slot = slot;
         GlowYOffset = glowYOffset;
         GlowScaleX = glowScaleX;
         GlowScaleY = glowScaleY;
@@ -43,6 +47,13 @@ public partial class Prop : Node2D
             CreateVisual();
         else
             UpdateVisual();
+    }
+
+    public void ApplyPalette(LevelColorPalette palette)
+    {
+        _palette = palette;
+        _paletteApplied = true;
+        ApplyColors();
     }
 
     private static float ResolveGlowScale(float scale) => scale > 0f ? scale : 1.8f;
@@ -58,7 +69,7 @@ public partial class Prop : Node2D
         {
             _glow = new Polygon2D();
             BuildRectPolygon(_glow, PropWidth * ResolveGlowScale(GlowScaleX), PropHeight * ResolveGlowScale(GlowScaleY));
-            _glow.Color = new Color(PropColor.R, PropColor.G, PropColor.B, 0.3f);
+            _glow.Color = new Color(1f, 1f, 1f, 0.3f);
             _glow.ZIndex = -1;
             _glow.Position = new Vector2(0, GlowYOffset);
             AddChild(_glow);
@@ -66,6 +77,25 @@ public partial class Prop : Node2D
 
         if (DebugLabels)
             CreateDebugLabel();
+
+        if (_paletteApplied)
+            ApplyColors();
+    }
+
+    private void ApplyColors()
+    {
+        var tint = _palette.Resolve(Slot);
+        const float brightness = 1.5f;
+        _visual.Color = new Color(
+            Mathf.Clamp(PropColor.R * tint.R * brightness, 0f, 1f),
+            Mathf.Clamp(PropColor.G * tint.G * brightness, 0f, 1f),
+            Mathf.Clamp(PropColor.B * tint.B * brightness, 0f, 1f),
+            PropColor.A);
+        if (_glow != null)
+        {
+            var glowTint = _palette.Resolve(PaletteSlot.SecondaryMedium);
+            _glow.Color = new Color(glowTint.R, glowTint.G, glowTint.B, 0.3f);
+        }
     }
 
     private void CreateDebugLabel()
@@ -105,9 +135,12 @@ public partial class Prop : Node2D
                 AddChild(_glow);
             }
             BuildRectPolygon(_glow, PropWidth * ResolveGlowScale(GlowScaleX), PropHeight * ResolveGlowScale(GlowScaleY));
-            _glow.Color = new Color(PropColor.R, PropColor.G, PropColor.B, 0.3f);
+            _glow.Color = new Color(1f, 1f, 1f, 0.3f);
             _glow.Position = new Vector2(0, GlowYOffset);
         }
+
+        if (_paletteApplied)
+            ApplyColors();
     }
 
     private static void BuildRectPolygon(Polygon2D poly, float w, float h)

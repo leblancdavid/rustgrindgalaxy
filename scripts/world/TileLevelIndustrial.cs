@@ -52,10 +52,11 @@ public partial class TileLevelIndustrial : MissionLevel
 
     public override void ApplyMission(MissionRunData mission)
     {
-        ApplyPalette(mission.PaletteKey);
+        var palette = LevelColorPalette.FromMinerals(mission.PrimaryMineral, mission.SecondaryMineral);
+        ApplyPalette(palette);
 
         var player = GetTree().Root.GetNodeOrNull<PlayerController>("World/Player");
-        _tileGenerator.Initialize(player!, this, mission.RunSeed ^ 0x51F15EED);
+        _tileGenerator.Initialize(player!, this, mission.RunSeed ^ 0x51F15EED, palette);
         _tileGenerator.SetExtractionZone(GetExtractionZone());
         _tileGenerator.BuildInitial();
 
@@ -73,31 +74,12 @@ public partial class TileLevelIndustrial : MissionLevel
         _tileGenerator.CollectSpawnMarkers("SpawnMarkers/Hazards", _hazardSpawnMarkers);
     }
 
-    private void ApplyPalette(string paletteKey)
+    private void ApplyPalette(LevelColorPalette palette)
     {
-        switch (paletteKey)
-        {
-            case "rocky":
-                _backdrop.Color = new Color(0.121f, 0.094f, 0.09f, 1.0f);
-                _upperWall.Color = new Color(0.266f, 0.2f, 0.153f, 1.0f);
-                _midStripe.Color = new Color(0.62f, 0.403f, 0.215f, 0.35f);
-                break;
-            case "frozen":
-                _backdrop.Color = new Color(0.05f, 0.08f, 0.14f, 1.0f);
-                _upperWall.Color = new Color(0.13f, 0.2f, 0.32f, 1.0f);
-                _midStripe.Color = new Color(0.49f, 0.77f, 0.94f, 0.3f);
-                break;
-            case "derelict":
-                _backdrop.Color = new Color(0.07f, 0.055f, 0.09f, 1.0f);
-                _upperWall.Color = new Color(0.18f, 0.13f, 0.2f, 1.0f);
-                _midStripe.Color = new Color(0.59f, 0.33f, 0.67f, 0.28f);
-                break;
-            default:
-                _backdrop.Color = new Color(0.0784314f, 0.0980392f, 0.121569f, 1.0f);
-                _upperWall.Color = new Color(0.12549f, 0.152941f, 0.188235f, 1.0f);
-                _midStripe.Color = new Color(0.227451f, 0.447059f, 0.529412f, 0.4f);
-                break;
-        }
+        _backdrop.Color = palette.PrimaryDark;
+        _backdrop.Color = new Color(_backdrop.Color.R, _backdrop.Color.G, _backdrop.Color.B, 1.0f);
+        _upperWall.Color = palette.PrimaryMedium;
+        _midStripe.Color = new Color(palette.SecondaryLight.R, palette.SecondaryLight.G, palette.SecondaryLight.B, 0.35f);
     }
 
     private void ApplyModifiers(MissionRunData mission)

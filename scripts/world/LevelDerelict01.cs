@@ -23,6 +23,7 @@ public partial class LevelDerelict01 : MissionLevel
     private readonly List<Marker2D> _droneSpawnMarkers = new();
     private readonly List<Marker2D> _pickupSpawnMarkers = new();
     private readonly List<Marker2D> _hazardSpawnMarkers = new();
+    private LevelColorPalette _palette;
 
     public override void _Ready()
     {
@@ -50,36 +51,18 @@ public partial class LevelDerelict01 : MissionLevel
 
     public override void ApplyMission(MissionRunData mission)
     {
-        ApplyPalette(mission.PaletteKey);
+        _palette = LevelColorPalette.FromMinerals(mission.PrimaryMineral, mission.SecondaryMineral);
+        ApplyPalette(_palette);
         ApplyModifiers(mission);
         SpawnMissionContent(mission);
     }
 
-    private void ApplyPalette(string paletteKey)
+    private void ApplyPalette(LevelColorPalette palette)
     {
-        switch (paletteKey)
-        {
-            case "frozen":
-                _backdrop.Color = new Color(0.035f, 0.07f, 0.12f, 1.0f);
-                _hullBand.Color = new Color(0.29f, 0.52f, 0.72f, 1.0f);
-                _fogBand.Color = new Color(0.72f, 0.9f, 0.98f, 0.18f);
-                break;
-            case "industrial":
-                _backdrop.Color = new Color(0.09f, 0.08f, 0.1f, 1.0f);
-                _hullBand.Color = new Color(0.42f, 0.28f, 0.23f, 1.0f);
-                _fogBand.Color = new Color(0.89f, 0.51f, 0.22f, 0.16f);
-                break;
-            case "rocky":
-                _backdrop.Color = new Color(0.08f, 0.065f, 0.06f, 1.0f);
-                _hullBand.Color = new Color(0.36f, 0.28f, 0.18f, 1.0f);
-                _fogBand.Color = new Color(0.82f, 0.62f, 0.34f, 0.14f);
-                break;
-            default:
-                _backdrop.Color = new Color(0.05f, 0.045f, 0.08f, 1.0f);
-                _hullBand.Color = new Color(0.25f, 0.18f, 0.3f, 1.0f);
-                _fogBand.Color = new Color(0.64f, 0.41f, 0.76f, 0.18f);
-                break;
-        }
+        _backdrop.Color = palette.PrimaryDark;
+        _backdrop.Color = new Color(_backdrop.Color.R, _backdrop.Color.G, _backdrop.Color.B, 1.0f);
+        _hullBand.Color = palette.PrimaryMedium;
+        _fogBand.Color = new Color(palette.SecondaryLight.R, palette.SecondaryLight.G, palette.SecondaryLight.B, 0.18f);
     }
 
     private void ApplyModifiers(MissionRunData mission)
@@ -181,7 +164,8 @@ public partial class LevelDerelict01 : MissionLevel
                 var template = PickPropTemplate(palette, rng);
                 var prop = new Prop();
                 prop.Layer = template.Layer;
-                prop.Initialize(template.Width, template.Height, template.Color, template.IsLighting, template.Layer, template.GlowYOffset, template.GlowScaleX, template.GlowScaleY);
+                prop.Initialize(template.Width, template.Height, template.Color, template.IsLighting, template.Layer, template.Slot, template.GlowYOffset, template.GlowScaleX, template.GlowScaleY);
+                prop.ApplyPalette(_palette);
                 var baseSink = 5f;
                 var fgExtra = template.Layer == Prop.PropLayer.Foreground ? 9f : 0f;
                 var groundOffset = baseSink + fgExtra;

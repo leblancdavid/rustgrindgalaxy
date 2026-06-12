@@ -28,7 +28,8 @@ public partial class ProcGenTest : Node2D
         _respawnPosition = SpawnPosition;
 
         var seed = (long)(GD.Randi() | ((ulong)GD.Randi() << 32));
-        _tileGenerator.Initialize(_player, null!, seed);
+        var palette = LevelColorPalette.FromMinerals(MineralType.Cinder, MineralType.Azure);
+        _tileGenerator.Initialize(_player, null!, seed, palette);
         _tileGenerator.BuildInitial();
         _tileGenerator.UpdateStreaming();
     }

@@ -23,6 +23,7 @@ public partial class LevelSurface01 : MissionLevel
     private readonly List<Marker2D> _droneSpawnMarkers = new();
     private readonly List<Marker2D> _pickupSpawnMarkers = new();
     private readonly List<Marker2D> _hazardSpawnMarkers = new();
+    private LevelColorPalette _palette;
 
     public override void _Ready()
     {
@@ -50,31 +51,18 @@ public partial class LevelSurface01 : MissionLevel
 
     public override void ApplyMission(MissionRunData mission)
     {
-        ApplyPalette(mission.PaletteKey);
+        _palette = LevelColorPalette.FromMinerals(mission.PrimaryMineral, mission.SecondaryMineral);
+        ApplyPalette(_palette);
         ApplyModifiers(mission);
         SpawnMissionContent(mission);
     }
 
-    private void ApplyPalette(string paletteKey)
+    private void ApplyPalette(LevelColorPalette palette)
     {
-        switch (paletteKey)
-        {
-            case "frozen":
-                _sky.Color = new Color(0.08f, 0.14f, 0.23f, 1.0f);
-                _horizon.Color = new Color(0.46f, 0.67f, 0.85f, 1.0f);
-                _dustBand.Color = new Color(0.82f, 0.93f, 1.0f, 0.22f);
-                break;
-            case "rocky":
-                _sky.Color = new Color(0.13f, 0.1f, 0.08f, 1.0f);
-                _horizon.Color = new Color(0.48f, 0.34f, 0.21f, 1.0f);
-                _dustBand.Color = new Color(0.88f, 0.69f, 0.4f, 0.18f);
-                break;
-            default:
-                _sky.Color = new Color(0.09f, 0.11f, 0.14f, 1.0f);
-                _horizon.Color = new Color(0.4f, 0.43f, 0.47f, 1.0f);
-                _dustBand.Color = new Color(0.77f, 0.76f, 0.72f, 0.16f);
-                break;
-        }
+        _sky.Color = palette.PrimaryDark;
+        _sky.Color = new Color(_sky.Color.R, _sky.Color.G, _sky.Color.B, 1.0f);
+        _horizon.Color = palette.PrimaryMedium;
+        _dustBand.Color = new Color(palette.SecondaryLight.R, palette.SecondaryLight.G, palette.SecondaryLight.B, 0.18f);
     }
 
     private void ApplyModifiers(MissionRunData mission)
@@ -176,7 +164,8 @@ public partial class LevelSurface01 : MissionLevel
                 var template = PickPropTemplate(palette, rng);
                 var prop = new Prop();
                 prop.Layer = template.Layer;
-                prop.Initialize(template.Width, template.Height, template.Color, template.IsLighting, template.Layer, template.GlowYOffset, template.GlowScaleX, template.GlowScaleY);
+                prop.Initialize(template.Width, template.Height, template.Color, template.IsLighting, template.Layer, template.Slot, template.GlowYOffset, template.GlowScaleX, template.GlowScaleY);
+                prop.ApplyPalette(_palette);
                 var baseSink = 5f;
                 var fgExtra = template.Layer == Prop.PropLayer.Foreground ? 9f : 0f;
                 var groundOffset = baseSink + fgExtra;

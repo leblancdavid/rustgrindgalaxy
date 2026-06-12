@@ -55,6 +55,7 @@ public partial class TileLevelGenerator : Node2D
     private ExtractionZone _extractionZone = null!;
     private readonly List<int> _cycleQueue = new();
     private int _cycleIndex;
+    private LevelColorPalette _colorPalette;
 
     public float LevelEndX { get; private set; }
     public int GeneratedTileCount { get; private set; }
@@ -71,11 +72,12 @@ public partial class TileLevelGenerator : Node2D
         public FloorSegment[] FloorSegments;
     }
 
-    public void Initialize(PlayerController player, MissionLevel level, long seed)
+    public void Initialize(PlayerController player, MissionLevel level, long seed, LevelColorPalette colorPalette = default)
     {
         _player = player;
         _missionLevel = level;
         _rng = new RandomNumberGenerator { Seed = (ulong)seed };
+        _colorPalette = colorPalette;
         LoadTilePool();
     }
 
@@ -177,7 +179,7 @@ public partial class TileLevelGenerator : Node2D
 
 		tile.ClearExcludedPositions();
 		tile.SpawnInteractiveProps(_rng);
-		tile.SpawnFloorProps(_rng, _missionLevel?.GetPropPalette() ?? PropPalettes.Industrial);
+		tile.SpawnFloorProps(_rng, _missionLevel?.GetPropPalette() ?? PropPalettes.Industrial, _colorPalette);
 		tile.SpawnRailSupports();
 
         if (GeneratedTileCount > 0 && GeneratedTileCount % BeaconInterval == BeaconInterval - 1)

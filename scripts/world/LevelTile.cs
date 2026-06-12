@@ -15,6 +15,7 @@ public partial class LevelTile : Node2D
 
     private const float PropExclusionRadius = 60.0f;
     private readonly List<Vector2> _excludedPositions = new();
+    private LevelColorPalette _colorPalette;
 
     public void ClearExcludedPositions() => _excludedPositions.Clear();
 
@@ -34,8 +35,9 @@ public partial class LevelTile : Node2D
 
     public float GetTileRightX() => Position.X + TileWidth;
 
-    public void SpawnFloorProps(RandomNumberGenerator rng, List<PropTemplate> palette)
+    public void SpawnFloorProps(RandomNumberGenerator rng, List<PropTemplate> palette, LevelColorPalette colorPalette = default)
     {
+        _colorPalette = colorPalette;
         if (FloorSegments == null || FloorSegments.Length == 0 || palette == null || palette.Count == 0)
             return;
 
@@ -74,7 +76,8 @@ public partial class LevelTile : Node2D
             var visual = new Prop();
             visual.Layer = template.Layer;
             AddChild(visual);
-            visual.Initialize(template.Width, template.Height, template.Color, template.IsLighting, template.Layer, template.GlowYOffset, template.GlowScaleX, template.GlowScaleY);
+            visual.Initialize(template.Width, template.Height, template.Color, template.IsLighting, template.Layer, template.Slot, template.GlowYOffset, template.GlowScaleX, template.GlowScaleY);
+            visual.ApplyPalette(colorPalette);
             var baseSink = 5f;
             var slope = segment.Value.EndX != segment.Value.StartX
                 ? Mathf.Abs((segment.Value.EndY - segment.Value.StartY) / (segment.Value.EndX - segment.Value.StartX))
@@ -136,6 +139,7 @@ public partial class LevelTile : Node2D
         var midY = (localPoint.Y + groundY) * 0.5f;
         var support = new Prop();
         support.Initialize(RailSupportWidth, height, RailSupportColor, false, Prop.PropLayer.Background);
+        support.ApplyPalette(_colorPalette);
         support.Position = new Vector2(localPoint.X, midY);
         AddChild(support);
     }
