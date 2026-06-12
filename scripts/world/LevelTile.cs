@@ -13,6 +13,13 @@ public partial class LevelTile : Node2D
     public int MinProps = 4;
     public int MaxProps = 8;
 
+    private const float PropExclusionRadius = 60.0f;
+    private readonly List<Vector2> _excludedPositions = new();
+
+    public void ClearExcludedPositions() => _excludedPositions.Clear();
+
+    public void AddExcludedPosition(Vector2 pos) => _excludedPositions.Add(pos);
+
     public LevelTileConnector GetLeftConnector()
     {
         return new LevelTileConnector { GroundY = LeftGroundY, RailY = LeftRailY };
@@ -48,6 +55,20 @@ public partial class LevelTile : Node2D
             var localX = rng.RandfRange(segment.Value.StartX, segment.Value.EndX);
             var t = Mathf.InverseLerp(segment.Value.StartX, segment.Value.EndX, localX);
             var floorY = Mathf.Lerp(segment.Value.StartY, segment.Value.EndY, t);
+
+            var isExcluded = false;
+            foreach (var ep in _excludedPositions)
+            {
+                var dx = localX - ep.X;
+                var dy = floorY - ep.Y;
+                if (dx * dx + dy * dy < PropExclusionRadius * PropExclusionRadius)
+                {
+                    isExcluded = true;
+                    break;
+                }
+            }
+            if (isExcluded)
+                continue;
 
             var template = PickPropTemplate(palette, rng);
             var visual = new Prop();
@@ -153,7 +174,7 @@ public partial class LevelTile : Node2D
         return palette[^1];
     }
 
-	public void SpawnInteractiveProps(RandomNumberGenerator rng, float chance = 0.2f)
+	public void SpawnInteractiveProps(RandomNumberGenerator rng, float chance = 0.3f)
 	{
 		if (rng.Randf() >= chance)
 			return;
@@ -181,9 +202,15 @@ public partial class LevelTile : Node2D
 		var t = Mathf.InverseLerp(segment.Value.StartX, segment.Value.EndX, localX);
 		var floorY = Mathf.Lerp(segment.Value.StartY, segment.Value.EndY, t);
 
+		var dx = segment.Value.EndX - segment.Value.StartX;
+		var dy = segment.Value.EndY - segment.Value.StartY;
+		var angle = Mathf.Atan2(dy, dx);
+
 		var pad = new BoostPad();
 		AddChild(pad);
-		pad.Position = new Vector2(localX, floorY - 5f);
+		pad.Position = new Vector2(localX, floorY);
+		pad.Rotation = angle;
+		AddExcludedPosition(new Vector2(localX, floorY));
 	}
 
 	private void SpawnLaunchPad(RandomNumberGenerator rng)
@@ -199,9 +226,15 @@ public partial class LevelTile : Node2D
 		var t = Mathf.InverseLerp(segment.Value.StartX, segment.Value.EndX, localX);
 		var floorY = Mathf.Lerp(segment.Value.StartY, segment.Value.EndY, t);
 
+		var dx = segment.Value.EndX - segment.Value.StartX;
+		var dy = segment.Value.EndY - segment.Value.StartY;
+		var angle = Mathf.Atan2(dy, dx);
+
 		var pad = new LaunchPad();
 		AddChild(pad);
-		pad.Position = new Vector2(localX, floorY - 5f);
+		pad.Position = new Vector2(localX, floorY);
+		pad.Rotation = angle;
+		AddExcludedPosition(new Vector2(localX, floorY));
 	}
 
 	private void SpawnGrindBoost(RandomNumberGenerator rng)
@@ -227,6 +260,21 @@ public partial class LevelTile : Node2D
 		var pad = new GrindBoost();
 		AddChild(pad);
 		pad.Position = new Vector2(localRailCenter.X, localRailCenter.Y);
+		pad.Rotation = rail.Angle;
+		AddExcludedPosition(localRailCenter);
+	}
+
+	public void RemovePropsNear(Vector2 localPoint)
+	{
+		foreach (var child in GetChildren())
+		{
+			if (child is Prop prop)
+			{
+				var dist = prop.Position.DistanceTo(localPoint);
+				if (dist < PropExclusionRadius)
+					prop.QueueFree();
+			}
+		}
 	}
 
 	public static FloorSegment[] GetDefaultFloorSegments(string tileName)

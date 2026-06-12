@@ -174,9 +174,10 @@ public partial class TileLevelGenerator : Node2D
 
         tile.Position = new Vector2(offsetX + (shouldMirror ? tile.TileWidth : 0f), tileY);
 
+		tile.ClearExcludedPositions();
+		tile.SpawnInteractiveProps(_rng);
 		tile.SpawnFloorProps(_rng, _missionLevel?.GetPropPalette() ?? PropPalettes.Industrial);
 		tile.SpawnRailSupports();
-		tile.SpawnInteractiveProps(_rng);
 
         if (GeneratedTileCount > 0 && GeneratedTileCount % BeaconInterval == BeaconInterval - 1)
             PlaceBeacon(tile);
@@ -195,6 +196,10 @@ public partial class TileLevelGenerator : Node2D
         var leftX = tile.GetTileLeftX();
         var surfaceY = tile.Position.Y + tile.LeftGroundY;
         beacon.Position = new Vector2(leftX + 40f, surfaceY);
+
+        var beaconGlobal = beacon.ToGlobal(Vector2.Zero);
+        var beaconTileLocal = tile.ToLocal(beaconGlobal);
+        tile.RemovePropsNear(beaconTileLocal);
     }
 
     private void PlaceExtractionZone(float offsetX)

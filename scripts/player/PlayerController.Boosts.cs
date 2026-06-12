@@ -20,6 +20,11 @@ public partial class PlayerController : CharacterBody2D
 	{
 		_boostMultiplier = multiplier;
 		_grindBoostTimer = duration;
+
+		if (_activeRail != null && !Mathf.IsZeroApprox(_railSpeed))
+		{
+			_railSpeed *= 1.5f;
+		}
 	}
 
 	private void UpdateBoostTimers(float delta)

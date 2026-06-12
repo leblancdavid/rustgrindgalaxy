@@ -15,6 +15,7 @@ public partial class RespawnBeacon : Area2D
 
     public override void _Ready()
     {
+        ZIndex = 10;
         _visual = GetNode<Polygon2D>("Visual");
         _beam = GetNode<Polygon2D>("Beam");
         _label = GetNode<Label>("Label");

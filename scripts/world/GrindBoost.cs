@@ -9,6 +9,7 @@ public partial class GrindBoost : Area2D
 
 	public override void _Ready()
 	{
+		ZIndex = 2;
 		AddCollisionShape();
 		AddVisuals();
 		BodyEntered += OnBodyEntered;
