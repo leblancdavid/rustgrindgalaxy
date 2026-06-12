@@ -30,15 +30,9 @@ public partial class LevelTile : Node2D
         return new LevelTileConnector { GroundY = RightGroundY, RailY = RightRailY };
     }
 
-    public float GetTileLeftX()
-    {
-        return Scale.X < 0 ? Position.X - TileWidth : Position.X;
-    }
+    public float GetTileLeftX() => Position.X;
 
-    public float GetTileRightX()
-    {
-        return Scale.X < 0 ? Position.X : Position.X + TileWidth;
-    }
+    public float GetTileRightX() => Position.X + TileWidth;
 
     public void SpawnFloorProps(RandomNumberGenerator rng, List<PropTemplate> palette)
     {
@@ -327,6 +321,32 @@ public partial class LevelTile : Node2D
             new FloorSegment(0, 320, 100, 100),
             new FloorSegment(320, 960, 100, 60),
             new FloorSegment(960, 1280, 60, 60),
+        },
+
+        ["RampSectionDesc"] = new[] {
+            new FloorSegment(0, 320, 60, 60),
+            new FloorSegment(320, 960, 60, 164),
+            new FloorSegment(960, 1280, 164, 164),
+        },
+        ["StairClimbDesc"] = new[] {
+            new FloorSegment(0, 160, 60, 60),
+            new FloorSegment(160, 320, 60, 60),
+            new FloorSegment(320, 480, 79, 79),
+            new FloorSegment(480, 640, 96, 96),
+            new FloorSegment(640, 800, 113, 113),
+            new FloorSegment(800, 960, 130, 130),
+            new FloorSegment(960, 1120, 147, 147),
+            new FloorSegment(1120, 1280, 164, 164),
+        },
+        ["GentleRiseDesc"] = new[] {
+            new FloorSegment(0, 320, 100, 100),
+            new FloorSegment(320, 960, 100, 164),
+            new FloorSegment(960, 1280, 164, 164),
+        },
+        ["MidRiseDesc"] = new[] {
+            new FloorSegment(0, 320, 60, 60),
+            new FloorSegment(320, 960, 60, 100),
+            new FloorSegment(960, 1280, 100, 100),
         },
     };
 

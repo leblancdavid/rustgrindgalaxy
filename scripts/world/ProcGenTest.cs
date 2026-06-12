@@ -125,8 +125,6 @@ public partial class ProcGenTest : Node2D
             {
                 var fileName = tile.SceneFilePath.GetFile().GetBaseName();
                 var typeName = fileName.EndsWith("Tile") ? fileName[..^4] : fileName;
-                if (tile.Scale.X < 0)
-                    typeName += " (mirrored)";
                 return $"Tile [{i}/{_tileGenerator.GeneratedTileCount}]: {typeName}";
             }
         }

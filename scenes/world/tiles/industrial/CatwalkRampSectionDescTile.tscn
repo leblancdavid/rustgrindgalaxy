@@ -1,0 +1,79 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/LevelTile.cs" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/world/GrindRail.tscn" id="2"]
+
+[sub_resource type="RectangleShape2D" id="1"]
+size = Vector2(352, 16)
+
+[sub_resource type="RectangleShape2D" id="2"]
+size = Vector2(320, 120)
+
+[node name="CatwalkRampSectionDescTile" type="Node2D"]
+script = ExtResource("1")
+TileWidth = 1280
+LeftGroundY = 60.0
+RightGroundY = 164.0
+
+[node name="FlatVisual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(1280, 164, 960, 164, 960, 180, 1280, 180)
+color = Color(0.301961, 0.317647, 0.356863, 1)
+
+[node name="FlatTrim" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(1280, 164, 960, 164, 960, 167, 1280, 167)
+color = Color(0.964706, 0.694118, 0.219608, 1)
+
+[node name="RampVisual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(960, 164, 320, 60, 320, 180, 960, 180)
+color = Color(0.301961, 0.317647, 0.356863, 1)
+
+[node name="RampTrim" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(960, 164, 320, 60, 320, 63, 960, 167)
+color = Color(0.964706, 0.694118, 0.219608, 1)
+
+[node name="RampRise" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(960, 164, 958, 164, 958, 180, 960, 180)
+color = Color(0.388235, 0.411765, 0.462745, 1)
+
+[node name="LandingVisual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(320, 60, 0, 60, 0, 180, 320, 180)
+color = Color(0.301961, 0.317647, 0.356863, 1)
+
+[node name="LandingTrim" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(320, 60, 0, 60, 0, 63, 320, 63)
+color = Color(0.964706, 0.694118, 0.219608, 1)
+
+[node name="FlatGround" type="StaticBody2D" parent="."]
+position = Vector2(1120, 172)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="FlatGround"]
+shape = SubResource("1")
+
+[node name="LandingGround" type="StaticBody2D" parent="."]
+position = Vector2(160, 120)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LandingGround"]
+shape = SubResource("2")
+
+[node name="RampBody" type="StaticBody2D" parent="."]
+
+[node name="RampCollision" type="CollisionPolygon2D" parent="RampBody"]
+polygon = PackedVector2Array(960, 164, 320, 60, 320, 180, 960, 180)
+
+[node name="Rail" parent="." instance=ExtResource("2")]
+position = Vector2(640, 72)
+rotation = 0.161
+Width = 640.0
+BaseSpeed = 220.0
+
+[node name="SpawnMarkers" type="Node2D" parent="."]
+
+[node name="Raiders" type="Node2D" parent="SpawnMarkers"]
+
+[node name="Drones" type="Node2D" parent="SpawnMarkers"]
+
+[node name="Hazards" type="Node2D" parent="SpawnMarkers"]
+
+[node name="PickupMarkers" type="Node2D" parent="SpawnMarkers"]
+
+

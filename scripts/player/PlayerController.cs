@@ -37,11 +37,18 @@ public partial class PlayerController : CharacterBody2D
 	[Export] public float BalanceDriftChangeInterval = 1.8f;
 	[Export] public float BalanceCorrectionSpeed = 2.5f;
 	[Export] public float BalanceRecoverySpeed = 1.0f;
+	[Export] public float BalanceJitterAmplitude = 0.04f;
+	[Export] public float BalanceJitterInterval = 0.12f;
 	[Export] public float BalancePhysicsForce = 35.0f;
 	[Export] public float BalanceVisualTiltDegrees = 10.0f;
 	[Export] public float BalanceIndicatorWidth = 24.0f;
 	[Export] public float BalanceIndicatorHeight = 5.0f;
 	[Export] public float BalanceIndicatorY = -36.0f;
+	[Export] public float GrindTimeToMaxDifficulty = 10.0f;
+	[Export] public float BalanceMaxDriftRate = 3.5f;
+	[Export] public float BalanceMinDriftInterval = 0.4f;
+	[Export] public float BalanceMaxDriftTargetRange = 1.8f;
+	[Export] public float BalanceComboRecovery = 0.45f;
 	[Export] public float AirRotationRampUpTime = 0.5f;
 	[Export] public int MaxHealth = 5;
 	[Export] public float InvulnerabilityDuration = 0.75f;
@@ -101,6 +108,9 @@ public partial class PlayerController : CharacterBody2D
 	private float _balanceValue;
 	private float _balanceDriftTarget;
 	private float _balanceDriftTimer;
+	private float _balanceJitterValue;
+	private float _balanceJitterTimer;
+	private float _grindElapsedTime;
 	private float _airRotationRamp;
 	private float _airRotationRampDirection;
 	private Node2D _balanceIndicator = null!;

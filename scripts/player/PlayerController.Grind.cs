@@ -30,10 +30,13 @@ public partial class PlayerController : CharacterBody2D
 		_activeRail = rail;
 		ClearQueuedTrick();
 		RegisterCompletedTrickName(GetInstalledTrickName(ModuleType.Grind));
+		_railRotationOffset = 0.0f;
 		_grindIntentTimeRemaining = 0.0f;
 		_balanceValue = 0.0f;
-		_balanceDriftTarget = (float)GD.RandRange(-0.6, 0.6);
-		_balanceDriftTimer = BalanceDriftChangeInterval * (float)GD.RandRange(0.5f, 1.5f);
+		_balanceDriftTarget = 0.0f;
+		_balanceDriftTimer = 0.1f;
+		_balanceJitterValue = 0.0f;
+		_balanceJitterTimer = 0.1f;
 		if (_balanceIndicator != null)
 		{
 			_balanceIndicator.Visible = true;
@@ -54,9 +57,6 @@ public partial class PlayerController : CharacterBody2D
 		{
 			_grindDirection = Mathf.Sign(tangentSpeed);
 		}
-
-		var grindSign = Mathf.Sign(_grindDirection);
-		_railRotationOffset = GetAngleDifference(rail.Angle * grindSign, GetBoardAngle());
 
 		_railSpeed = Mathf.Abs(tangentSpeed);
 
@@ -79,6 +79,8 @@ public partial class PlayerController : CharacterBody2D
 		_railSpeed = 0.0f;
 		_airRotation = GetBoardAngle();
 		_railAttachCooldownRemaining = RailAttachCooldownSeconds;
+		_railRotationOffset = 0.0f;
+		_grindElapsedTime = 0.0f;
 		_balanceValue = 0.0f;
 		_balanceDriftTarget = 0.0f;
 		_balanceDriftTimer = 0.0f;
@@ -97,6 +99,7 @@ public partial class PlayerController : CharacterBody2D
 			return;
 		}
 
+		_grindElapsedTime += deltaSeconds;
 		UpdateGrindBalance(deltaSeconds, inputDirection);
 
 		if (_balanceIndicator.Visible && (Mathf.Abs(_balanceValue) >= BalanceMaxOffset - 0.001f))
@@ -131,6 +134,7 @@ public partial class PlayerController : CharacterBody2D
 
 			if (TryFindConnectingRail(rail, _grindDirection, out var nextRail, out var nextProgress))
 			{
+				_grindElapsedTime *= BalanceComboRecovery;
 				EnterRail(nextRail, _grindDirection, nextProgress);
 				HandleGrinding(ref velocity, inputDirection, deltaSeconds, gravity);
 				return;

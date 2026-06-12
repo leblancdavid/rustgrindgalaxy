@@ -10,5 +10,7 @@ public sealed class ResolvedModuleEffects
 
     public float RailEntryArmorSeconds { get; set; }
 
-    public float GrindContactDamage { get; set; }
+	public float GrindContactDamage { get; set; }
+
+	public float BalanceDifficultyRate { get; set; } = 1.0f;
 }

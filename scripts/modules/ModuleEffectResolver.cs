@@ -38,10 +38,14 @@ public static class ModuleEffectResolver
                         effects.RailEntryArmorSeconds += 0.18f * intensity;
                         break;
 
-                    case "Spark Trail":
-                        effects.GrindContactDamage += 8.0f * intensity;
-                        break;
-                }
+					case "Spark Trail":
+						effects.GrindContactDamage += 8.0f * intensity;
+						break;
+
+					case "Mag Lock Stability":
+						effects.BalanceDifficultyRate *= 1.0f - (0.30f * intensity);
+						break;
+				}
             }
         }
 

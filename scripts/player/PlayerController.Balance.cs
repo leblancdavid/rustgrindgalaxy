@@ -53,15 +53,21 @@ public partial class PlayerController : CharacterBody2D
 
 	private void UpdateGrindBalance(float deltaSeconds, float inputDirection)
 	{
+		var t = Mathf.Clamp((_grindElapsedTime * _resolvedEffects.BalanceDifficultyRate) / Mathf.Max(GrindTimeToMaxDifficulty, 0.01f), 0.0f, 1.0f);
+
+		var currentDriftRate = Mathf.Lerp(BalanceDriftRate, BalanceMaxDriftRate, t);
+		var currentInterval = Mathf.Lerp(BalanceDriftChangeInterval, BalanceMinDriftInterval, t);
+		var currentTargetRange = Mathf.Lerp(1.0f, BalanceMaxDriftTargetRange, t);
+
 		_balanceDriftTimer -= deltaSeconds;
 
 		if (_balanceDriftTimer <= 0.0f)
 		{
-			_balanceDriftTarget = (float)GD.RandRange(-1.0, 1.0);
-			_balanceDriftTimer = BalanceDriftChangeInterval * (float)GD.RandRange(0.5f, 1.5f);
+			_balanceDriftTarget = (float)GD.RandRange(-currentTargetRange, currentTargetRange);
+			_balanceDriftTimer = currentInterval * (float)GD.RandRange(0.5f, 1.5f);
 		}
 
-		var drift = _balanceDriftTarget * BalanceDriftRate * deltaSeconds;
+		var drift = _balanceDriftTarget * currentDriftRate * deltaSeconds;
 		var correction = inputDirection * BalanceCorrectionSpeed * deltaSeconds;
 
 		_balanceValue += drift + correction;
@@ -78,6 +84,15 @@ public partial class PlayerController : CharacterBody2D
 				_balanceValue += recovery;
 			}
 		}
+
+		_balanceJitterTimer -= deltaSeconds;
+		if (_balanceJitterTimer <= 0.0f)
+		{
+			_balanceJitterValue = (float)GD.RandRange(-BalanceJitterAmplitude, BalanceJitterAmplitude);
+			_balanceJitterTimer = BalanceJitterInterval * (float)GD.RandRange(0.5f, 1.5f);
+		}
+
+		_balanceValue += _balanceJitterValue * deltaSeconds;
 
 		_balanceValue = Mathf.Clamp(_balanceValue, -BalanceMaxOffset, BalanceMaxOffset);
 
