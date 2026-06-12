@@ -45,6 +45,7 @@ public partial class PlayerController : CharacterBody2D
 	[Export] public float AirRotationRampUpTime = 0.5f;
 	[Export] public int MaxHealth = 5;
 	[Export] public float InvulnerabilityDuration = 0.75f;
+	[Export] public float FloorSnapDistance = 10.0f;
 
 	private const string GrindAction = "grind";
 	private const string TrickFlipAction = "trick_flip";
@@ -166,6 +167,7 @@ public partial class PlayerController : CharacterBody2D
 		_previousBoardContactPoint = GetRailContactPoint();
 		CurrentHealth = MaxHealth;
 		CreateBalanceIndicator();
+		FloorSnapLength = FloorSnapDistance;
 	}
 
 	public void SetLoadout(PlayerLoadout loadout)
