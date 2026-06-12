@@ -4,11 +4,13 @@ public partial class PlayerController : CharacterBody2D
 {
 	private void ApplyHorizontalMovement(ref Vector2 velocity, float inputDirection, float deltaSeconds, bool onFloor, float gravity)
 	{
+		float slopeAcceleration = 0.0f;
+
 		if (onFloor)
 		{
 			var floorNormal = GetFloorNormal();
 			var floorTangent = GetSlopeTangent(floorNormal);
-			var slopeAcceleration = floorTangent.Dot(Vector2.Down) * gravity * (SlopeGravityStrength / gravity);
+			slopeAcceleration = floorTangent.Dot(Vector2.Down) * gravity * (SlopeGravityStrength / gravity);
 			velocity.X += slopeAcceleration * deltaSeconds;
 		}
 
@@ -25,6 +27,17 @@ public partial class PlayerController : CharacterBody2D
 		var effectiveSpeed = HasSpeedBoost ? MoveSpeed * _boostMultiplier : MoveSpeed;
 		var targetSpeed = inputDirection * effectiveSpeed;
 		var acceleration = onFloor ? GroundAcceleration : AirAcceleration;
+
+		if (Mathf.Abs(velocity.X) > Mathf.Abs(targetSpeed) && Mathf.Sign(velocity.X) == Mathf.Sign(inputDirection))
+		{
+			if (onFloor && slopeAcceleration * inputDirection > 0.0f)
+			{
+				return;
+			}
+
+			acceleration = CoastDeceleration * 0.5f;
+		}
+
 		velocity.X = Mathf.MoveToward(velocity.X, targetSpeed, acceleration * deltaSeconds);
 	}
 
