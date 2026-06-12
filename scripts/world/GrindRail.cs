@@ -51,6 +51,12 @@ public partial class GrindRail : Node2D
         };
     }
 
+    public void ApplyPalette(LevelColorPalette palette, PaletteSlot slot = PaletteSlot.SecondaryMedium)
+    {
+        if (_line != null)
+            _line.DefaultColor = palette.Resolve(slot);
+    }
+
     public bool CanSnap(PlayerController player)
     {
         return TryGetSnapProgress(player.GlobalPosition, out _);

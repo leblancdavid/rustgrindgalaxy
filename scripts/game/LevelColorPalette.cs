@@ -18,10 +18,22 @@ public struct LevelColorPalette
     public Color SecondaryDark;
     public Color SecondaryMedium;
     public Color SecondaryLight;
+    public float Brightness;
+
+    public LevelColorPalette(Color primaryDark, Color primaryMedium, Color primaryLight, Color secondaryDark, Color secondaryMedium, Color secondaryLight)
+    {
+        PrimaryDark = primaryDark;
+        PrimaryMedium = primaryMedium;
+        PrimaryLight = primaryLight;
+        SecondaryDark = secondaryDark;
+        SecondaryMedium = secondaryMedium;
+        SecondaryLight = secondaryLight;
+        Brightness = 1f;
+    }
 
     public readonly Color Resolve(PaletteSlot slot)
     {
-        return slot switch
+        var color = slot switch
         {
             PaletteSlot.PrimaryDark => PrimaryDark,
             PaletteSlot.PrimaryMedium => PrimaryMedium,
@@ -31,6 +43,14 @@ public struct LevelColorPalette
             PaletteSlot.SecondaryLight => SecondaryLight,
             _ => Colors.White,
         };
+        return new Color(color.R * Brightness, color.G * Brightness, color.B * Brightness, 1f);
+    }
+
+    public readonly LevelColorPalette WithBrightness(float b)
+    {
+        var copy = this;
+        copy.Brightness = b;
+        return copy;
     }
 
     private static readonly Color CinderLight = Color.FromHtml("#F07830");
@@ -84,6 +104,7 @@ public struct LevelColorPalette
             SecondaryDark = secDark,
             SecondaryMedium = secMedium,
             SecondaryLight = secLight,
+            Brightness = 1f,
         };
     }
 }

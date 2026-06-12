@@ -10,6 +10,10 @@ public partial class ProcGenTest : Node2D
     private Camera2D _camera = null!;
     private Hud _hud = null!;
     private TileLevelGenerator _tileGenerator = null!;
+    private ColorRect _spaceRect = null!;
+    private ColorRect _upperBand = null!;
+    private ColorRect _glowStripe = null!;
+    private Sprite2D _fogMist = null!;
 
     public override void _Ready()
     {
@@ -28,10 +32,73 @@ public partial class ProcGenTest : Node2D
         _respawnPosition = SpawnPosition;
 
         var seed = (long)(GD.Randi() | ((ulong)GD.Randi() << 32));
-        var palette = LevelColorPalette.FromMinerals(MineralType.Cinder, MineralType.Azure);
-        _tileGenerator.Initialize(_player, null!, seed, palette);
+        var rng = new RandomNumberGenerator { Seed = (ulong)seed };
+
+        var primary = (MineralType)(rng.Randi() % 6);
+        var secondary = (MineralType)(rng.Randi() % 6);
+        while (secondary == primary) secondary = (MineralType)(rng.Randi() % 6);
+        var palette = LevelColorPalette.FromMinerals(primary, secondary);
+        GD.Print($"Palette: {primary}/{secondary}");
+        var darkenBg = rng.Randf() < 0.5f;
+        var bgDim = darkenBg ? 0.65f : 1.0f;
+        var fgPalette = darkenBg ? palette : palette.WithBrightness(0.85f);
+
+        ApplyPalette(palette, bgDim);
+
+        _tileGenerator.Initialize(_player, null!, seed, fgPalette);
         _tileGenerator.BuildInitial();
         _tileGenerator.UpdateStreaming();
+    }
+
+    private void ApplyPalette(LevelColorPalette palette, float bgDim = 1.0f)
+    {
+        _spaceRect = GetNode<ColorRect>("ParallaxBackground/DeepSpace/SpaceRect");
+        _upperBand = GetNode<ColorRect>("ParallaxBackground/FarLayer/UpperBand");
+        _glowStripe = GetNode<ColorRect>("ParallaxBackground/FarLayer/GlowStripe");
+
+        _spaceRect.Color = new Color(palette.PrimaryDark.R * bgDim, palette.PrimaryDark.G * bgDim, palette.PrimaryDark.B * bgDim, 1f);
+        _upperBand.Color = new Color(palette.PrimaryMedium.R * bgDim, palette.PrimaryMedium.G * bgDim, palette.PrimaryMedium.B * bgDim, 1f);
+        _glowStripe.Color = new Color(palette.SecondaryLight.R * bgDim, palette.SecondaryLight.G * bgDim, palette.SecondaryLight.B * bgDim, 0.2f);
+
+        var farLayer = GetNode("ParallaxBackground/FarLayer");
+        foreach (var child in farLayer.GetChildren())
+        {
+            if (child is Polygon2D poly && child.Name.ToString().StartsWith("Silhouette"))
+                poly.Color = new Color(palette.PrimaryDark.R * bgDim, palette.PrimaryDark.G * bgDim, palette.PrimaryDark.B * bgDim, 0.55f);
+        }
+
+        var midLayer = GetNode("ParallaxBackground/MidLayer");
+        foreach (var child in midLayer.GetChildren())
+        {
+            if (child is Polygon2D poly)
+            {
+                var name = child.Name.ToString();
+                if (name.StartsWith("MidPanel"))
+                    poly.Color = new Color(palette.PrimaryMedium.R * bgDim, palette.PrimaryMedium.G * bgDim, palette.PrimaryMedium.B * bgDim, 0.38f);
+                else if (name.StartsWith("Support"))
+                    poly.Color = new Color(palette.PrimaryLight.R * bgDim, palette.PrimaryLight.G * bgDim, palette.PrimaryLight.B * bgDim, 0.3f);
+            }
+        }
+
+        _fogMist = new Sprite2D();
+        _fogMist.Centered = false;
+        _fogMist.Position = new Vector2(0, 144);
+        AddChild(_fogMist);
+        MoveChild(_fogMist, 1);
+
+        var fogVis = new Color(palette.SecondaryMedium.R * bgDim, palette.SecondaryMedium.G * bgDim, palette.SecondaryMedium.B * bgDim, 0.55f);
+        var gradient = new Gradient();
+        gradient.SetColor(0, new Color(0, 0, 0, 0));
+        gradient.SetColor(1, fogVis);
+        gradient.AddPoint(0.3f, new Color(fogVis.R, fogVis.G, fogVis.B, 0.15f));
+        var tex = new GradientTexture2D();
+        tex.Gradient = gradient;
+        tex.Fill = GradientTexture2D.FillEnum.Linear;
+        tex.FillFrom = new Vector2(0, 0);
+        tex.FillTo = new Vector2(0, 1);
+        tex.Width = 640;
+        tex.Height = 216;
+        _fogMist.Texture = tex;
     }
 
     public override void _Process(double delta)

@@ -13,6 +13,7 @@ public partial class TileLevelIndustrial : MissionLevel
     private ColorRect _upperWall = null!;
     private ColorRect _midStripe = null!;
     private TileLevelGenerator _tileGenerator = null!;
+    private Sprite2D _fogMist = null!;
 
     public TileLevelGenerator TileGenerator => _tileGenerator;
     private Node2D _spawnedActors = null!;
@@ -37,6 +38,12 @@ public partial class TileLevelIndustrial : MissionLevel
         _droneScene = GD.Load<PackedScene>(DroneScenePath);
         _pickupScene = GD.Load<PackedScene>(PickupScenePath);
         _shockHazardScene = GD.Load<PackedScene>(ShockHazardScenePath);
+
+        _fogMist = new Sprite2D();
+        _fogMist.Centered = false;
+        _fogMist.Position = new Vector2(0, 72);
+        AddChild(_fogMist);
+        MoveChild(_fogMist, 3);
     }
 
     public override void _Process(double delta)
@@ -53,10 +60,16 @@ public partial class TileLevelIndustrial : MissionLevel
     public override void ApplyMission(MissionRunData mission)
     {
         var palette = LevelColorPalette.FromMinerals(mission.PrimaryMineral, mission.SecondaryMineral);
-        ApplyPalette(palette);
+
+        var rng = new RandomNumberGenerator { Seed = (ulong)(mission.RunSeed ^ 0x51F15EED) };
+        var darkenBg = rng.Randf() < 0.5f;
+        var bgDim = darkenBg ? 0.65f : 1.0f;
+        var fgPalette = darkenBg ? palette : palette.WithBrightness(0.85f);
+
+        ApplyPalette(palette, bgDim);
 
         var player = GetTree().Root.GetNodeOrNull<PlayerController>("World/Player");
-        _tileGenerator.Initialize(player!, this, mission.RunSeed ^ 0x51F15EED, palette);
+        _tileGenerator.Initialize(player!, this, mission.RunSeed ^ 0x51F15EED, fgPalette);
         _tileGenerator.SetExtractionZone(GetExtractionZone());
         _tileGenerator.BuildInitial();
 
@@ -74,12 +87,26 @@ public partial class TileLevelIndustrial : MissionLevel
         _tileGenerator.CollectSpawnMarkers("SpawnMarkers/Hazards", _hazardSpawnMarkers);
     }
 
-    private void ApplyPalette(LevelColorPalette palette)
+    private void ApplyPalette(LevelColorPalette palette, float bgDim = 1.0f)
     {
-        _backdrop.Color = palette.PrimaryDark;
+        _backdrop.Color = palette.PrimaryDark * bgDim;
         _backdrop.Color = new Color(_backdrop.Color.R, _backdrop.Color.G, _backdrop.Color.B, 1.0f);
-        _upperWall.Color = palette.PrimaryMedium;
-        _midStripe.Color = new Color(palette.SecondaryLight.R, palette.SecondaryLight.G, palette.SecondaryLight.B, 0.35f);
+        _upperWall.Color = new Color(palette.PrimaryMedium.R * bgDim, palette.PrimaryMedium.G * bgDim, palette.PrimaryMedium.B * bgDim, 1f);
+        _midStripe.Color = new Color(palette.SecondaryLight.R * bgDim, palette.SecondaryLight.G * bgDim, palette.SecondaryLight.B * bgDim, 0.35f);
+
+        var fogVis = new Color(palette.SecondaryMedium.R * bgDim, palette.SecondaryMedium.G * bgDim, palette.SecondaryMedium.B * bgDim, 0.55f);
+        var gradient = new Gradient();
+        gradient.SetColor(0, new Color(0, 0, 0, 0));
+        gradient.SetColor(1, fogVis);
+        gradient.AddPoint(0.3f, new Color(fogVis.R, fogVis.G, fogVis.B, 0.15f));
+        var tex = new GradientTexture2D();
+        tex.Gradient = gradient;
+        tex.Fill = GradientTexture2D.FillEnum.Linear;
+        tex.FillFrom = new Vector2(0, 0);
+        tex.FillTo = new Vector2(0, 1);
+        tex.Width = 320;
+        tex.Height = 108;
+        _fogMist.Texture = tex;
     }
 
     private void ApplyModifiers(MissionRunData mission)

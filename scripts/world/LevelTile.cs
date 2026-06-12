@@ -113,6 +113,37 @@ public partial class LevelTile : Node2D
     private static readonly Color RailSupportColor = new Color(0.35f, 0.35f, 0.38f);
     private const float RailSupportWidth = 6.0f;
 
+    public void ApplyVisualPalette(LevelColorPalette palette)
+    {
+        var b = palette.Brightness;
+        foreach (var child in GetChildren())
+        {
+            if (child is GrindRail rail)
+            {
+                rail.ApplyPalette(palette, PaletteSlot.SecondaryMedium);
+                continue;
+            }
+            if (child is Polygon2D poly)
+            {
+                Color color;
+                string name = child.Name;
+                if (name.Contains("Rise"))
+                    color = new Color(palette.PrimaryMedium.R * b, palette.PrimaryMedium.G * b, palette.PrimaryMedium.B * b, 1f);
+                else if (name.Contains("Edge"))
+                    color = new Color(palette.SecondaryLight.R * b, palette.SecondaryLight.G * b, palette.SecondaryLight.B * b, 1f);
+                else if (name.Contains("Trim"))
+                    color = new Color(palette.PrimaryLight.R * b, palette.PrimaryLight.G * b, palette.PrimaryLight.B * b, 1f);
+                else if (name == "UpperPlatformVisual")
+                    color = new Color(palette.SecondaryDark.R * b, palette.SecondaryDark.G * b, palette.SecondaryDark.B * b, 1f);
+                else if (name.Contains("Visual"))
+                    color = new Color(palette.PrimaryDark.R * b, palette.PrimaryDark.G * b, palette.PrimaryDark.B * b, 1f);
+                else
+                    continue;
+                poly.Color = color;
+            }
+        }
+    }
+
     public void SpawnRailSupports()
     {
         foreach (var child in GetChildren())
