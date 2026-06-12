@@ -4,6 +4,8 @@ public partial class BoostPad : Area2D
 {
 	[Export] public float BoostMultiplier = 2.0f;
 	[Export] public float BoostDuration = 1.5f;
+	[Export] public float BoostImpulse = 200.0f;
+	[Export] public float BoostAccelMultiplier = 3.0f;
 	[Export] public float PadWidth = 48.0f;
 	[Export] public float PadHeight = 10.0f;
 
@@ -68,6 +70,6 @@ public partial class BoostPad : Area2D
 		if (!player.IsOnFloor())
 			return;
 
-		player.ApplySpeedBoost(BoostMultiplier, BoostDuration);
+		player.ApplySpeedBoost(BoostMultiplier, BoostDuration, BoostImpulse, BoostAccelMultiplier);
 	}
 }

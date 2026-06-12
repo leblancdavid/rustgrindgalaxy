@@ -4,6 +4,15 @@ public partial class PlayerController : CharacterBody2D
 {
 	private void ApplyHorizontalMovement(ref Vector2 velocity, float inputDirection, float deltaSeconds, bool onFloor, float gravity)
 	{
+		if (_pendingBoostImpulse > 0f)
+		{
+			var dir = !Mathf.IsZeroApprox(inputDirection) ? Mathf.Sign(inputDirection) : Mathf.Sign(velocity.X);
+			if (dir == 0)
+				dir = 1;
+			velocity.X += dir * _pendingBoostImpulse;
+			_pendingBoostImpulse = 0f;
+		}
+
 		float slopeAcceleration = 0.0f;
 
 		if (onFloor)
@@ -26,7 +35,7 @@ public partial class PlayerController : CharacterBody2D
 
 		var effectiveSpeed = HasSpeedBoost ? MoveSpeed * _boostMultiplier : MoveSpeed;
 		var targetSpeed = inputDirection * effectiveSpeed;
-		var acceleration = onFloor ? GroundAcceleration : AirAcceleration;
+		var acceleration = onFloor ? GetBoostAcceleration(GroundAcceleration) : GetBoostAcceleration(AirAcceleration);
 
 		if (Mathf.Abs(velocity.X) > Mathf.Abs(targetSpeed) && Mathf.Sign(velocity.X) == Mathf.Sign(inputDirection))
 		{

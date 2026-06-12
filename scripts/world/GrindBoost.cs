@@ -4,6 +4,8 @@ public partial class GrindBoost : Area2D
 {
 	[Export] public float BoostMultiplier = 2.0f;
 	[Export] public float BoostDuration = 1.5f;
+	[Export] public float BoostImpulse = 180.0f;
+	[Export] public float BoostAccelMultiplier = 3.0f;
 	[Export] public float PadWidth = 48.0f;
 	[Export] public float PadHeight = 10.0f;
 
@@ -69,6 +71,6 @@ public partial class GrindBoost : Area2D
 		if (!player.IsGrinding)
 			return;
 
-		player.ApplyGrindBoost(BoostMultiplier, BoostDuration);
+		player.ApplyGrindBoost(BoostMultiplier, BoostDuration, BoostImpulse, BoostAccelMultiplier);
 	}
 }

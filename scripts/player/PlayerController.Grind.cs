@@ -122,7 +122,8 @@ public partial class PlayerController : CharacterBody2D
 
 		var downhillAcceleration = rail.Tangent.Dot(Vector2.Down) * gravity * (RailGravityStrength / gravity);
 		_railSpeed += downhillAcceleration * deltaSeconds;
-		_railSpeed = Mathf.MoveToward(_railSpeed, 0.0f, RailFriction * deltaSeconds);
+		var friction = HasGrindBoost ? RailFriction / _boostAccelMultiplier : RailFriction;
+		_railSpeed = Mathf.MoveToward(_railSpeed, 0.0f, friction * deltaSeconds);
 		_railSpeed += _balanceValue * BalancePhysicsForce * deltaSeconds;
 		var maxRailSpeed = HasGrindBoost ? MaxRailSpeed * _boostMultiplier : MaxRailSpeed;
 		_railSpeed = Mathf.Clamp(_railSpeed, -maxRailSpeed, maxRailSpeed);
