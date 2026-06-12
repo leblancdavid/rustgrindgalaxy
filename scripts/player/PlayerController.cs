@@ -215,6 +215,7 @@ public partial class PlayerController : CharacterBody2D
 		_railAttachCooldownRemaining = Mathf.Max(0.0f, _railAttachCooldownRemaining - deltaSeconds);
 		_grindIntentTimeRemaining = Mathf.Max(0.0f, _grindIntentTimeRemaining - deltaSeconds);
 		_travelIntentTimeRemaining = Mathf.Max(0.0f, _travelIntentTimeRemaining - deltaSeconds);
+		UpdateBoostTimers(deltaSeconds);
 
 		UpdateDamageFlash();
 		UpdateGrindIntent();

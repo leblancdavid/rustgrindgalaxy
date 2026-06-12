@@ -153,7 +153,83 @@ public partial class LevelTile : Node2D
         return palette[^1];
     }
 
-    public static FloorSegment[] GetDefaultFloorSegments(string tileName)
+	public void SpawnInteractiveProps(RandomNumberGenerator rng, float chance = 0.2f)
+	{
+		if (rng.Randf() >= chance)
+			return;
+
+		var roll = rng.RandiRange(0, 2);
+
+		if (roll == 0)
+			SpawnBoostPad(rng);
+		else if (roll == 1)
+			SpawnLaunchPad(rng);
+		else
+			SpawnGrindBoost(rng);
+	}
+
+	private void SpawnBoostPad(RandomNumberGenerator rng)
+	{
+		var segment = PickSegment(FloorSegments, rng);
+		if (segment == null)
+			return;
+
+		var localX = rng.RandfRange(segment.Value.StartX + 24f, segment.Value.EndX - 24f);
+		if (localX <= segment.Value.StartX)
+			localX = segment.Value.StartX + 24f;
+
+		var t = Mathf.InverseLerp(segment.Value.StartX, segment.Value.EndX, localX);
+		var floorY = Mathf.Lerp(segment.Value.StartY, segment.Value.EndY, t);
+
+		var pad = new BoostPad();
+		AddChild(pad);
+		pad.Position = new Vector2(localX, floorY - 5f);
+	}
+
+	private void SpawnLaunchPad(RandomNumberGenerator rng)
+	{
+		var segment = PickSegment(FloorSegments, rng);
+		if (segment == null)
+			return;
+
+		var localX = rng.RandfRange(segment.Value.StartX + 24f, segment.Value.EndX - 24f);
+		if (localX <= segment.Value.StartX)
+			localX = segment.Value.StartX + 24f;
+
+		var t = Mathf.InverseLerp(segment.Value.StartX, segment.Value.EndX, localX);
+		var floorY = Mathf.Lerp(segment.Value.StartY, segment.Value.EndY, t);
+
+		var pad = new LaunchPad();
+		AddChild(pad);
+		pad.Position = new Vector2(localX, floorY - 5f);
+	}
+
+	private void SpawnGrindBoost(RandomNumberGenerator rng)
+	{
+		GrindRail rail = null;
+		foreach (var child in GetChildren())
+		{
+			if (child is GrindRail candidate)
+			{
+				rail = candidate;
+				break;
+			}
+		}
+
+		if (rail == null)
+		{
+			SpawnBoostPad(rng);
+			return;
+		}
+
+		var localRailCenter = ToLocal(rail.StartPoint.Lerp(rail.EndPoint, 0.5f));
+
+		var pad = new GrindBoost();
+		AddChild(pad);
+		pad.Position = new Vector2(localRailCenter.X, localRailCenter.Y);
+	}
+
+	public static FloorSegment[] GetDefaultFloorSegments(string tileName)
     {
         return _defaultFloorSegments.TryGetValue(tileName, out var segments) ? segments : null;
     }

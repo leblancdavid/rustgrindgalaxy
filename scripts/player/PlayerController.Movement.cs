@@ -22,7 +22,8 @@ public partial class PlayerController : CharacterBody2D
 			return;
 		}
 
-		var targetSpeed = inputDirection * MoveSpeed;
+		var effectiveSpeed = HasSpeedBoost ? MoveSpeed * _boostMultiplier : MoveSpeed;
+		var targetSpeed = inputDirection * effectiveSpeed;
 		var acceleration = onFloor ? GroundAcceleration : AirAcceleration;
 		velocity.X = Mathf.MoveToward(velocity.X, targetSpeed, acceleration * deltaSeconds);
 	}

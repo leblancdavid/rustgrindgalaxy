@@ -121,7 +121,8 @@ public partial class PlayerController : CharacterBody2D
 		_railSpeed += downhillAcceleration * deltaSeconds;
 		_railSpeed = Mathf.MoveToward(_railSpeed, 0.0f, RailFriction * deltaSeconds);
 		_railSpeed += _balanceValue * BalancePhysicsForce * deltaSeconds;
-		_railSpeed = Mathf.Clamp(_railSpeed, -MaxRailSpeed, MaxRailSpeed);
+		var maxRailSpeed = HasGrindBoost ? MaxRailSpeed * _boostMultiplier : MaxRailSpeed;
+		_railSpeed = Mathf.Clamp(_railSpeed, -maxRailSpeed, maxRailSpeed);
 		_railProgress += (_railSpeed * deltaSeconds) / Mathf.Max(rail.Length, 0.001f);
 
 		if (_railProgress <= 0.0f || _railProgress >= 1.0f)

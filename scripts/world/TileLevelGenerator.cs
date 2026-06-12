@@ -174,8 +174,9 @@ public partial class TileLevelGenerator : Node2D
 
         tile.Position = new Vector2(offsetX + (shouldMirror ? tile.TileWidth : 0f), tileY);
 
-        tile.SpawnFloorProps(_rng, _missionLevel?.GetPropPalette() ?? PropPalettes.Industrial);
-        tile.SpawnRailSupports();
+		tile.SpawnFloorProps(_rng, _missionLevel?.GetPropPalette() ?? PropPalettes.Industrial);
+		tile.SpawnRailSupports();
+		tile.SpawnInteractiveProps(_rng);
 
         if (GeneratedTileCount > 0 && GeneratedTileCount % BeaconInterval == BeaconInterval - 1)
             PlaceBeacon(tile);
