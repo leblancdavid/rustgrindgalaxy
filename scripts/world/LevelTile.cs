@@ -135,7 +135,7 @@ public partial class LevelTile : Node2D
 
         var midY = (localPoint.Y + groundY) * 0.5f;
         var support = new Prop();
-        support.Initialize(RailSupportWidth, height, RailSupportColor, false);
+        support.Initialize(RailSupportWidth, height, RailSupportColor, false, Prop.PropLayer.Background);
         support.Position = new Vector2(localPoint.X, midY);
         AddChild(support);
     }
