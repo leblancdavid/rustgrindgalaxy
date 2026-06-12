@@ -117,6 +117,7 @@ public partial class PlayerController : CharacterBody2D
 	private Polygon2D _balanceArrow = null!;
 	private bool _isChargingJump;
 	private Marker2D _boardContact = null!;
+	private Node2D _visualContainer = null!;
 	private Polygon2D _boardVisual = null!;
 	private Polygon2D _visual = null!;
 	private Color _baseColor;
@@ -169,8 +170,9 @@ public partial class PlayerController : CharacterBody2D
 	{
 		EnsureGrindInput();
 		_boardContact = GetNode<Marker2D>("BoardContact");
-		_boardVisual = GetNode<Polygon2D>("BoardVisual");
-		_visual = GetNode<Polygon2D>("Visual");
+		_visualContainer = GetNode<Node2D>("VisualContainer");
+		_boardVisual = GetNode<Polygon2D>("VisualContainer/BoardVisual");
+		_visual = GetNode<Polygon2D>("VisualContainer/Visual");
 		_baseColor = _visual.Color;
 		_boardVisualBasePosition = _boardVisual.Position;
 		_airRotation = Rotation;

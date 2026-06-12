@@ -217,7 +217,7 @@ public partial class PlayerController : CharacterBody2D
 		_failedLandingDirection = failureDirection;
 		velocity = (floorTangent * tangentialSpeed) + (-floorNormal * fallSpeed);
 		GlobalPosition += floorNormal * FailedLandingSeparation;
-		_airRotation = Rotation;
+		_airRotation = _visualContainer.Rotation;
 	}
 
 	private void UpdateGroundRotationState()

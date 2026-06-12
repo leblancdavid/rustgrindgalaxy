@@ -161,12 +161,18 @@ public partial class PlayerController : CharacterBody2D
 
 	private void UpdateVisualRotation(float deltaSeconds, float targetRotation)
 	{
-		if (_activeRail != null || IsOnFloor() == false)
+		if (_activeRail != null)
 		{
-			Rotation = targetRotation;
+			_visualContainer.Rotation = 0.0f;
 			return;
 		}
 
-		Rotation = Mathf.LerpAngle(Rotation, targetRotation, Mathf.Clamp(RotationLerpSpeed * deltaSeconds, 0.0f, 1.0f));
+		if (IsOnFloor() == false)
+		{
+			_visualContainer.Rotation = targetRotation;
+			return;
+		}
+
+		_visualContainer.Rotation = Mathf.LerpAngle(_visualContainer.Rotation, targetRotation, Mathf.Clamp(RotationLerpSpeed * deltaSeconds, 0.0f, 1.0f));
 	}
 }

@@ -8,20 +8,23 @@ size = Vector2(16, 28)
 [node name="Player" type="CharacterBody2D"]
 script = ExtResource("1")
 
-[node name="BoardVisual" type="Polygon2D" parent="."]
-z_index = 2
-position = Vector2(0, 3)
-polygon = PackedVector2Array(-12, -2, -10, -4, 10, -4, 12, -2, 12, 2, 10, 4, -10, 4, -12, 2)
-color = Color(0.901961, 0.482353, 0.247059, 1)
-
-[node name="Visual" type="Polygon2D" parent="."]
-z_index = 3
-polygon = PackedVector2Array(0, -28, 4, -27, 7, -24, 8, -20, 8, -14, 7, -8, 4, -3, 0, 0, -4, -3, -7, -8, -8, -14, -8, -20, -7, -24, -4, -27)
-color = Color(0.819608, 0.827451, 0.882353, 1)
-
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(0, -14)
 shape = SubResource("1")
+
+[node name="VisualContainer" type="Node2D" parent="."]
+position = Vector2(0, 3)
+
+[node name="Visual" type="Polygon2D" parent="VisualContainer"]
+z_index = 3
+position = Vector2(0, -3)
+polygon = PackedVector2Array(0, -28, 4, -27, 7, -24, 8, -20, 8, -14, 7, -8, 4, -3, 0, 0, -4, -3, -7, -8, -8, -14, -8, -20, -7, -24, -4, -27)
+color = Color(0.819608, 0.827451, 0.882353, 1)
+
+[node name="BoardVisual" type="Polygon2D" parent="VisualContainer"]
+z_index = 2
+polygon = PackedVector2Array(-12, -2, -10, -4, 10, -4, 12, -2, 12, 2, 10, 4, -10, 4, -12, 2)
+color = Color(0.901961, 0.482353, 0.247059, 1)
 
 [node name="BoardContact" type="Marker2D" parent="."]
 position = Vector2(0, 4)

@@ -70,14 +70,15 @@ public partial class PlayerController : CharacterBody2D
 		var boardOffset = _boardContact.Position.Rotated(boardRotation);
 		GlobalPosition = rail.GetPointAtProgress(_railProgress) - boardOffset;
 		Rotation = boardRotation;
+		_visualContainer.Rotation = 0.0f;
 		Velocity = rail.Tangent * _railSpeed;
 	}
 
 	private void ExitRail()
 	{
+		_airRotation = GetBoardAngle();
 		_activeRail = null;
 		_railSpeed = 0.0f;
-		_airRotation = GetBoardAngle();
 		_railAttachCooldownRemaining = RailAttachCooldownSeconds;
 		_railRotationOffset = 0.0f;
 		_grindElapsedTime = 0.0f;
@@ -88,6 +89,7 @@ public partial class PlayerController : CharacterBody2D
 		{
 			_balanceIndicator.Visible = false;
 		}
+		Rotation = 0.0f;
 	}
 
 	private void HandleGrinding(ref Vector2 velocity, float inputDirection, float deltaSeconds, float gravity)
