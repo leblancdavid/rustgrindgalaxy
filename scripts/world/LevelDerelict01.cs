@@ -62,7 +62,7 @@ public partial class LevelDerelict01 : MissionLevel
         _backdrop.Color = palette.PrimaryDark;
         _backdrop.Color = new Color(_backdrop.Color.R, _backdrop.Color.G, _backdrop.Color.B, 1.0f);
         _hullBand.Color = palette.PrimaryMedium;
-        _fogBand.Color = new Color(palette.SecondaryLight.R, palette.SecondaryLight.G, palette.SecondaryLight.B, 0.18f);
+        _fogBand.Color = new Color(palette.PrimaryLight.R, palette.PrimaryLight.G, palette.PrimaryLight.B, 0.18f);
     }
 
     private void ApplyModifiers(MissionRunData mission)

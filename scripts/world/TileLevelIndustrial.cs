@@ -96,7 +96,7 @@ public partial class TileLevelIndustrial : MissionLevel
         _backdrop.Color = palette.PrimaryDark * bgDim;
         _backdrop.Color = new Color(_backdrop.Color.R, _backdrop.Color.G, _backdrop.Color.B, 1.0f);
         _upperWall.Color = new Color(palette.PrimaryMedium.R * bgDim, palette.PrimaryMedium.G * bgDim, palette.PrimaryMedium.B * bgDim, 1f);
-        _midStripe.Color = new Color(palette.SecondaryLight.R * bgDim, palette.SecondaryLight.G * bgDim, palette.SecondaryLight.B * bgDim, 0.35f);
+        _midStripe.Color = new Color(palette.PrimaryLight.R * bgDim, palette.PrimaryLight.G * bgDim, palette.PrimaryLight.B * bgDim, 0.35f);
 
         _mistFog = MistFog.CreateMist(palette, bgDim, 400);
         AddChild(_mistFog);

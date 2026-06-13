@@ -51,7 +51,7 @@ public partial class GrindRail : Node2D
         };
     }
 
-    public void ApplyPalette(LevelColorPalette palette, PaletteSlot slot = PaletteSlot.SecondaryMedium)
+    public void ApplyPalette(LevelColorPalette palette, PaletteSlot slot = PaletteSlot.PrimaryLight)
     {
         if (_line != null)
             _line.DefaultColor = palette.Resolve(slot);

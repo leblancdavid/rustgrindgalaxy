@@ -93,7 +93,7 @@ public partial class Prop : Node2D
             PropColor.A);
         if (_glow != null)
         {
-            var glowTint = _palette.Resolve(PaletteSlot.SecondaryMedium);
+            var glowTint = _palette.Resolve(PaletteSlot.PrimaryLight);
             _glow.Color = new Color(glowTint.R, glowTint.G, glowTint.B, 0.3f);
         }
     }

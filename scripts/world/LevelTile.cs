@@ -120,7 +120,7 @@ public partial class LevelTile : Node2D
         {
             if (child is GrindRail rail)
             {
-                rail.ApplyPalette(palette, PaletteSlot.SecondaryMedium);
+                rail.ApplyPalette(palette, PaletteSlot.PrimaryLight);
                 continue;
             }
             if (child is Polygon2D poly)
@@ -128,15 +128,15 @@ public partial class LevelTile : Node2D
                 Color color;
                 string name = child.Name;
                 if (name.Contains("Rise"))
-                    color = new Color(palette.PrimaryMedium.R * b, palette.PrimaryMedium.G * b, palette.PrimaryMedium.B * b, 1f);
+                    color = new Color(palette.SecondaryMedium.R * b, palette.SecondaryMedium.G * b, palette.SecondaryMedium.B * b, 1f);
                 else if (name.Contains("Edge"))
-                    color = new Color(palette.SecondaryLight.R * b, palette.SecondaryLight.G * b, palette.SecondaryLight.B * b, 1f);
-                else if (name.Contains("Trim"))
                     color = new Color(palette.PrimaryLight.R * b, palette.PrimaryLight.G * b, palette.PrimaryLight.B * b, 1f);
+                else if (name.Contains("Trim"))
+                    color = new Color(palette.SecondaryLight.R * b, palette.SecondaryLight.G * b, palette.SecondaryLight.B * b, 1f);
                 else if (name == "UpperPlatformVisual")
                     color = new Color(palette.SecondaryDark.R * b, palette.SecondaryDark.G * b, palette.SecondaryDark.B * b, 1f);
                 else if (name.Contains("Visual"))
-                    color = new Color(palette.PrimaryDark.R * b, palette.PrimaryDark.G * b, palette.PrimaryDark.B * b, 1f);
+                    color = new Color(palette.SecondaryDark.R * b, palette.SecondaryDark.G * b, palette.SecondaryDark.B * b, 1f);
                 else
                     continue;
                 poly.Color = color;

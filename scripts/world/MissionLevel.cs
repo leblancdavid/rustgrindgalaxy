@@ -66,17 +66,17 @@ public static class PropPalettes
         new() { Width = 20, Height = 42, Color = Gray(0.60f, 0.35f, 0.20f), IsLighting = false, Weight = 4f, Layer = Prop.PropLayer.Default, Slot = PaletteSlot.PrimaryMedium },
         new() { Width = 18, Height = 36, Color = Gray(0.38f, 0.42f, 0.45f), IsLighting = false, Weight = 4f, Layer = Prop.PropLayer.Default, Slot = PaletteSlot.PrimaryMedium },
         new() { Width = 10, Height = 10, Color = Gray(0.25f, 0.25f, 0.28f), IsLighting = false, Weight = 3f, Layer = Prop.PropLayer.Default, Slot = PaletteSlot.PrimaryDark },
-        new() { Width = 12, Height = 12, Color = Gray(0.75f, 0.70f, 0.30f), IsLighting = false, Weight = 3f, Layer = Prop.PropLayer.Default, Slot = PaletteSlot.SecondaryLight },
-        new() { Width = 12, Height = 12, Color = Gray(0.30f, 0.80f, 0.95f), IsLighting = false, Weight = 3f, Layer = Prop.PropLayer.Default, Slot = PaletteSlot.SecondaryLight },
+        new() { Width = 12, Height = 12, Color = Gray(0.75f, 0.70f, 0.30f), IsLighting = false, Weight = 3f, Layer = Prop.PropLayer.Default, Slot = PaletteSlot.PrimaryLight },
+        new() { Width = 12, Height = 12, Color = Gray(0.30f, 0.80f, 0.95f), IsLighting = false, Weight = 3f, Layer = Prop.PropLayer.Default, Slot = PaletteSlot.PrimaryLight },
         // Foreground layer — props drawn on top of player
-        new() { Width = 26, Height = 92, Color = Gray(0.85f, 0.60f, 0.05f), IsLighting = false, Weight = 4f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.SecondaryDark },
-        new() { Width = 80, Height = 32, Color = Gray(0.50f, 0.55f, 0.60f), IsLighting = false, Weight = 4f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.SecondaryDark },
-        new() { Width = 52, Height = 40, Color = Gray(0.55f, 0.40f, 0.25f), IsLighting = false, Weight = 4f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.SecondaryDark },
-        new() { Width = 40, Height = 66, Color = Gray(0.35f, 0.45f, 0.55f), IsLighting = false, Weight = 4f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.SecondaryDark },
-        new() { Width = 66, Height = 26, Color = Gray(0.65f, 0.35f, 0.15f), IsLighting = false, Weight = 4f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.SecondaryMedium },
-        new() { Width = 34, Height = 52, Color = Gray(0.30f, 0.60f, 0.25f), IsLighting = false, Weight = 3f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.SecondaryMedium },
-        new() { Width = 10, Height = 10, Color = Gray(0.90f, 0.85f, 0.40f), IsLighting = false, Weight = 3f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.SecondaryLight },
-        new() { Width = 14, Height = 14, Color = Gray(0.95f, 0.30f, 0.25f), IsLighting = false, Weight = 3f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.SecondaryLight },
+        new() { Width = 26, Height = 92, Color = Gray(0.85f, 0.60f, 0.05f), IsLighting = false, Weight = 4f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.PrimaryDark },
+        new() { Width = 80, Height = 32, Color = Gray(0.50f, 0.55f, 0.60f), IsLighting = false, Weight = 4f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.PrimaryDark },
+        new() { Width = 52, Height = 40, Color = Gray(0.55f, 0.40f, 0.25f), IsLighting = false, Weight = 4f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.PrimaryDark },
+        new() { Width = 40, Height = 66, Color = Gray(0.35f, 0.45f, 0.55f), IsLighting = false, Weight = 4f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.PrimaryDark },
+        new() { Width = 66, Height = 26, Color = Gray(0.65f, 0.35f, 0.15f), IsLighting = false, Weight = 4f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.PrimaryMedium },
+        new() { Width = 34, Height = 52, Color = Gray(0.30f, 0.60f, 0.25f), IsLighting = false, Weight = 3f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.PrimaryMedium },
+        new() { Width = 10, Height = 10, Color = Gray(0.90f, 0.85f, 0.40f), IsLighting = false, Weight = 3f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.PrimaryLight },
+        new() { Width = 14, Height = 14, Color = Gray(0.95f, 0.30f, 0.25f), IsLighting = false, Weight = 3f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.PrimaryLight },
     };
 
     public static readonly List<PropTemplate> Derelict = new()
@@ -94,12 +94,12 @@ public static class PropPalettes
         new() { Width = 18, Height = 18, Color = Gray(0.32f, 0.22f, 0.15f), IsLighting = false, Weight = 5f, Layer = Prop.PropLayer.Default, Slot = PaletteSlot.PrimaryMedium },
         new() { Width = 20, Height = 42, Color = Gray(0.35f, 0.25f, 0.16f), IsLighting = false, Weight = 5f, Layer = Prop.PropLayer.Default, Slot = PaletteSlot.PrimaryMedium },
         new() { Width = 12, Height = 12, Color = Gray(0.22f, 0.16f, 0.10f), IsLighting = false, Weight = 3f, Layer = Prop.PropLayer.Default, Slot = PaletteSlot.PrimaryDark },
-        new() { Width = 10, Height = 10, Color = Gray(0.60f, 0.50f, 0.20f), IsLighting = false, Weight = 3f, Layer = Prop.PropLayer.Default, Slot = PaletteSlot.SecondaryLight },
+        new() { Width = 10, Height = 10, Color = Gray(0.60f, 0.50f, 0.20f), IsLighting = false, Weight = 3f, Layer = Prop.PropLayer.Default, Slot = PaletteSlot.PrimaryLight },
         // Foreground
-        new() { Width = 66, Height = 26, Color = Gray(0.50f, 0.35f, 0.22f), IsLighting = false, Weight = 4f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.SecondaryDark },
-        new() { Width = 34, Height = 60, Color = Gray(0.55f, 0.30f, 0.18f), IsLighting = false, Weight = 4f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.SecondaryDark },
-        new() { Width = 46, Height = 32, Color = Gray(0.45f, 0.28f, 0.15f), IsLighting = false, Weight = 3f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.SecondaryDark },
-        new() { Width = 20, Height = 16, Color = Gray(0.80f, 0.60f, 0.30f), IsLighting = false, Weight = 3f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.SecondaryLight },
+        new() { Width = 66, Height = 26, Color = Gray(0.50f, 0.35f, 0.22f), IsLighting = false, Weight = 4f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.PrimaryDark },
+        new() { Width = 34, Height = 60, Color = Gray(0.55f, 0.30f, 0.18f), IsLighting = false, Weight = 4f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.PrimaryDark },
+        new() { Width = 46, Height = 32, Color = Gray(0.45f, 0.28f, 0.15f), IsLighting = false, Weight = 3f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.PrimaryDark },
+        new() { Width = 20, Height = 16, Color = Gray(0.80f, 0.60f, 0.30f), IsLighting = false, Weight = 3f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.PrimaryLight },
     };
 
     public static readonly List<PropTemplate> Surface = new()
@@ -118,11 +118,11 @@ public static class PropPalettes
         new() { Width = 18, Height = 16, Color = Gray(0.32f, 0.28f, 0.22f), IsLighting = false, Weight = 5f, Layer = Prop.PropLayer.Default, Slot = PaletteSlot.PrimaryMedium },
         new() { Width = 20, Height = 30, Color = Gray(0.28f, 0.24f, 0.18f), IsLighting = false, Weight = 5f, Layer = Prop.PropLayer.Default, Slot = PaletteSlot.PrimaryMedium },
         new() { Width = 12, Height = 12, Color = Gray(0.50f, 0.45f, 0.35f), IsLighting = false, Weight = 3f, Layer = Prop.PropLayer.Default, Slot = PaletteSlot.PrimaryMedium },
-        new() { Width = 10, Height = 10, Color = Gray(0.60f, 0.55f, 0.30f), IsLighting = false, Weight = 3f, Layer = Prop.PropLayer.Default, Slot = PaletteSlot.SecondaryLight },
+        new() { Width = 10, Height = 10, Color = Gray(0.60f, 0.55f, 0.30f), IsLighting = false, Weight = 3f, Layer = Prop.PropLayer.Default, Slot = PaletteSlot.PrimaryLight },
         // Foreground — surface debris
-        new() { Width = 52, Height = 32, Color = Gray(0.35f, 0.40f, 0.22f), IsLighting = false, Weight = 5f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.SecondaryDark },
-        new() { Width = 40, Height = 26, Color = Gray(0.50f, 0.42f, 0.30f), IsLighting = false, Weight = 4f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.SecondaryDark },
-        new() { Width = 30, Height = 46, Color = Gray(0.40f, 0.30f, 0.20f), IsLighting = false, Weight = 4f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.SecondaryDark },
-        new() { Width = 20, Height = 16, Color = Gray(0.70f, 0.65f, 0.30f), IsLighting = false, Weight = 3f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.SecondaryLight },
+        new() { Width = 52, Height = 32, Color = Gray(0.35f, 0.40f, 0.22f), IsLighting = false, Weight = 5f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.PrimaryDark },
+        new() { Width = 40, Height = 26, Color = Gray(0.50f, 0.42f, 0.30f), IsLighting = false, Weight = 4f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.PrimaryDark },
+        new() { Width = 30, Height = 46, Color = Gray(0.40f, 0.30f, 0.20f), IsLighting = false, Weight = 4f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.PrimaryDark },
+        new() { Width = 20, Height = 16, Color = Gray(0.70f, 0.65f, 0.30f), IsLighting = false, Weight = 3f, Layer = Prop.PropLayer.Foreground, Slot = PaletteSlot.PrimaryLight },
     };
 }

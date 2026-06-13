@@ -62,7 +62,7 @@ public partial class LevelSurface01 : MissionLevel
         _sky.Color = palette.PrimaryDark;
         _sky.Color = new Color(_sky.Color.R, _sky.Color.G, _sky.Color.B, 1.0f);
         _horizon.Color = palette.PrimaryMedium;
-        _dustBand.Color = new Color(palette.SecondaryLight.R, palette.SecondaryLight.G, palette.SecondaryLight.B, 0.18f);
+        _dustBand.Color = new Color(palette.PrimaryLight.R, palette.PrimaryLight.G, palette.PrimaryLight.B, 0.18f);
     }
 
     private void ApplyModifiers(MissionRunData mission)

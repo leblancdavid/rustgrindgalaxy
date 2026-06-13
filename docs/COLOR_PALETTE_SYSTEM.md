@@ -66,18 +66,21 @@ Which palette slot each visual element should use. Marked as adjustable during i
 |---|---|---|
 | Backdrop / sky fill | PrimaryDark | Full-screen ColorRect behind everything |
 | UpperWall / cliff sides | PrimaryMedium | Secondary structural surfaces |
-| MidStripe / accent lines | SecondaryLight | Horizontal accent band |
-| GroundVisual (tile floor) | PrimaryDark | Large floor Polygon2D |
-| GroundTrim (tile edge) | PrimaryLight | Bright edge line on walkable surface |
-| Catwalk floor | PrimaryDark | Elevated walkway surface |
-| Catwalk trim | PrimaryLight | Catwalk edge highlight |
-| Rail support posts | PrimaryDark | Vertical support bars under rails |
+| MidStripe / accent lines | PrimaryLight | Horizontal accent band |
+| GroundVisual (tile floor) | SecondaryDark | Large floor Polygon2D |
+| GroundTrim (tile edge) | SecondaryLight | Bright edge line on walkable surface |
+| GroundRise (wall risers) | SecondaryMedium | Vertical wall faces between floor levels |
+| Edge lines | PrimaryLight | Thin highlight edge on floor platforms |
+| Catwalk floor | SecondaryDark | Elevated walkway surface |
+| Catwalk trim | SecondaryLight | Catwalk edge highlight |
+| Rail support posts | SecondaryDark | Vertical support bars under rails |
+| Grind rail line | PrimaryLight | Rail top surface |
 | Background-layer props | PrimaryDark or PrimaryMedium | Tall distant structures |
 | Default-layer props | PrimaryMedium or PrimaryLight | Mid-ground clutter |
-| Foreground-layer props | Secondary variants | Elements drawn above the player |
-| Prop glow / lighting effects | SecondaryMedium | Semi-transparent glow behind lit props |
-| Hazard glow / energy effects | SecondaryLight | Active hazard warning colors |
-| Extraction zone marker | SecondaryLight | Mission exit highlight |
+| Foreground-layer props | Primary variants | Elements drawn above the player |
+| Prop glow / lighting effects | PrimaryLight | Semi-transparent glow behind lit props |
+| Hazard glow / energy effects | PrimaryLight | Active hazard warning colors |
+| Extraction zone marker | PrimaryLight | Mission exit highlight |
 
 A prop template declares a `PaletteSlot` field so the mapping can vary per prop, not just per layer.
 
