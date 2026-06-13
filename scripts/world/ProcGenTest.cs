@@ -13,7 +13,7 @@ public partial class ProcGenTest : Node2D
     private ColorRect _spaceRect = null!;
     private ColorRect _upperBand = null!;
     private ColorRect _glowStripe = null!;
-    private Sprite2D _fogMist = null!;
+    private Sprite2D _mistFog = null!;
 
     public override void _Ready()
     {
@@ -80,25 +80,10 @@ public partial class ProcGenTest : Node2D
             }
         }
 
-        _fogMist = new Sprite2D();
-        _fogMist.Centered = false;
-        _fogMist.Position = new Vector2(0, 144);
-        AddChild(_fogMist);
-        MoveChild(_fogMist, 1);
-
-        var fogVis = new Color(palette.SecondaryMedium.R * bgDim, palette.SecondaryMedium.G * bgDim, palette.SecondaryMedium.B * bgDim, 0.55f);
-        var gradient = new Gradient();
-        gradient.SetColor(0, new Color(0, 0, 0, 0));
-        gradient.SetColor(1, fogVis);
-        gradient.AddPoint(0.3f, new Color(fogVis.R, fogVis.G, fogVis.B, 0.15f));
-        var tex = new GradientTexture2D();
-        tex.Gradient = gradient;
-        tex.Fill = GradientTexture2D.FillEnum.Linear;
-        tex.FillFrom = new Vector2(0, 0);
-        tex.FillTo = new Vector2(0, 1);
-        tex.Width = 640;
-        tex.Height = 216;
-        _fogMist.Texture = tex;
+        _mistFog = MistFog.CreateMist(palette, bgDim, 800);
+        AddChild(_mistFog);
+        MoveChild(_mistFog, 1);
+        _mistFog.Position = new Vector2(-1500, -40);
     }
 
     public override void _Process(double delta)
@@ -106,6 +91,10 @@ public partial class ProcGenTest : Node2D
         _hud.UpdatePlayerState(_player);
         _hud.UpdateTileName(GetTileLabelText());
         _tileGenerator.UpdateStreaming();
+
+        _mistFog.Position = new Vector2(
+            _camera.GlobalPosition.X - 1500,
+            -40);
 
         var surfaceY = GetSurfaceYAtX(_player.GlobalPosition.X);
         var threshold = surfaceY < float.MaxValue ? surfaceY + 500f : FallRespawnY;
