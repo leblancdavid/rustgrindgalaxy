@@ -9,6 +9,8 @@ public partial class ShockHazard : Area2D
     public override void _Ready()
     {
         _visual = GetNode<Polygon2D>("Visual");
+        var glow = RectGlow.CreateGlow(28f, 12f, ZIndex + 1);
+        AddChild(glow);
         BodyEntered += OnBodyEntered;
     }
 

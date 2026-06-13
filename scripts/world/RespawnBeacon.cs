@@ -11,6 +11,7 @@ public partial class RespawnBeacon : Area2D
     private PlayerController _player = null!;
     private Polygon2D _visual = null!;
     private Polygon2D _beam = null!;
+    private Polygon2D _glow = null!;
     private Label _label = null!;
 
     public override void _Ready()
@@ -20,6 +21,9 @@ public partial class RespawnBeacon : Area2D
         _beam = GetNode<Polygon2D>("Beam");
         _label = GetNode<Label>("Label");
         _beam.Visible = false;
+
+        _glow = RectGlow.CreateGlow(30f, 30f, ZIndex + 1);
+        AddChild(_glow);
     }
 
     public void SetPlayer(PlayerController player)

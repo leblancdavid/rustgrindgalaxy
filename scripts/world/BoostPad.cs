@@ -29,9 +29,13 @@ public partial class BoostPad : Area2D
 	{
 		var greenColor = new Color(0.2f, 0.7f, 0.2f);
 
-		var bg = new Polygon2D();
 		var hw = PadWidth / 2f;
 		var hh = PadHeight / 2f;
+
+		var glow = RectGlow.CreateGlow(PadWidth + 10f, PadHeight + 2f, ZIndex + 1);
+		AddChild(glow);
+
+		var bg = new Polygon2D();
 		bg.Polygon = new Vector2[]
 		{
 			new Vector2(-hw, -hh),

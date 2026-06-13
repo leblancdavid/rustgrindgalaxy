@@ -13,6 +13,7 @@ public partial class GrindRail : Node2D
     private Area2D _area = null!;
     private CollisionShape2D _collisionShape = null!;
     private Line2D _line = null!;
+    private Polygon2D _glowPoly = null!;
 
     public Vector2 StartPoint => ToGlobal(new Vector2(-Width * 0.5f, 0.0f));
 
@@ -31,6 +32,9 @@ public partial class GrindRail : Node2D
         _collisionShape = _area.GetNode<CollisionShape2D>("CollisionShape2D");
         _line = GetNode<Line2D>("Line2D");
         _line.ZIndex = 1;
+
+        _glowPoly = RectGlow.CreateGlow(Width + 10f, Height + 2f, ZIndex + 1);
+        AddChild(_glowPoly);
 
         UpdateVisuals();
         _area.BodyEntered += OnBodyEntered;
