@@ -20,8 +20,9 @@ void fragment() {
     float yDist = min(UV.y, 1.0 - UV.y) * glow_size.y;
     float edgeDist = min(xDist, yDist);
     float t = edgeDist / 3.0;
+    float cornerFade = smoothstep(0.0, 3.0, max(xDist, yDist));
     float peakAlpha = 0.35;
-    float alpha = peakAlpha * clamp(t, 0.0, 1.0) * clamp(2.0 - t, 0.0, 1.0);
+    float alpha = peakAlpha * clamp(t, 0.0, 1.0) * (1.0 - step(1.0, t)) * cornerFade;
 
     vec2 g = floor(UV * vec2(32.0, 32.0));
     float n = fract(sin(g.x * 12.9898 + g.y * 78.233) * 43758.5453);
