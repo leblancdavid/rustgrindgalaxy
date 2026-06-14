@@ -63,6 +63,9 @@ public partial class GrindRail : Node2D
     {
         if (_poly != null)
             _poly.Color = palette.Resolve(slot);
+
+        if (_glowPoly != null && _glowPoly.Material is ShaderMaterial mat)
+            mat.SetShaderParameter("glow_color", _poly.Color);
     }
 
     public bool CanSnap(PlayerController player)
