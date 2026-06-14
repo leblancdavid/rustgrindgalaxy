@@ -102,7 +102,13 @@ public partial class LevelTile : Node2D
                 continue;
 
             var loot = new LootProp();
-            loot.Initialize(type, width, height, minAmount, maxAmount);
+            var baseSink = 5f;
+            var slope = segment.Value.EndX != segment.Value.StartX
+                ? Mathf.Abs((segment.Value.EndY - segment.Value.StartY) / (segment.Value.EndX - segment.Value.StartX))
+                : 0f;
+            var rampSink = slope * width * 0.5f;
+            var groundOffset = baseSink + rampSink;
+            loot.Initialize(type, width, height, minAmount, maxAmount, groundOffset);
 
             if (type == LootType.MineralPatch && _colorPalette.Brightness > 0f)
             {
@@ -111,12 +117,6 @@ public partial class LevelTile : Node2D
             }
 
             AddChild(loot);
-            var baseSink = 5f;
-            var slope = segment.Value.EndX != segment.Value.StartX
-                ? Mathf.Abs((segment.Value.EndY - segment.Value.StartY) / (segment.Value.EndX - segment.Value.StartX))
-                : 0f;
-            var rampSink = slope * width * 0.5f;
-            var groundOffset = baseSink + rampSink;
             loot.Position = new Vector2(localX, floorY - height / 2f + groundOffset);
             AddExcludedPosition(new Vector2(localX, floorY));
         }

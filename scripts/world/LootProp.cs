@@ -20,6 +20,7 @@ public partial class LootProp : Area2D
     private MineralType _mineral = MineralType.Cinder;
     private bool _mineralSet;
     private bool _shattered;
+    private float _groundOffset;
 
     public override void _Ready()
     {
@@ -53,13 +54,14 @@ public partial class LootProp : Area2D
         }
     }
 
-    public void Initialize(LootType type, float width, float height, int minAmount, int maxAmount)
+    public void Initialize(LootType type, float width, float height, int minAmount, int maxAmount, float groundOffset = 5f)
     {
         Type = type;
         _width = width;
         _height = height;
         MinAmount = minAmount;
         MaxAmount = maxAmount;
+        _groundOffset = groundOffset;
 
         BuildChildren();
     }
@@ -187,20 +189,23 @@ public partial class LootProp : Area2D
                 frag.Position = new Vector2(localX, localY);
                 AddChild(frag);
 
-                var flyDir = new Vector2(
-                    rng.RandfRange(-1f, 1f),
-                    rng.RandfRange(-1.5f, -0.3f)).Normalized();
-                var flyDist = rng.RandfRange(60f, 120f);
-                var targetPos = frag.Position + flyDir * flyDist;
+                var velX = rng.RandfRange(-50f, 50f);
+                var velY = rng.RandfRange(-30f, 70f);
+                var targetX = localX + velX;
+                var targetY = Mathf.Min(localY + velY, _height / 2f - _groundOffset);
                 var rotAmount = rng.RandfRange(-Mathf.Pi, Mathf.Pi);
 
-                tween.TweenProperty(frag, "position", targetPos, 0.35f)
+                tween.TweenProperty(frag, "position:x", targetX, 0.3f)
                     .SetTrans(Tween.TransitionType.Quad)
                     .SetEase(Tween.EaseType.Out);
+                tween.TweenProperty(frag, "position:y", targetY, 0.5f)
+                    .SetTrans(Tween.TransitionType.Quad)
+                    .SetEase(velY >= 0 ? Tween.EaseType.In : Tween.EaseType.Out);
                 tween.TweenProperty(frag, "rotation", rotAmount, 0.35f)
                     .SetTrans(Tween.TransitionType.Quad)
                     .SetEase(Tween.EaseType.Out);
                 tween.TweenProperty(frag, "modulate:a", 0.0f, 0.35f)
+                    .SetDelay(0.15f)
                     .SetTrans(Tween.TransitionType.Quad)
                     .SetEase(Tween.EaseType.In);
 
@@ -208,6 +213,7 @@ public partial class LootProp : Area2D
             }
         }
 
+        tween.SetParallel(false);
         tween.TweenCallback(Callable.From(() => QueueFree()));
     }
 
