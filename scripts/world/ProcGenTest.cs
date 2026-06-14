@@ -23,7 +23,7 @@ public partial class ProcGenTest : Node2D
         _tileGenerator = GetNode<TileLevelGenerator>("TileGenerator");
 
         RemoveCameraBounds();
-        _camera.Position = new Vector2(0, -30);
+        _camera.Position = new Vector2(0, -80);
 
         var generator = new ModuleGenerator();
         _player.SetLoadout(generator.GenerateDebugLoadout(ModuleRarity.Rare));
