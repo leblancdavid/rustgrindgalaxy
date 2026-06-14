@@ -12,7 +12,7 @@ public partial class GrindRail : Node2D
 
     private Area2D _area = null!;
     private CollisionShape2D _collisionShape = null!;
-    private Line2D _line = null!;
+    private Polygon2D _poly = null!;
     private Polygon2D _glowPoly = null!;
 
     public Vector2 StartPoint => ToGlobal(new Vector2(-Width * 0.5f, 0.0f));
@@ -30,10 +30,10 @@ public partial class GrindRail : Node2D
         AddToGroup(RailGroupName);
         _area = GetNode<Area2D>("Area2D");
         _collisionShape = _area.GetNode<CollisionShape2D>("CollisionShape2D");
-        _line = GetNode<Line2D>("Line2D");
-        _line.ZIndex = 1;
+        _poly = GetNode<Polygon2D>("Polygon2D");
+        _poly.ZIndex = 1;
 
-        _glowPoly = RectGlow.CreateGlow(Width + 10f, Height + 2f, ZIndex + 1);
+        _glowPoly = RectGlow.CreateGlow(Width + 6f, Height + 6f, ZIndex + 1);
         AddChild(_glowPoly);
 
         UpdateVisuals();
@@ -48,17 +48,21 @@ public partial class GrindRail : Node2D
             rectangle.Size = new Vector2(Width, Height);
         }
 
-        _line.Points = new[]
+        var hw = Width * 0.5f;
+        var hh = Height * 0.5f;
+        _poly.Polygon = new[]
         {
-            new Vector2(-Width * 0.5f, 0.0f),
-            new Vector2(Width * 0.5f, 0.0f),
+            new Vector2(-hw, -hh),
+            new Vector2(hw, -hh),
+            new Vector2(hw, hh),
+            new Vector2(-hw, hh),
         };
     }
 
     public void ApplyPalette(LevelColorPalette palette, PaletteSlot slot = PaletteSlot.PrimaryLight)
     {
-        if (_line != null)
-            _line.DefaultColor = palette.Resolve(slot);
+        if (_poly != null)
+            _poly.Color = palette.Resolve(slot);
     }
 
     public bool CanSnap(PlayerController player)

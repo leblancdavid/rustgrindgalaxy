@@ -10,7 +10,7 @@ public partial class MineralPickup : Area2D
     public override void _Ready()
     {
         _visual = GetNode<Polygon2D>("Visual");
-        var glow = RectGlow.CreateGlow(22f, 14f, ZIndex + 1);
+        var glow = RectGlow.CreateGlow(18f, 18f, ZIndex + 1);
         AddChild(glow);
         UpdateVisual();
         BodyEntered += OnBodyEntered;

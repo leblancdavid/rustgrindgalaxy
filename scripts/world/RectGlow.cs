@@ -18,15 +18,14 @@ uniform vec2 glow_size;
 void fragment() {
     float xDist = min(UV.x, 1.0 - UV.x) * glow_size.x;
     float yDist = min(UV.y, 1.0 - UV.y) * glow_size.y;
-    float axialDist = min(xDist, yDist);
-    float cornerR = min(min(glow_size.x, glow_size.y) * 0.5, 8.0);
-    float roundPush = cornerR * (1.0 - smoothstep(0.0, cornerR, max(xDist, yDist)));
-    float edgeDist = max(0.0, axialDist - roundPush);
-    float alpha = smoothstep(0.0, 12.0, edgeDist);
+    float edgeDist = min(xDist, yDist);
+    float t = edgeDist / 3.0;
+    float peakAlpha = 0.35;
+    float alpha = peakAlpha * clamp(t, 0.0, 1.0) * clamp(2.0 - t, 0.0, 1.0);
 
     vec2 g = floor(UV * vec2(32.0, 32.0));
     float n = fract(sin(g.x * 12.9898 + g.y * 78.233) * 43758.5453);
-    float grain = 1.0 + (n - 0.5) * 0.16;
+    float grain = 1.0 + (n - 0.5) * 0.12;
 
     COLOR = vec4(1.0, 1.0, 1.0, alpha * grain);
 }";

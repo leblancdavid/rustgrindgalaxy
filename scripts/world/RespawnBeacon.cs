@@ -22,7 +22,7 @@ public partial class RespawnBeacon : Area2D
         _label = GetNode<Label>("Label");
         _beam.Visible = false;
 
-        _glow = RectGlow.CreateGlow(30f, 30f, ZIndex + 1);
+        _glow = RectGlow.CreateGlow(26f, 34f, ZIndex + 1);
         AddChild(_glow);
     }
 

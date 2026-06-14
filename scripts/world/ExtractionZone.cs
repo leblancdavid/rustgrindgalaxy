@@ -7,7 +7,7 @@ public partial class ExtractionZone : Area2D
     public override void _Ready()
     {
         _visual = GetNode<Polygon2D>("Visual");
-        var glow = RectGlow.CreateGlow(38f, 22f, ZIndex + 1);
+        var glow = RectGlow.CreateGlow(34f, 26f, ZIndex + 1);
         AddChild(glow);
         BodyEntered += OnBodyEntered;
     }

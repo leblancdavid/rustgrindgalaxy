@@ -33,7 +33,7 @@ public partial class GrindBoost : Area2D
 		var hw = PadWidth / 2f;
 		var hh = PadHeight / 2f;
 
-		var glow = RectGlow.CreateGlow(PadWidth + 10f, PadHeight + 2f, ZIndex + 1);
+		var glow = RectGlow.CreateGlow(PadWidth + 6f, PadHeight + 6f, ZIndex + 1);
 		AddChild(glow);
 
 		var bg = new Polygon2D();

@@ -3,15 +3,15 @@
 [ext_resource type="Script" path="res://scripts/world/GrindRail.cs" id="1"]
 
 [sub_resource type="RectangleShape2D" id="1"]
-size = Vector2(96, 10)
+size = Vector2(96, 3)
 
 [node name="GrindRail" type="Node2D"]
 script = ExtResource("1")
+Height = 3.0
 
-[node name="Line2D" type="Line2D" parent="."]
-width = 3.0
-default_color = Color(0.960784, 0.807843, 0.301961, 1)
-points = PackedVector2Array(-48, 0, 48, 0)
+[node name="Polygon2D" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-48, -1.5, 48, -1.5, 48, 1.5, -48, 1.5)
+color = Color(0.960784, 0.807843, 0.301961, 1)
 
 [node name="Area2D" type="Area2D" parent="."]
 
