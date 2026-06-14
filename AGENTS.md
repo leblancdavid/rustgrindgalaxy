@@ -48,6 +48,11 @@ The current repository started as a mostly asset-only shell. Do not assume gamep
 - When adding scenes, keep ownership and node structure obvious.
 - Use deterministic scene names and script paths so they are easy to find with search tools.
 
+## Physics & Node Lookup Patterns
+
+- For code-created `Area2D` nodes, `BodyEntered`/`GetOverlappingBodies()` can fail silently. Use `PhysicsDirectSpaceState2D.IntersectShape()` with a `PhysicsShapeQueryParameters2D` instead — it queries the physics engine's spatial hash directly and is guaranteed to detect overlap if the geometries intersect.
+- When looking up `World` via `player.GetParentOrNull<World>()`, the player's parent may be `ProcGenTest` (test scene) instead of `World`. Use `world?.CollectMineral(...)` (null-conditional) to silently skip optional World-only operations while still running required cleanup like `QueueFree()` or `PlayShatter()`. See `MineralPickup.cs:32-34` for the established pattern.
+
 ## Refactoring And Safety
 
 - Inspect existing usage before changing public method names or scene paths.
