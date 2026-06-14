@@ -180,6 +180,7 @@ public partial class TileLevelGenerator : Node2D
 		tile.ClearExcludedPositions();
 		tile.SpawnInteractiveProps(_rng);
 		tile.SpawnFloorProps(_rng, _missionLevel?.GetPropPalette() ?? PropPalettes.Industrial, _colorPalette);
+		tile.SpawnLootProps(_rng, _colorPalette);
 		tile.SpawnRailSupports();
 		tile.ApplyVisualPalette(_colorPalette);
 

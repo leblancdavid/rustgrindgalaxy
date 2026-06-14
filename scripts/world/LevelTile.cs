@@ -35,6 +35,109 @@ public partial class LevelTile : Node2D
 
     public float GetTileRightX() => Position.X + TileWidth;
 
+    public void SpawnLootProps(RandomNumberGenerator rng, LevelColorPalette colorPalette, float chance = 0.5f, int minCount = 1, int maxCount = 3)
+    {
+        if (FloorSegments == null || FloorSegments.Length == 0)
+            return;
+
+        if (rng.Randf() >= chance)
+            return;
+
+        var count = rng.RandiRange(minCount, maxCount);
+        for (var i = 0; i < count; i++)
+        {
+            var segment = PickSegment(FloorSegments, rng);
+            if (segment == null)
+                continue;
+
+            var roll = rng.Randf();
+            var type = roll < 0.40f ? LootType.Crate : roll < 0.75f ? LootType.Scrap : LootType.MineralPatch;
+
+            float width, height;
+            int minAmount, maxAmount;
+            switch (type)
+            {
+                case LootType.Crate:
+                    width = rng.RandfRange(28f, 36f);
+                    height = rng.RandfRange(22f, 30f);
+                    minAmount = 1;
+                    maxAmount = 3;
+                    break;
+                case LootType.Scrap:
+                    width = rng.RandfRange(32f, 48f);
+                    height = rng.RandfRange(14f, 20f);
+                    minAmount = 1;
+                    maxAmount = 2;
+                    break;
+                default:
+                    width = rng.RandfRange(16f, 24f);
+                    height = rng.RandfRange(12f, 18f);
+                    minAmount = 2;
+                    maxAmount = 4;
+                    break;
+            }
+
+            var halfWidth = width * 0.5f + 2f;
+            var minX = segment.Value.StartX + halfWidth;
+            var maxX = segment.Value.EndX - halfWidth;
+            if (minX >= maxX)
+                continue;
+
+            var localX = rng.RandfRange(minX, maxX);
+            var t = Mathf.InverseLerp(segment.Value.StartX, segment.Value.EndX, localX);
+            var floorY = Mathf.Lerp(segment.Value.StartY, segment.Value.EndY, t);
+
+            var isExcluded = false;
+            foreach (var ep in _excludedPositions)
+            {
+                var dx = localX - ep.X;
+                var dy = floorY - ep.Y;
+                if (dx * dx + dy * dy < PropExclusionRadius * PropExclusionRadius)
+                {
+                    isExcluded = true;
+                    break;
+                }
+            }
+            if (isExcluded)
+                continue;
+
+            var loot = new LootProp();
+            loot.Initialize(type, width, height, minAmount, maxAmount);
+
+            if (type == LootType.MineralPatch && _colorPalette.Brightness > 0f)
+            {
+                var primaryMineral = ResolvePrimaryMineral(_colorPalette);
+                loot.SetMineral(primaryMineral);
+            }
+
+            AddChild(loot);
+            var baseSink = 5f;
+            var slope = segment.Value.EndX != segment.Value.StartX
+                ? Mathf.Abs((segment.Value.EndY - segment.Value.StartY) / (segment.Value.EndX - segment.Value.StartX))
+                : 0f;
+            var rampSink = slope * width * 0.5f;
+            var groundOffset = baseSink + rampSink;
+            loot.Position = new Vector2(localX, floorY - height / 2f + groundOffset);
+            AddExcludedPosition(new Vector2(localX, floorY));
+        }
+    }
+
+    private static MineralType ResolvePrimaryMineral(LevelColorPalette palette)
+    {
+        var light = palette.PrimaryLight;
+        if (light.G > light.R && light.G > light.B)
+            return MineralType.Verdant;
+        if (light.B > light.R && light.B > light.G)
+            return MineralType.Azure;
+        if (light.R > 0.8f && light.G > 0.7f)
+            return MineralType.Solar;
+        if (light.R > 0.7f && light.G > 0.3f && light.G < 0.6f)
+            return MineralType.Cinder;
+        if (light.R > 0.8f && light.G > 0.8f && light.B > 0.8f)
+            return MineralType.Lumen;
+        return MineralType.Umbra;
+    }
+
     public void SpawnFloorProps(RandomNumberGenerator rng, List<PropTemplate> palette, LevelColorPalette colorPalette = default)
     {
         _colorPalette = colorPalette;
@@ -326,6 +429,12 @@ public partial class LevelTile : Node2D
 				var dist = grindBoost.Position.DistanceTo(localPoint);
 				if (dist < PropExclusionRadius)
 					grindBoost.QueueFree();
+			}
+			if (child is LootProp lootProp)
+			{
+				var dist = lootProp.Position.DistanceTo(localPoint);
+				if (dist < PropExclusionRadius)
+					lootProp.QueueFree();
 			}
 		}
 	}
