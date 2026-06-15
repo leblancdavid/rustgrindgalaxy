@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Godot;
 
 public enum LootType
@@ -22,6 +23,19 @@ public partial class LootProp : Area2D
     private bool _shattered;
     private float _groundOffset;
 
+    private struct FragmentState
+    {
+        public Polygon2D Node;
+        public Vector2 Velocity;
+        public float RotSpeed;
+    }
+
+    private List<FragmentState> _debris;
+    private float _shatterElapsed;
+
+    private const float DebrisGravity = 500f;
+    private const float ShatterDuration = 1.2f;
+
     public override void _Ready()
     {
         if (_visual == null)
@@ -31,7 +45,10 @@ public partial class LootProp : Area2D
     public override void _Process(double delta)
     {
         if (_shattered)
+        {
+            UpdateShatter((float)delta);
             return;
+        }
 
         if (GetWorld2D()?.DirectSpaceState is not PhysicsDirectSpaceState2D space)
             return;
@@ -165,8 +182,8 @@ public partial class LootProp : Area2D
         var fragW = _width / cols;
         var fragH = _height / rows;
 
-        var tween = CreateTween();
-        tween.SetParallel(true);
+        _debris = new List<FragmentState>(fragmentCount);
+        _shatterElapsed = 0f;
 
         var used = 0;
         for (var r = 0; r < rows && used < fragmentCount; r++)
@@ -189,32 +206,52 @@ public partial class LootProp : Area2D
                 frag.Position = new Vector2(localX, localY);
                 AddChild(frag);
 
-                var velX = rng.RandfRange(-50f, 50f);
-                var velY = rng.RandfRange(-30f, 70f);
-                var targetX = localX + velX;
-                var targetY = Mathf.Min(localY + velY, _height / 2f - _groundOffset);
-                var rotAmount = rng.RandfRange(-Mathf.Pi, Mathf.Pi);
+                var state = new FragmentState
+                {
+                    Node = frag,
+                    Velocity = new Vector2(
+                        rng.RandfRange(-80f, 80f),
+                        rng.RandfRange(-200f, -80f)),
+                    RotSpeed = rng.RandfRange(-4f, 4f),
+                };
 
-                tween.TweenProperty(frag, "position:x", targetX, 0.3f)
-                    .SetTrans(Tween.TransitionType.Quad)
-                    .SetEase(Tween.EaseType.Out);
-                tween.TweenProperty(frag, "position:y", targetY, 0.5f)
-                    .SetTrans(Tween.TransitionType.Quad)
-                    .SetEase(velY >= 0 ? Tween.EaseType.In : Tween.EaseType.Out);
-                tween.TweenProperty(frag, "rotation", rotAmount, 0.35f)
-                    .SetTrans(Tween.TransitionType.Quad)
-                    .SetEase(Tween.EaseType.Out);
-                tween.TweenProperty(frag, "modulate:a", 0.0f, 0.35f)
-                    .SetDelay(0.15f)
-                    .SetTrans(Tween.TransitionType.Quad)
-                    .SetEase(Tween.EaseType.In);
-
+                _debris.Add(state);
                 used++;
             }
         }
+    }
 
-        tween.SetParallel(false);
-        tween.TweenCallback(Callable.From(() => QueueFree()));
+    private void UpdateShatter(float delta)
+    {
+        _shatterElapsed += delta;
+        var floorLocalY = _height / 2f - _groundOffset;
+
+        for (var i = 0; i < _debris.Count; i++)
+        {
+            var state = _debris[i];
+            state.Velocity.Y += DebrisGravity * delta;
+            var newPos = state.Node.Position + state.Velocity * delta;
+
+            if (newPos.Y >= floorLocalY)
+            {
+                newPos.Y = floorLocalY;
+                state.Velocity = Vector2.Zero;
+            }
+
+            state.Node.Position = newPos;
+            state.Node.Rotation += state.RotSpeed * delta;
+
+            if (_shatterElapsed > 0.4f)
+            {
+                var t = (_shatterElapsed - 0.4f) / 0.4f;
+                state.Node.Modulate = new Color(1f, 1f, 1f, Mathf.Clamp(1f - t, 0f, 1f));
+            }
+
+            _debris[i] = state;
+        }
+
+        if (_shatterElapsed >= ShatterDuration)
+            QueueFree();
     }
 
     private static void BuildRectPolygon(Polygon2D poly, float w, float h)
