@@ -14,6 +14,7 @@ public partial class LevelTile : Node2D
     public int MaxProps = 8;
 
     private const float PropExclusionRadius = 60.0f;
+    private static readonly float MaxRampAngleRad = Mathf.Pi / 6f; // 30 degrees
     private readonly List<Vector2> _excludedPositions = new();
     private LevelColorPalette _colorPalette;
 
@@ -87,6 +88,12 @@ public partial class LevelTile : Node2D
             var t = Mathf.InverseLerp(segment.Value.StartX, segment.Value.EndX, localX);
             var floorY = Mathf.Lerp(segment.Value.StartY, segment.Value.EndY, t);
 
+            var segDx = segment.Value.EndX - segment.Value.StartX;
+            var segDy = segment.Value.EndY - segment.Value.StartY;
+            var segmentAngle = Mathf.Atan2(segDy, segDx);
+            if (Mathf.Abs(segmentAngle) > MaxRampAngleRad)
+                continue;
+
             var isExcluded = false;
             foreach (var ep in _excludedPositions)
             {
@@ -102,10 +109,9 @@ public partial class LevelTile : Node2D
                 continue;
 
             var loot = new LootProp();
+
             var baseSink = 5f;
-            var slope = segment.Value.EndX != segment.Value.StartX
-                ? Mathf.Abs((segment.Value.EndY - segment.Value.StartY) / (segment.Value.EndX - segment.Value.StartX))
-                : 0f;
+            var slope = segDx != 0f ? Mathf.Abs(segDy / segDx) : 0f;
             var rampSink = slope * width * 0.5f;
             var groundOffset = baseSink + rampSink;
             loot.Initialize(type, width, height, minAmount, maxAmount, groundOffset);
@@ -122,6 +128,7 @@ public partial class LevelTile : Node2D
 
             AddChild(loot);
             loot.Position = new Vector2(localX, floorY - height / 2f + groundOffset);
+            loot.Rotation = segmentAngle;
             AddExcludedPosition(new Vector2(localX, floorY));
         }
     }
@@ -175,6 +182,12 @@ public partial class LevelTile : Node2D
             var t = Mathf.InverseLerp(segment.Value.StartX, segment.Value.EndX, localX);
             var floorY = Mathf.Lerp(segment.Value.StartY, segment.Value.EndY, t);
 
+            var segDx = segment.Value.EndX - segment.Value.StartX;
+            var segDy = segment.Value.EndY - segment.Value.StartY;
+            var segmentAngle = Mathf.Atan2(segDy, segDx);
+            if (Mathf.Abs(segmentAngle) > MaxRampAngleRad)
+                continue;
+
             var isExcluded = false;
             foreach (var ep in _excludedPositions)
             {
@@ -195,13 +208,12 @@ public partial class LevelTile : Node2D
             visual.Initialize(template.Width, template.Height, template.Color, template.IsLighting, template.Layer, template.Slot, template.GlowYOffset, template.GlowScaleX, template.GlowScaleY);
             visual.ApplyPalette(colorPalette);
             var baseSink = 5f;
-            var slope = segment.Value.EndX != segment.Value.StartX
-                ? Mathf.Abs((segment.Value.EndY - segment.Value.StartY) / (segment.Value.EndX - segment.Value.StartX))
-                : 0f;
+            var slope = segDx != 0f ? Mathf.Abs(segDy / segDx) : 0f;
             var rampSink = slope * template.Width * 0.5f;
             var fgExtra = template.Layer == Prop.PropLayer.Foreground ? 3f : 0f;
             var groundOffset = baseSink + rampSink + fgExtra;
             visual.Position = new Vector2(localX, floorY - template.Height / 2f + groundOffset);
+            visual.Rotation = segmentAngle;
         }
     }
 
@@ -356,6 +368,8 @@ public partial class LevelTile : Node2D
 		var dx = segment.Value.EndX - segment.Value.StartX;
 		var dy = segment.Value.EndY - segment.Value.StartY;
 		var angle = Mathf.Atan2(dy, dx);
+		if (Mathf.Abs(angle) > MaxRampAngleRad)
+			return;
 
 		var pad = new BoostPad();
 		AddChild(pad);
@@ -380,6 +394,8 @@ public partial class LevelTile : Node2D
 		var dx = segment.Value.EndX - segment.Value.StartX;
 		var dy = segment.Value.EndY - segment.Value.StartY;
 		var angle = Mathf.Atan2(dy, dx);
+		if (Mathf.Abs(angle) > MaxRampAngleRad)
+			return;
 
 		var pad = new LaunchPad();
 		AddChild(pad);
@@ -405,6 +421,9 @@ public partial class LevelTile : Node2D
 			SpawnBoostPad(rng);
 			return;
 		}
+
+		if (Mathf.Abs(rail.Angle) > MaxRampAngleRad)
+			return;
 
 		var localRailCenter = ToLocal(rail.StartPoint.Lerp(rail.EndPoint, 0.5f));
 
