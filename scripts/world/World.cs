@@ -127,10 +127,17 @@ public partial class World : Node2D
         return GetTotalCollectedMinerals() >= MissionMaterialTarget;
     }
 
+    public int ScrapCollected { get; private set; }
+
     public void CollectMineral(MineralType mineral, int amount)
     {
         CollectedMinerals[mineral] = CollectedMinerals.GetValueOrDefault(mineral) + amount;
         UpdateExtractionState();
+    }
+
+    public void CollectScrap(int amount)
+    {
+        ScrapCollected += amount;
     }
 
     public int GetTotalCollectedMinerals()

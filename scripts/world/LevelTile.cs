@@ -110,10 +110,14 @@ public partial class LevelTile : Node2D
             var groundOffset = baseSink + rampSink;
             loot.Initialize(type, width, height, minAmount, maxAmount, groundOffset);
 
-            if (type == LootType.MineralPatch && _colorPalette.Brightness > 0f)
+            if (_colorPalette.Brightness > 0f)
             {
                 var primaryMineral = ResolvePrimaryMineral(_colorPalette);
-                loot.SetMineral(primaryMineral);
+                var secondaryMineral = ResolveSecondaryMineral(_colorPalette);
+                loot.SetMinerals(primaryMineral, secondaryMineral);
+
+                if (type == LootType.MineralPatch)
+                    loot.SetMineral(primaryMineral);
             }
 
             AddChild(loot);
@@ -124,16 +128,25 @@ public partial class LevelTile : Node2D
 
     private static MineralType ResolvePrimaryMineral(LevelColorPalette palette)
     {
-        var light = palette.PrimaryLight;
-        if (light.G > light.R && light.G > light.B)
+        return ResolveMineralFromColor(palette.PrimaryLight);
+    }
+
+    private static MineralType ResolveSecondaryMineral(LevelColorPalette palette)
+    {
+        return ResolveMineralFromColor(palette.SecondaryLight);
+    }
+
+    private static MineralType ResolveMineralFromColor(Color color)
+    {
+        if (color.G > color.R && color.G > color.B)
             return MineralType.Verdant;
-        if (light.B > light.R && light.B > light.G)
+        if (color.B > color.R && color.B > color.G)
             return MineralType.Azure;
-        if (light.R > 0.8f && light.G > 0.7f)
+        if (color.R > 0.8f && color.G > 0.7f)
             return MineralType.Solar;
-        if (light.R > 0.7f && light.G > 0.3f && light.G < 0.6f)
+        if (color.R > 0.7f && color.G > 0.3f && color.G < 0.6f)
             return MineralType.Cinder;
-        if (light.R > 0.8f && light.G > 0.8f && light.B > 0.8f)
+        if (color.R > 0.8f && color.G > 0.8f && color.B > 0.8f)
             return MineralType.Lumen;
         return MineralType.Umbra;
     }

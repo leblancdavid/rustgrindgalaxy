@@ -20,6 +20,8 @@ public partial class LootProp : Area2D
     private Node2D _glow;
     private MineralType _mineral = MineralType.Cinder;
     private bool _mineralSet;
+    private MineralType _primaryMineral = MineralType.Cinder;
+    private MineralType _secondaryMineral = MineralType.Azure;
     private bool _shattered;
     private float _groundOffset;
 
@@ -109,6 +111,12 @@ public partial class LootProp : Area2D
         _mineralSet = true;
     }
 
+    public void SetMinerals(MineralType primary, MineralType secondary)
+    {
+        _primaryMineral = primary;
+        _secondaryMineral = secondary;
+    }
+
     private Color GetTypeColor()
     {
         return Type switch
@@ -139,21 +147,36 @@ public partial class LootProp : Area2D
 
     private void CollectAndShatter(PlayerController player)
     {
-        var world = player.GetParentOrNull<World>();
-
         var rng = new RandomNumberGenerator();
         rng.Randomize();
-        var amount = rng.RandiRange(MinAmount, MaxAmount);
+        var totalAmount = rng.RandiRange(MinAmount, MaxAmount);
 
-        if (Type == LootType.MineralPatch && _mineralSet)
+        var count = Type switch
         {
-            world?.CollectMineral(_mineral, amount);
-        }
-        else
+            LootType.MineralPatch => rng.RandiRange(3, Mathf.Min(5, totalAmount)),
+            LootType.Scrap => rng.RandiRange(1, Mathf.Min(3, totalAmount)),
+            _ => rng.RandiRange(2, Mathf.Min(4, totalAmount)),
+        };
+
+        var amountPerPickup = Mathf.Max(1, totalAmount / count);
+
+        for (var i = 0; i < count; i++)
         {
-            var mineralRoll = rng.RandiRange(0, 5);
-            var mineral = (MineralType)mineralRoll;
-            world?.CollectMineral(mineral, amount);
+            var offset = new Vector2(rng.RandfRange(-12f, 12f), rng.RandfRange(-8f, 8f));
+            var type = LootPickupType.Mineral;
+
+            if (Type != LootType.MineralPatch)
+            {
+                var scrapChance = Type == LootType.Scrap ? 0.7f : 0.35f;
+                if (rng.Randf() < scrapChance)
+                    type = LootPickupType.Scrap;
+            }
+
+            var mineral = MineralType.Cinder;
+            if (type == LootPickupType.Mineral)
+                mineral = rng.Randf() < 0.6f ? _primaryMineral : _secondaryMineral;
+
+            LootPickup.Spawn(GetParent(), GlobalPosition + offset, player, type, mineral, amountPerPickup);
         }
 
         PlayShatter();
