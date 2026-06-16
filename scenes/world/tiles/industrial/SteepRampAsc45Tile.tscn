@@ -8,7 +8,7 @@
 size = Vector2(440, 236)
 
 [sub_resource type="RectangleShape2D" id="2"]
-size = Vector2(540, 236)
+size = Vector2(464, 236)
 
 [node name="SteepRampAsc45Tile" type="Node2D"]
 script = ExtResource("1")
@@ -25,11 +25,11 @@ polygon = PackedVector2Array(0, 360, 440, 360, 440, 363, 0, 363)
 color = Color(0.964706, 0.694118, 0.219608, 1)
 
 [node name="RampVisual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(440, 360, 740, 60, 740, 400, 440, 400)
+polygon = PackedVector2Array(440, 360, 500, 338.16, 756, 81.84, 816, 60, 816, 400, 756, 400, 500, 400, 440, 400)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
 [node name="RampTrim" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(440, 360, 740, 60, 740, 63, 440, 363)
+polygon = PackedVector2Array(440, 360, 500, 338.16, 756, 81.84, 816, 60, 816, 63, 756, 84.84, 500, 341.16, 440, 363)
 color = Color(0.964706, 0.694118, 0.219608, 1)
 
 [node name="RampRise" type="Polygon2D" parent="."]
@@ -37,11 +37,11 @@ polygon = PackedVector2Array(440, 360, 442, 360, 442, 363, 440, 363)
 color = Color(0.388235, 0.411765, 0.462745, 1)
 
 [node name="FlatHighVisual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(740, 60, 1280, 60, 1280, 400, 740, 400)
+polygon = PackedVector2Array(816, 60, 1280, 60, 1280, 400, 816, 400)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
 [node name="FlatHighTrim" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(740, 60, 1280, 60, 1280, 63, 740, 63)
+polygon = PackedVector2Array(816, 60, 1280, 60, 1280, 63, 816, 63)
 color = Color(0.964706, 0.694118, 0.219608, 1)
 
 [node name="FlatLowGround" type="StaticBody2D" parent="."]
@@ -51,7 +51,7 @@ position = Vector2(220, 478)
 shape = SubResource("1")
 
 [node name="FlatHighGround" type="StaticBody2D" parent="."]
-position = Vector2(1010, 178)
+position = Vector2(1048, 178)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="FlatHighGround"]
 shape = SubResource("2")
@@ -59,14 +59,28 @@ shape = SubResource("2")
 [node name="RampBody" type="StaticBody2D" parent="."]
 
 [node name="RampCollision" type="CollisionPolygon2D" parent="RampBody"]
-polygon = PackedVector2Array(440, 360, 740, 60, 740, 400, 440, 400)
+polygon = PackedVector2Array(440, 360, 500, 338.16, 756, 81.84, 816, 60, 816, 400, 756, 400, 500, 400, 440, 400)
 
-[node name="Rail" parent="." instance=ExtResource("2")]
-position = Vector2(590, 195)
-rotation = -0.785
-Width = 450.0
+[node name="Rail1" parent="." instance=ExtResource("2")]
+position = Vector2(470, 321)
+rotation = -0.349
+Width = 63.85
 BaseSpeed = 220.0
-SnapDistanceBelow = 18.0
+SnapDistanceBelow = 40.0
+
+[node name="Rail2" parent="." instance=ExtResource("2")]
+position = Vector2(628, 182)
+rotation = -0.785
+Width = 362.3
+BaseSpeed = 220.0
+SnapDistanceBelow = 40.0
+
+[node name="Rail3" parent="." instance=ExtResource("2")]
+position = Vector2(786, 43)
+rotation = -0.349
+Width = 63.85
+BaseSpeed = 220.0
+SnapDistanceBelow = 40.0
 
 [node name="BoostPad" type="Area2D" parent="."]
 position = Vector2(220, 360)

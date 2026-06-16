@@ -20,7 +20,12 @@ public partial class PlayerController : CharacterBody2D
 			var floorNormal = GetFloorNormal();
 			var floorTangent = GetSlopeTangent(floorNormal);
 			slopeAcceleration = floorTangent.Dot(Vector2.Down) * gravity * (SlopeGravityStrength / gravity);
-			velocity.X += slopeAcceleration * deltaSeconds;
+
+			// Cancel slope gravity when inputting uphill so steep ramps are climbable
+			if (Mathf.IsZeroApprox(inputDirection) || slopeAcceleration * inputDirection >= 0.0f)
+			{
+				velocity.X += slopeAcceleration * deltaSeconds;
+			}
 		}
 
 		if (Mathf.IsZeroApprox(inputDirection))
