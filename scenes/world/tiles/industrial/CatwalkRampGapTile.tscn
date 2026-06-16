@@ -1,0 +1,83 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/LevelTile.cs" id="1"]
+[ext_resource type="Script" path="res://scripts/world/BoostPad.cs" id="2"]
+
+[sub_resource type="RectangleShape2D" id="1"]
+size = Vector2(320, 16)
+
+[node name="CatwalkRampGapTile" type="Node2D"]
+script = ExtResource("1")
+TileWidth = 1280
+LeftGroundY = 164.0
+RightGroundY = 164.0
+
+[node name="LeftRampVisual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(0, 164, 320, 220, 320, 236, 0, 180)
+color = Color(0.301961, 0.317647, 0.356863, 1)
+
+[node name="LeftRampTrim" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(0, 164, 320, 220, 320, 223, 0, 167)
+color = Color(0.964706, 0.694118, 0.219608, 1)
+
+[node name="LeftEdgeRise" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(320, 220, 322, 220, 322, 236, 320, 236)
+color = Color(0.388235, 0.411765, 0.462745, 1)
+
+[node name="RightEdgeRise" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(640, 220, 642, 220, 642, 236, 640, 236)
+color = Color(0.388235, 0.411765, 0.462745, 1)
+
+[node name="RightRampVisual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(640, 220, 960, 164, 960, 180, 640, 236)
+color = Color(0.301961, 0.317647, 0.356863, 1)
+
+[node name="RightRampTrim" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(640, 220, 960, 164, 960, 167, 640, 223)
+color = Color(0.964706, 0.694118, 0.219608, 1)
+
+[node name="LandingVisual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(960, 164, 1280, 164, 1280, 180, 960, 180)
+color = Color(0.301961, 0.317647, 0.356863, 1)
+
+[node name="LandingTrim" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(960, 164, 1280, 164, 1280, 167, 960, 167)
+color = Color(0.964706, 0.694118, 0.219608, 1)
+
+[node name="LeftRampBody" type="StaticBody2D" parent="."]
+
+[node name="LeftRampCollision" type="CollisionPolygon2D" parent="LeftRampBody"]
+polygon = PackedVector2Array(0, 164, 320, 220, 320, 236, 0, 180)
+
+[node name="RightRampBody" type="StaticBody2D" parent="."]
+
+[node name="RightRampCollision" type="CollisionPolygon2D" parent="RightRampBody"]
+polygon = PackedVector2Array(640, 220, 960, 164, 960, 180, 640, 236)
+
+[node name="LandingGround" type="StaticBody2D" parent="."]
+position = Vector2(1120, 172)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LandingGround"]
+shape = SubResource("1")
+
+[node name="BoostPadLeft" type="Area2D" parent="."]
+position = Vector2(160, 192)
+script = ExtResource("2")
+PadWidth = 48.0
+PadHeight = 10.0
+
+[node name="BoostPadRight" type="Area2D" parent="."]
+position = Vector2(800, 192)
+script = ExtResource("2")
+PadWidth = 48.0
+PadHeight = 10.0
+
+[node name="SpawnMarkers" type="Node2D" parent="."]
+
+[node name="Raiders" type="Node2D" parent="SpawnMarkers"]
+
+[node name="Drones" type="Node2D" parent="SpawnMarkers"]
+
+[node name="Hazards" type="Node2D" parent="SpawnMarkers"]
+
+[node name="PickupMarkers" type="Node2D" parent="SpawnMarkers"]

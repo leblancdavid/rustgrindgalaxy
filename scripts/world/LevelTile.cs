@@ -548,6 +548,50 @@ public partial class LevelTile : Node2D
             new FloorSegment(320, 960, 60, 100),
             new FloorSegment(960, 1280, 100, 100),
         },
+
+        ["SteepRampDesc"] = new[] {
+            new FloorSegment(0, 440, 60, 60),
+            new FloorSegment(440, 840, 60, 260),
+            new FloorSegment(840, 1280, 260, 260),
+        },
+        ["SteepRampAsc"] = new[] {
+            new FloorSegment(0, 440, 260, 260),
+            new FloorSegment(440, 840, 260, 60),
+            new FloorSegment(840, 1280, 60, 60),
+        },
+        ["SteepRampDesc45"] = new[] {
+            new FloorSegment(0, 440, 60, 60),
+            new FloorSegment(440, 740, 60, 360),
+            new FloorSegment(740, 1280, 360, 360),
+        },
+        ["SteepRampAsc45"] = new[] {
+            new FloorSegment(0, 440, 360, 360),
+            new FloorSegment(440, 740, 360, 60),
+            new FloorSegment(740, 1280, 60, 60),
+        },
+        ["SteepRampDesc60"] = new[] {
+            new FloorSegment(0, 460, 60, 60),
+            new FloorSegment(460, 690, 60, 460),
+            new FloorSegment(690, 1280, 460, 460),
+        },
+        ["SteepRampAsc60"] = new[] {
+            new FloorSegment(0, 460, 460, 460),
+            new FloorSegment(460, 690, 460, 60),
+            new FloorSegment(690, 1280, 60, 60),
+        },
+        ["RampGap"] = new[] {
+            new FloorSegment(0, 320, 164, 220),
+            new FloorSegment(640, 960, 220, 164),
+            new FloorSegment(960, 1280, 164, 164),
+        },
+        ["RailGap"] = new[] {
+            new FloorSegment(0, 400, 164, 164),
+            new FloorSegment(880, 1280, 164, 164),
+        },
+        ["RailGapAngled"] = new[] {
+            new FloorSegment(0, 400, 164, 164),
+            new FloorSegment(880, 1280, 164, 164),
+        },
     };
 
 }

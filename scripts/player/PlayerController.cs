@@ -53,6 +53,7 @@ public partial class PlayerController : CharacterBody2D
 	[Export] public int MaxHealth = 5;
 	[Export] public float InvulnerabilityDuration = 0.75f;
 	[Export] public float FloorSnapDistance = 10.0f;
+	[Export] public float FloorMaxAngleDegrees = 65.0f;
 
 	private const string GrindAction = "grind";
 	private const string TrickFlipAction = "trick_flip";
@@ -180,6 +181,7 @@ public partial class PlayerController : CharacterBody2D
 		CurrentHealth = MaxHealth;
 		CreateBalanceIndicator();
 		FloorSnapLength = FloorSnapDistance;
+		FloorMaxAngle = Mathf.DegToRad(FloorMaxAngleDegrees);
 	}
 
 	public void SetLoadout(PlayerLoadout loadout)

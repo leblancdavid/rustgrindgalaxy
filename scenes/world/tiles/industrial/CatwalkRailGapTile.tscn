@@ -1,0 +1,67 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/LevelTile.cs" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/world/GrindRail.tscn" id="2"]
+
+[sub_resource type="RectangleShape2D" id="1"]
+size = Vector2(400, 16)
+
+[sub_resource type="RectangleShape2D" id="2"]
+size = Vector2(400, 16)
+
+[node name="CatwalkRailGapTile" type="Node2D"]
+script = ExtResource("1")
+TileWidth = 1280
+LeftGroundY = 164.0
+RightGroundY = 164.0
+
+[node name="LeftPlatformVisual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(0, 164, 400, 164, 400, 180, 0, 180)
+color = Color(0.301961, 0.317647, 0.356863, 1)
+
+[node name="LeftTrim" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(0, 164, 400, 164, 400, 167, 0, 167)
+color = Color(0.964706, 0.694118, 0.219608, 1)
+
+[node name="LeftEdgeRise" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(400, 164, 402, 164, 402, 180, 400, 180)
+color = Color(0.388235, 0.411765, 0.462745, 1)
+
+[node name="RightPlatformVisual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(880, 164, 1280, 164, 1280, 180, 880, 180)
+color = Color(0.301961, 0.317647, 0.356863, 1)
+
+[node name="RightTrim" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(880, 164, 1280, 164, 1280, 167, 880, 167)
+color = Color(0.964706, 0.694118, 0.219608, 1)
+
+[node name="RightEdgeRise" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(880, 164, 882, 164, 882, 180, 880, 180)
+color = Color(0.388235, 0.411765, 0.462745, 1)
+
+[node name="LeftGround" type="StaticBody2D" parent="."]
+position = Vector2(200, 172)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="LeftGround"]
+shape = SubResource("1")
+
+[node name="RightGround" type="StaticBody2D" parent="."]
+position = Vector2(1080, 172)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RightGround"]
+shape = SubResource("2")
+
+[node name="Rail" parent="." instance=ExtResource("2")]
+position = Vector2(640, 108)
+Width = 480.0
+BaseSpeed = 200.0
+
+[node name="SpawnMarkers" type="Node2D" parent="."]
+
+[node name="Raiders" type="Node2D" parent="SpawnMarkers"]
+
+[node name="Drones" type="Node2D" parent="SpawnMarkers"]
+
+[node name="Hazards" type="Node2D" parent="SpawnMarkers"]
+
+[node name="PickupMarkers" type="Node2D" parent="SpawnMarkers"]

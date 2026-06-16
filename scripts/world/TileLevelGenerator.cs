@@ -36,6 +36,26 @@ public partial class TileLevelGenerator : Node2D
     private const string CatwalkGentleRiseDescPath = "res://scenes/world/tiles/industrial/CatwalkGentleRiseDescTile.tscn";
     private const string CatwalkMidRiseDescPath = "res://scenes/world/tiles/industrial/CatwalkMidRiseDescTile.tscn";
 
+    private const string SteepRampDescPath = "res://scenes/world/tiles/industrial/SteepRampDescTile.tscn";
+    private const string SteepRampDesc45Path = "res://scenes/world/tiles/industrial/SteepRampDesc45Tile.tscn";
+    private const string SteepRampDesc60Path = "res://scenes/world/tiles/industrial/SteepRampDesc60Tile.tscn";
+    private const string SteepRampAscPath = "res://scenes/world/tiles/industrial/SteepRampAscTile.tscn";
+    private const string SteepRampAsc45Path = "res://scenes/world/tiles/industrial/SteepRampAsc45Tile.tscn";
+    private const string SteepRampAsc60Path = "res://scenes/world/tiles/industrial/SteepRampAsc60Tile.tscn";
+    private const string RampGapPath = "res://scenes/world/tiles/industrial/RampGapTile.tscn";
+    private const string RailGapPath = "res://scenes/world/tiles/industrial/RailGapTile.tscn";
+    private const string RailGapAngledPath = "res://scenes/world/tiles/industrial/RailGapAngledTile.tscn";
+
+    private const string CatwalkSteepRampDescPath = "res://scenes/world/tiles/industrial/CatwalkSteepRampDescTile.tscn";
+    private const string CatwalkSteepRampDesc45Path = "res://scenes/world/tiles/industrial/CatwalkSteepRampDesc45Tile.tscn";
+    private const string CatwalkSteepRampDesc60Path = "res://scenes/world/tiles/industrial/CatwalkSteepRampDesc60Tile.tscn";
+    private const string CatwalkSteepRampAscPath = "res://scenes/world/tiles/industrial/CatwalkSteepRampAscTile.tscn";
+    private const string CatwalkSteepRampAsc45Path = "res://scenes/world/tiles/industrial/CatwalkSteepRampAsc45Tile.tscn";
+    private const string CatwalkSteepRampAsc60Path = "res://scenes/world/tiles/industrial/CatwalkSteepRampAsc60Tile.tscn";
+    private const string CatwalkRampGapPath = "res://scenes/world/tiles/industrial/CatwalkRampGapTile.tscn";
+    private const string CatwalkRailGapPath = "res://scenes/world/tiles/industrial/CatwalkRailGapTile.tscn";
+    private const string CatwalkRailGapAngledPath = "res://scenes/world/tiles/industrial/CatwalkRailGapAngledTile.tscn";
+
     [Export] public int MinLevelTiles = 15;
     [Export] public int TilesAheadOfPlayer = 5;
     [Export] public float RemoveBehindDistance = 2560.0f;
@@ -269,36 +289,56 @@ public partial class TileLevelGenerator : Node2D
     private void LoadTilePool()
     {
         _beaconScene = GD.Load<PackedScene>(BeaconScenePath);
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(FlatRunPath), Name = "FlatRun", LeftGroundY = 164, RightGroundY = 164, Weight = 0.0941f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(HalfPipePath), Name = "HalfPipe", LeftGroundY = 164, RightGroundY = 164, Weight = 0.1412f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(GapJumpPath), Name = "GapJump", LeftGroundY = 164, RightGroundY = 164, Weight = 0.0588f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(MultiLevelPath), Name = "MultiLevel", LeftGroundY = 164, RightGroundY = 164, Weight = 0.1176f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(RampSectionPath), Name = "RampSection", LeftGroundY = 164, RightGroundY = 60, Weight = 0.1882f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(StairClimbPath), Name = "StairClimb", LeftGroundY = 164, RightGroundY = 60, Weight = 0.1647f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(HighFlatPath), Name = "HighFlat", LeftGroundY = 60, RightGroundY = 60, Weight = 0.0824f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(GentleRisePath), Name = "GentleRise", LeftGroundY = 164, RightGroundY = 100, Weight = 0.0706f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(MidFlatPath), Name = "MidFlat", LeftGroundY = 100, RightGroundY = 100, Weight = 0.0471f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(MidRisePath), Name = "MidRise", LeftGroundY = 100, RightGroundY = 60, Weight = 0.0353f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(FlatRunPath), Name = "FlatRun", LeftGroundY = 164, RightGroundY = 164, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(HalfPipePath), Name = "HalfPipe", LeftGroundY = 164, RightGroundY = 164, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(GapJumpPath), Name = "GapJump", LeftGroundY = 164, RightGroundY = 164, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(MultiLevelPath), Name = "MultiLevel", LeftGroundY = 164, RightGroundY = 164, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(RampSectionPath), Name = "RampSection", LeftGroundY = 164, RightGroundY = 60, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(StairClimbPath), Name = "StairClimb", LeftGroundY = 164, RightGroundY = 60, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(HighFlatPath), Name = "HighFlat", LeftGroundY = 60, RightGroundY = 60, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(GentleRisePath), Name = "GentleRise", LeftGroundY = 164, RightGroundY = 100, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(MidFlatPath), Name = "MidFlat", LeftGroundY = 100, RightGroundY = 100, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(MidRisePath), Name = "MidRise", LeftGroundY = 100, RightGroundY = 60, Weight = 1.0f });
 
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkFlatRunPath), Name = "FlatRun", LeftGroundY = 164, RightGroundY = 164, Weight = 0.035f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkHalfPipePath), Name = "HalfPipe", LeftGroundY = 164, RightGroundY = 164, Weight = 0.050f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkGapJumpPath), Name = "GapJump", LeftGroundY = 164, RightGroundY = 164, Weight = 0.020f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkMultiLevelPath), Name = "MultiLevel", LeftGroundY = 164, RightGroundY = 164, Weight = 0.040f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkRampSectionPath), Name = "RampSection", LeftGroundY = 164, RightGroundY = 60, Weight = 0.065f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkStairClimbPath), Name = "StairClimb", LeftGroundY = 164, RightGroundY = 60, Weight = 0.055f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkHighFlatPath), Name = "HighFlat", LeftGroundY = 60, RightGroundY = 60, Weight = 0.028f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkGentleRisePath), Name = "GentleRise", LeftGroundY = 164, RightGroundY = 100, Weight = 0.025f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkMidFlatPath), Name = "MidFlat", LeftGroundY = 100, RightGroundY = 100, Weight = 0.015f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkMidRisePath), Name = "MidRise", LeftGroundY = 100, RightGroundY = 60, Weight = 0.010f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkFlatRunPath), Name = "FlatRun", LeftGroundY = 164, RightGroundY = 164, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkHalfPipePath), Name = "HalfPipe", LeftGroundY = 164, RightGroundY = 164, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkGapJumpPath), Name = "GapJump", LeftGroundY = 164, RightGroundY = 164, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkMultiLevelPath), Name = "MultiLevel", LeftGroundY = 164, RightGroundY = 164, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkRampSectionPath), Name = "RampSection", LeftGroundY = 164, RightGroundY = 60, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkStairClimbPath), Name = "StairClimb", LeftGroundY = 164, RightGroundY = 60, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkHighFlatPath), Name = "HighFlat", LeftGroundY = 60, RightGroundY = 60, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkGentleRisePath), Name = "GentleRise", LeftGroundY = 164, RightGroundY = 100, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkMidFlatPath), Name = "MidFlat", LeftGroundY = 100, RightGroundY = 100, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkMidRisePath), Name = "MidRise", LeftGroundY = 100, RightGroundY = 60, Weight = 1.0f });
 
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(RampSectionDescPath), Name = "RampSectionDesc", LeftGroundY = 60, RightGroundY = 164, Weight = 0.0941f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(StairClimbDescPath), Name = "StairClimbDesc", LeftGroundY = 60, RightGroundY = 164, Weight = 0.0824f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(GentleRiseDescPath), Name = "GentleRiseDesc", LeftGroundY = 100, RightGroundY = 164, Weight = 0.0353f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(MidRiseDescPath), Name = "MidRiseDesc", LeftGroundY = 60, RightGroundY = 100, Weight = 0.0177f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkRampSectionDescPath), Name = "RampSectionDesc", LeftGroundY = 60, RightGroundY = 164, Weight = 0.0325f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkStairClimbDescPath), Name = "StairClimbDesc", LeftGroundY = 60, RightGroundY = 164, Weight = 0.0275f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkGentleRiseDescPath), Name = "GentleRiseDesc", LeftGroundY = 100, RightGroundY = 164, Weight = 0.0125f });
-        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkMidRiseDescPath), Name = "MidRiseDesc", LeftGroundY = 60, RightGroundY = 100, Weight = 0.005f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(SteepRampDescPath), Name = "SteepRampDesc", LeftGroundY = 60, RightGroundY = 260, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(SteepRampDesc45Path), Name = "SteepRampDesc45", LeftGroundY = 60, RightGroundY = 360, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(SteepRampDesc60Path), Name = "SteepRampDesc60", LeftGroundY = 60, RightGroundY = 460, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(SteepRampAscPath), Name = "SteepRampAsc", LeftGroundY = 260, RightGroundY = 60, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(SteepRampAsc45Path), Name = "SteepRampAsc45", LeftGroundY = 360, RightGroundY = 60, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(SteepRampAsc60Path), Name = "SteepRampAsc60", LeftGroundY = 460, RightGroundY = 60, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(RampGapPath), Name = "RampGap", LeftGroundY = 164, RightGroundY = 164, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(RailGapPath), Name = "RailGap", LeftGroundY = 164, RightGroundY = 164, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(RailGapAngledPath), Name = "RailGapAngled", LeftGroundY = 164, RightGroundY = 164, Weight = 1.0f });
+
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkSteepRampDescPath), Name = "SteepRampDesc", LeftGroundY = 60, RightGroundY = 260, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkSteepRampDesc45Path), Name = "SteepRampDesc45", LeftGroundY = 60, RightGroundY = 360, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkSteepRampDesc60Path), Name = "SteepRampDesc60", LeftGroundY = 60, RightGroundY = 460, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkSteepRampAscPath), Name = "SteepRampAsc", LeftGroundY = 260, RightGroundY = 60, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkSteepRampAsc45Path), Name = "SteepRampAsc45", LeftGroundY = 360, RightGroundY = 60, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkSteepRampAsc60Path), Name = "SteepRampAsc60", LeftGroundY = 460, RightGroundY = 60, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkRampGapPath), Name = "RampGap", LeftGroundY = 164, RightGroundY = 164, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkRailGapPath), Name = "RailGap", LeftGroundY = 164, RightGroundY = 164, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkRailGapAngledPath), Name = "RailGapAngled", LeftGroundY = 164, RightGroundY = 164, Weight = 1.0f });
+
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(RampSectionDescPath), Name = "RampSectionDesc", LeftGroundY = 60, RightGroundY = 164, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(StairClimbDescPath), Name = "StairClimbDesc", LeftGroundY = 60, RightGroundY = 164, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(GentleRiseDescPath), Name = "GentleRiseDesc", LeftGroundY = 100, RightGroundY = 164, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(MidRiseDescPath), Name = "MidRiseDesc", LeftGroundY = 60, RightGroundY = 100, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkRampSectionDescPath), Name = "RampSectionDesc", LeftGroundY = 60, RightGroundY = 164, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkStairClimbDescPath), Name = "StairClimbDesc", LeftGroundY = 60, RightGroundY = 164, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkGentleRiseDescPath), Name = "GentleRiseDesc", LeftGroundY = 100, RightGroundY = 164, Weight = 1.0f });
+        _tilePool.Add(new TileEntry { Scene = GD.Load<PackedScene>(CatwalkMidRiseDescPath), Name = "MidRiseDesc", LeftGroundY = 60, RightGroundY = 100, Weight = 1.0f });
     }
 
     public void CollectRails(List<GrindRail> rails)

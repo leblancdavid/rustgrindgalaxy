@@ -1,0 +1,85 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/LevelTile.cs" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/world/GrindRail.tscn" id="2"]
+[ext_resource type="Script" path="res://scripts/world/BoostPad.cs" id="3"]
+
+[sub_resource type="RectangleShape2D" id="1"]
+size = Vector2(440, 236)
+
+[sub_resource type="RectangleShape2D" id="2"]
+size = Vector2(440, 236)
+
+[node name="SteepRampAscTile" type="Node2D"]
+script = ExtResource("1")
+TileWidth = 1280
+LeftGroundY = 260.0
+RightGroundY = 60.0
+
+[node name="FlatLowVisual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(0, 260, 440, 260, 440, 400, 0, 400)
+color = Color(0.301961, 0.317647, 0.356863, 1)
+
+[node name="FlatLowTrim" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(0, 260, 440, 260, 440, 263, 0, 263)
+color = Color(0.964706, 0.694118, 0.219608, 1)
+
+[node name="RampVisual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(440, 260, 840, 60, 840, 400, 440, 400)
+color = Color(0.301961, 0.317647, 0.356863, 1)
+
+[node name="RampTrim" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(440, 260, 840, 60, 840, 63, 440, 263)
+color = Color(0.964706, 0.694118, 0.219608, 1)
+
+[node name="RampRise" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(440, 260, 442, 260, 442, 263, 440, 263)
+color = Color(0.388235, 0.411765, 0.462745, 1)
+
+[node name="FlatHighVisual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(840, 60, 1280, 60, 1280, 400, 840, 400)
+color = Color(0.301961, 0.317647, 0.356863, 1)
+
+[node name="FlatHighTrim" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(840, 60, 1280, 60, 1280, 63, 840, 63)
+color = Color(0.964706, 0.694118, 0.219608, 1)
+
+[node name="FlatLowGround" type="StaticBody2D" parent="."]
+position = Vector2(220, 378)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="FlatLowGround"]
+shape = SubResource("1")
+
+[node name="FlatHighGround" type="StaticBody2D" parent="."]
+position = Vector2(1060, 178)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="FlatHighGround"]
+shape = SubResource("2")
+
+[node name="RampBody" type="StaticBody2D" parent="."]
+
+[node name="RampCollision" type="CollisionPolygon2D" parent="RampBody"]
+polygon = PackedVector2Array(440, 260, 840, 60, 840, 400, 440, 400)
+
+[node name="Rail" parent="." instance=ExtResource("2")]
+position = Vector2(640, 145)
+rotation = -0.463
+Width = 480.0
+BaseSpeed = 220.0
+SnapDistanceBelow = 18.0
+
+[node name="BoostPad" type="Area2D" parent="."]
+position = Vector2(220, 260)
+script = ExtResource("3")
+PadWidth = 48.0
+PadHeight = 10.0
+
+[node name="SpawnMarkers" type="Node2D" parent="."]
+
+[node name="Raiders" type="Node2D" parent="SpawnMarkers"]
+
+[node name="Drones" type="Node2D" parent="SpawnMarkers"]
+
+[node name="Hazards" type="Node2D" parent="SpawnMarkers"]
+
+[node name="PickupMarkers" type="Node2D" parent="SpawnMarkers"]
