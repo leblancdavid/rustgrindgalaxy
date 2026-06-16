@@ -139,10 +139,13 @@ public partial class PlayerController : CharacterBody2D
 			{
 				_railProgress = Mathf.Clamp(_railProgress, 0.0f, 1.0f);
 
-				if (TryFindConnectingRail(rail, _grindDirection, out var nextRail, out var nextProgress))
+				float transitionDir = Mathf.Sign(_railSpeed);
+				if (Mathf.IsZeroApprox(transitionDir))
+					transitionDir = _grindDirection;
+				if (TryFindConnectingRail(rail, transitionDir, out var nextRail, out var nextProgress))
 				{
 					_grindElapsedTime *= BalanceComboRecovery;
-					EnterRail(nextRail, _grindDirection, nextProgress);
+					EnterRail(nextRail, transitionDir, nextProgress);
 					continue;
 				}
 

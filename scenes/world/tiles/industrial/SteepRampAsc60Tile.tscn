@@ -7,8 +7,6 @@
 [sub_resource type="RectangleShape2D" id="1"]
 size = Vector2(460, 236)
 
-[sub_resource type="RectangleShape2D" id="2"]
-size = Vector2(454, 236)
 
 [node name="SteepRampAsc60Tile" type="Node2D"]
 script = ExtResource("1")
@@ -50,16 +48,11 @@ position = Vector2(230, 578)
 [node name="CollisionShape2D" type="CollisionShape2D" parent="FlatLowGround"]
 shape = SubResource("1")
 
-[node name="FlatHighGround" type="StaticBody2D" parent="."]
-position = Vector2(1053, 178)
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="FlatHighGround"]
-shape = SubResource("2")
 
 [node name="RampBody" type="StaticBody2D" parent="."]
 
 [node name="RampCollision" type="CollisionPolygon2D" parent="RampBody"]
-polygon = PackedVector2Array(460, 460, 520, 438.16, 570, 388.16, 718, 131.89, 768, 81.89, 828, 60.05, 828, 476, 768, 476, 718, 476, 570, 476, 520, 476, 460, 476)
+polygon = PackedVector2Array(460, 460, 520, 438.16, 570, 388.16, 718, 131.89, 768, 81.89, 828, 60.05, 1280, 60.05, 1280, 476, 828, 476, 768, 476, 718, 476, 570, 476, 520, 476, 460, 476)
 
 [node name="Rail1" parent="." instance=ExtResource("2")]
 position = Vector2(490, 421)
