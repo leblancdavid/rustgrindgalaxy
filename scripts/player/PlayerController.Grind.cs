@@ -273,7 +273,7 @@ public partial class PlayerController : CharacterBody2D
 			var angleDiff = Mathf.Abs(current.Tangent.AngleTo(linked.Tangent));
 			if (angleDiff <= Mathf.DegToRad(90.0f))
 			{
-				nextProgress = linked.GetProgressAtPoint(searchPoint);
+				nextProgress = direction >= 0 ? 0.0f : 1.0f;
 				nextRail = linked;
 				return true;
 			}

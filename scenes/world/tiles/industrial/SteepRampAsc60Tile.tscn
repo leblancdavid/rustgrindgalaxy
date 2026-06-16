@@ -8,7 +8,7 @@
 size = Vector2(460, 236)
 
 [sub_resource type="RectangleShape2D" id="2"]
-size = Vector2(452, 236)
+size = Vector2(454, 236)
 
 [node name="SteepRampAsc60Tile" type="Node2D"]
 script = ExtResource("1")
@@ -51,7 +51,7 @@ position = Vector2(230, 578)
 shape = SubResource("1")
 
 [node name="FlatHighGround" type="StaticBody2D" parent="."]
-position = Vector2(1054, 178)
+position = Vector2(1053, 178)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="FlatHighGround"]
 shape = SubResource("2")
