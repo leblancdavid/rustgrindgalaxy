@@ -66,6 +66,7 @@ rotation = 0.349
 Width = 63.85
 BaseSpeed = 220.0
 SnapDistanceBelow = 40.0
+NextRailPath = NodePath("../Rail2")
 
 [node name="Rail2" parent="." instance=ExtResource("2")]
 position = Vector2(628, 182)
@@ -73,6 +74,8 @@ rotation = 0.785
 Width = 362.3
 BaseSpeed = 220.0
 SnapDistanceBelow = 40.0
+NextRailPath = NodePath("../Rail3")
+PrevRailPath = NodePath("../Rail1")
 
 [node name="Rail3" parent="." instance=ExtResource("2")]
 position = Vector2(786, 321)
@@ -80,6 +83,7 @@ rotation = 0.349
 Width = 63.85
 BaseSpeed = 220.0
 SnapDistanceBelow = 40.0
+PrevRailPath = NodePath("../Rail2")
 
 [node name="SpawnMarkers" type="Node2D" parent="."]
 

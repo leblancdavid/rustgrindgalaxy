@@ -66,6 +66,7 @@ rotation = 0.349
 Width = 63.85
 BaseSpeed = 250.0
 SnapDistanceBelow = 40.0
+NextRailPath = NodePath("../Rail2")
 
 [node name="Rail2" parent="." instance=ExtResource("2")]
 position = Vector2(545, 79)
@@ -73,6 +74,8 @@ rotation = 0.785
 Width = 70.71
 BaseSpeed = 250.0
 SnapDistanceBelow = 40.0
+NextRailPath = NodePath("../Rail3")
+PrevRailPath = NodePath("../Rail1")
 
 [node name="Rail3" parent="." instance=ExtResource("2")]
 position = Vector2(644, 232)
@@ -80,6 +83,8 @@ rotation = 1.047
 Width = 295.9
 BaseSpeed = 250.0
 SnapDistanceBelow = 40.0
+NextRailPath = NodePath("../Rail4")
+PrevRailPath = NodePath("../Rail2")
 
 [node name="Rail4" parent="." instance=ExtResource("2")]
 position = Vector2(743, 385)
@@ -87,6 +92,8 @@ rotation = 0.785
 Width = 70.71
 BaseSpeed = 250.0
 SnapDistanceBelow = 40.0
+NextRailPath = NodePath("../Rail5")
+PrevRailPath = NodePath("../Rail3")
 
 [node name="Rail5" parent="." instance=ExtResource("2")]
 position = Vector2(798, 421)
@@ -94,6 +101,7 @@ rotation = 0.349
 Width = 63.85
 BaseSpeed = 250.0
 SnapDistanceBelow = 40.0
+PrevRailPath = NodePath("../Rail4")
 
 [node name="SpawnMarkers" type="Node2D" parent="."]
 

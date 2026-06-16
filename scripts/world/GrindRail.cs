@@ -9,11 +9,18 @@ public partial class GrindRail : Node2D
     [Export] public float BaseSpeed = 150.0f;
     [Export] public float SnapDistanceAbove = 18.0f;
     [Export] public float SnapDistanceBelow = 5.0f;
+    [Export] public NodePath NextRailPath;
+    [Export] public NodePath PrevRailPath;
 
     private Area2D _area = null!;
     private CollisionShape2D _collisionShape = null!;
     private Polygon2D _poly = null!;
     private Polygon2D _glowPoly = null!;
+    private GrindRail? _nextRail;
+    private GrindRail? _prevRail;
+
+    public GrindRail? NextRail => _nextRail;
+    public GrindRail? PrevRail => _prevRail;
 
     public Vector2 StartPoint => ToGlobal(new Vector2(-Width * 0.5f, 0.0f));
 
@@ -28,6 +35,8 @@ public partial class GrindRail : Node2D
     public override void _Ready()
     {
         AddToGroup(RailGroupName);
+        _nextRail = GetNodeOrNull<GrindRail>(NextRailPath);
+        _prevRail = GetNodeOrNull<GrindRail>(PrevRailPath);
         _area = GetNode<Area2D>("Area2D");
         _collisionShape = _area.GetNode<CollisionShape2D>("CollisionShape2D");
         _poly = GetNode<Polygon2D>("Polygon2D");

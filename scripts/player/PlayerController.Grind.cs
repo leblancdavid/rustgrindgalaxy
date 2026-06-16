@@ -94,67 +94,72 @@ public partial class PlayerController : CharacterBody2D
 
 	private void HandleGrinding(ref Vector2 velocity, float inputDirection, float deltaSeconds, float gravity)
 	{
-		var rail = _activeRail!;
+		var maxTransitions = 16;
 
-		if (TryReleaseJump(ref velocity, inputDirection, false, true))
+		for (var transitionCount = 0; transitionCount < maxTransitions; transitionCount++)
 		{
-			return;
-		}
+			var rail = _activeRail!;
 
-		_grindElapsedTime += deltaSeconds;
-		UpdateGrindBalance(deltaSeconds, inputDirection);
-
-		if (_balanceIndicator.Visible && (Mathf.Abs(_balanceValue) >= BalanceMaxOffset - 0.001f))
-		{
-			FailGrindBalance(ref velocity, rail);
-			return;
-		}
-
-		if (Mathf.IsZeroApprox(_grindDirection))
-		{
-			_grindDirection = 1.0f;
-		}
-
-		if (Mathf.Abs(_railRotationOffset) > GetLandingToleranceRadians())
-		{
-			ExitRail();
-			velocity = rail.Tangent * _railSpeed;
-			return;
-		}
-
-		var downhillAcceleration = rail.Tangent.Dot(Vector2.Down) * gravity * (RailGravityStrength / gravity);
-		_railSpeed += downhillAcceleration * deltaSeconds;
-		var friction = HasGrindBoost ? RailFriction / _boostAccelMultiplier : RailFriction;
-		_railSpeed = Mathf.MoveToward(_railSpeed, 0.0f, friction * deltaSeconds);
-		_railSpeed += _balanceValue * BalancePhysicsForce * deltaSeconds;
-		var maxRailSpeed = HasGrindBoost ? MaxRailSpeed * _boostMultiplier : MaxRailSpeed;
-		_railSpeed = Mathf.Clamp(_railSpeed, -maxRailSpeed, maxRailSpeed);
-		_railProgress += (_railSpeed * deltaSeconds) / Mathf.Max(rail.Length, 0.001f);
-
-		if (_railProgress <= 0.0f || _railProgress >= 1.0f)
-		{
-			_railProgress = Mathf.Clamp(_railProgress, 0.0f, 1.0f);
-
-			if (TryFindConnectingRail(rail, _grindDirection, out var nextRail, out var nextProgress))
+			if (TryReleaseJump(ref velocity, inputDirection, false, true))
 			{
-				_grindElapsedTime *= BalanceComboRecovery;
-				EnterRail(nextRail, _grindDirection, nextProgress);
-				HandleGrinding(ref velocity, inputDirection, deltaSeconds, gravity);
 				return;
 			}
 
-			var boardRotation = GetRailBoardAngle(rail);
-			var boardOffset = _boardContact.Position.Rotated(boardRotation);
-			GlobalPosition = rail.GetPointAtProgress(_railProgress) - boardOffset;
-			velocity = rail.Tangent * _railSpeed;
-			ExitRail();
-			return;
-		}
+			_grindElapsedTime += deltaSeconds;
+			UpdateGrindBalance(deltaSeconds, inputDirection);
 
-		var currentBoardRotation = GetRailBoardAngle(rail);
-		var currentBoardOffset = _boardContact.Position.Rotated(currentBoardRotation);
-		GlobalPosition = rail.GetPointAtProgress(_railProgress) - currentBoardOffset;
-		velocity = rail.Tangent * _railSpeed;
+			if (_balanceIndicator.Visible && (Mathf.Abs(_balanceValue) >= BalanceMaxOffset - 0.001f))
+			{
+				FailGrindBalance(ref velocity, rail);
+				return;
+			}
+
+			if (Mathf.IsZeroApprox(_grindDirection))
+			{
+				_grindDirection = 1.0f;
+			}
+
+			if (Mathf.Abs(_railRotationOffset) > GetLandingToleranceRadians())
+			{
+				ExitRail();
+				velocity = rail.Tangent * _railSpeed;
+				return;
+			}
+
+			var downhillAcceleration = rail.Tangent.Dot(Vector2.Down) * gravity * (RailGravityStrength / gravity);
+			_railSpeed += downhillAcceleration * deltaSeconds;
+			var friction = HasGrindBoost ? RailFriction / _boostAccelMultiplier : RailFriction;
+			_railSpeed = Mathf.MoveToward(_railSpeed, 0.0f, friction * deltaSeconds);
+			_railSpeed += _balanceValue * BalancePhysicsForce * deltaSeconds;
+			var maxRailSpeed = HasGrindBoost ? MaxRailSpeed * _boostMultiplier : MaxRailSpeed;
+			_railSpeed = Mathf.Clamp(_railSpeed, -maxRailSpeed, maxRailSpeed);
+			_railProgress += (_railSpeed * deltaSeconds) / Mathf.Max(rail.Length, 0.001f);
+
+			if (_railProgress <= 0.0f || _railProgress >= 1.0f)
+			{
+				_railProgress = Mathf.Clamp(_railProgress, 0.0f, 1.0f);
+
+				if (TryFindConnectingRail(rail, _grindDirection, out var nextRail, out var nextProgress))
+				{
+					_grindElapsedTime *= BalanceComboRecovery;
+					EnterRail(nextRail, _grindDirection, nextProgress);
+					continue;
+				}
+
+				var boardRotation = GetRailBoardAngle(rail);
+				var boardOffset = _boardContact.Position.Rotated(boardRotation);
+				GlobalPosition = rail.GetPointAtProgress(_railProgress) - boardOffset;
+				velocity = rail.Tangent * _railSpeed;
+				ExitRail();
+				return;
+			}
+
+			var currentBoardRotation = GetRailBoardAngle(rail);
+			var currentBoardOffset = _boardContact.Position.Rotated(currentBoardRotation);
+			GlobalPosition = rail.GetPointAtProgress(_railProgress) - currentBoardOffset;
+			velocity = rail.Tangent * _railSpeed;
+			break;
+		}
 	}
 
 	private void UpdateGrindIntent()
@@ -261,6 +266,18 @@ public partial class PlayerController : CharacterBody2D
 		nextProgress = 0.0f;
 
 		var searchPoint = direction > 0 ? current.EndPoint : current.StartPoint;
+
+		var linked = direction >= 0 ? current.NextRail : current.PrevRail;
+		if (linked != null)
+		{
+			var angleDiff = Mathf.Abs(current.Tangent.AngleTo(linked.Tangent));
+			if (angleDiff <= Mathf.DegToRad(90.0f))
+			{
+				nextProgress = linked.GetProgressAtPoint(searchPoint);
+				nextRail = linked;
+				return true;
+			}
+		}
 
 		foreach (var node in GetTree().GetNodesInGroup(GrindRail.RailGroupName))
 		{
