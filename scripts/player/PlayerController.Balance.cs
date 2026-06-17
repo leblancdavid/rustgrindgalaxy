@@ -56,43 +56,33 @@ public partial class PlayerController : CharacterBody2D
 		var t = Mathf.Clamp((_grindElapsedTime * _resolvedEffects.BalanceDifficultyRate) / Mathf.Max(GrindTimeToMaxDifficulty, 0.01f), 0.0f, 1.0f);
 
 		var currentDriftRate = Mathf.Lerp(BalanceDriftRate, BalanceMaxDriftRate, t);
-		var currentInterval = Mathf.Lerp(BalanceDriftChangeInterval, BalanceMinDriftInterval, t);
-		var currentTargetRange = Mathf.Lerp(1.0f, BalanceMaxDriftTargetRange, t);
+		var currentWobbleInterval = Mathf.Lerp(BalanceDriftWobbleInterval, BalanceMinDriftWobbleInterval, t);
 
-		_balanceDriftTimer -= deltaSeconds;
-
-		if (_balanceDriftTimer <= 0.0f)
+		_balanceDriftWobbleTimer -= deltaSeconds;
+		if (_balanceDriftWobbleTimer <= 0.0f)
 		{
-			_balanceDriftTarget = (float)GD.RandRange(-currentTargetRange, currentTargetRange);
-			_balanceDriftTimer = currentInterval * (float)GD.RandRange(0.5f, 1.5f);
+			_balanceDriftWobble = 1.0f + (float)GD.RandRange(-BalanceDriftWobbleRange, BalanceDriftWobbleRange);
+			_balanceDriftWobbleTimer = currentWobbleInterval * (float)GD.RandRange(0.5f, 1.5f);
 		}
 
-		var drift = _balanceDriftTarget * currentDriftRate * deltaSeconds;
+		// Drift pushes toward the edge on whichever side the needle is on
+		if (!Mathf.IsZeroApprox(_balanceValue))
+		{
+			var drift = Mathf.Sign(_balanceValue) * currentDriftRate * _balanceDriftWobble * deltaSeconds;
+			_balanceValue += drift;
+		}
+
 		var correction = inputDirection * BalanceCorrectionSpeed * deltaSeconds;
+		_balanceValue += correction;
 
-		_balanceValue += drift + correction;
-
-		if (Mathf.IsZeroApprox(drift) && Mathf.IsZeroApprox(correction))
+		_balanceNoiseTimer -= deltaSeconds;
+		if (_balanceNoiseTimer <= 0.0f)
 		{
-			var recovery = -Mathf.Sign(_balanceValue) * BalanceRecoverySpeed * deltaSeconds;
-			if (Mathf.Abs(recovery) >= Mathf.Abs(_balanceValue))
-			{
-				_balanceValue = 0.0f;
-			}
-			else
-			{
-				_balanceValue += recovery;
-			}
+			var kick = (float)GD.RandRange(-BalanceNoiseMagnitude, BalanceNoiseMagnitude);
+			_balanceValue += kick;
+			var frames = (float)GD.RandRange(BalanceNoiseMinFrames, BalanceNoiseMaxFrames);
+			_balanceNoiseTimer = frames / 60.0f;
 		}
-
-		_balanceJitterTimer -= deltaSeconds;
-		if (_balanceJitterTimer <= 0.0f)
-		{
-			_balanceJitterValue = (float)GD.RandRange(-BalanceJitterAmplitude, BalanceJitterAmplitude);
-			_balanceJitterTimer = BalanceJitterInterval * (float)GD.RandRange(0.5f, 1.5f);
-		}
-
-		_balanceValue += _balanceJitterValue * deltaSeconds;
 
 		_balanceValue = Mathf.Clamp(_balanceValue, -BalanceMaxOffset, BalanceMaxOffset);
 

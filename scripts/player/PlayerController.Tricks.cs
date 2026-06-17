@@ -423,8 +423,8 @@ public partial class PlayerController : CharacterBody2D
 		_ollieTakeoffTilt = 0.0f;
 		_grindBobTime = 0.0f;
 		_balanceValue = 0.0f;
-		_balanceDriftTarget = 0.0f;
-		_balanceDriftTimer = 0.0f;
+		_balanceDriftWobble = 1.0f;
+		_balanceDriftWobbleTimer = 0.0f;
 		_airRotationRamp = 0.0f;
 		_airRotationRampDirection = 0.0f;
 		_boardVisual.Position = _boardVisualBasePosition;

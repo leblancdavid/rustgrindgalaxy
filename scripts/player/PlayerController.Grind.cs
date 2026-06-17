@@ -33,10 +33,9 @@ public partial class PlayerController : CharacterBody2D
 		_railRotationOffset = 0.0f;
 		_grindIntentTimeRemaining = 0.0f;
 		_balanceValue = 0.0f;
-		_balanceDriftTarget = 0.0f;
-		_balanceDriftTimer = 0.1f;
-		_balanceJitterValue = 0.0f;
-		_balanceJitterTimer = 0.1f;
+		_balanceDriftWobble = 1.0f;
+		_balanceDriftWobbleTimer = 0.1f;
+		_balanceNoiseTimer = 0.0f;
 		if (_balanceIndicator != null)
 		{
 			_balanceIndicator.Visible = true;
@@ -83,8 +82,8 @@ public partial class PlayerController : CharacterBody2D
 		_railRotationOffset = 0.0f;
 		_grindElapsedTime = 0.0f;
 		_balanceValue = 0.0f;
-		_balanceDriftTarget = 0.0f;
-		_balanceDriftTimer = 0.0f;
+		_balanceDriftWobble = 1.0f;
+		_balanceDriftWobbleTimer = 0.0f;
 		if (_balanceIndicator != null)
 		{
 			_balanceIndicator.Visible = false;
