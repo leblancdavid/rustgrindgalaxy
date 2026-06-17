@@ -10,6 +10,7 @@ public partial class ProcGenTest : Node2D
     private Camera2D _camera = null!;
     private Hud _hud = null!;
     private TileLevelGenerator _tileGenerator = null!;
+    private Node2D _spawnedActors = null!;
     private ColorRect _spaceRect = null!;
     private ColorRect _upperBand = null!;
     private ColorRect _glowStripe = null!;
@@ -29,6 +30,7 @@ public partial class ProcGenTest : Node2D
 
         var generator = new ModuleGenerator();
         _player.SetLoadout(generator.GenerateDebugLoadout(ModuleRarity.Rare));
+        _player.GodMode = true;
         _player.GlobalPosition = SpawnPosition;
 
         _respawnPosition = SpawnPosition;
@@ -50,6 +52,9 @@ public partial class ProcGenTest : Node2D
         _tileGenerator.Initialize(_player, null!, seed, fgPalette);
         _tileGenerator.BuildInitial();
         _tileGenerator.UpdateStreaming();
+
+        _spawnedActors = GetNode<Node2D>("SpawnedActors");
+        SpawnEnemies();
     }
 
     private void ApplyPalette(LevelColorPalette palette, float bgDim = 1.0f)
@@ -109,6 +114,51 @@ public partial class ProcGenTest : Node2D
         if (_player.GlobalPosition.Y > threshold)
         {
             RespawnPlayer();
+        }
+    }
+
+    private void SpawnEnemies()
+    {
+        var raiderScene = GD.Load<PackedScene>("res://scenes/enemies/Raider.tscn");
+        var droneScene = GD.Load<PackedScene>("res://scenes/enemies/Drone.tscn");
+        var combatDroneScene = GD.Load<PackedScene>("res://scenes/enemies/CombatDrone.tscn");
+        var bombBotScene = GD.Load<PackedScene>("res://scenes/enemies/BombBot.tscn");
+        var boomerangScene = GD.Load<PackedScene>("res://scenes/enemies/BoomerangRaider.tscn");
+        var rng = new RandomNumberGenerator();
+
+        var groundTypes = new[] { raiderScene, bombBotScene, boomerangScene };
+        var flyingTypes = new[] { droneScene, combatDroneScene };
+
+        foreach (var tile in _tileGenerator.ActiveTiles)
+        {
+            var groundCount = (int)(rng.Randi() % 3) + 1;
+            for (var i = 0; i < groundCount; i++)
+            {
+                var t = rng.RandfRange(0.1f, 0.9f);
+                var posX = tile.GetTileLeftX() + t * tile.TileWidth;
+                var surfaceY = tile.Position.Y + Mathf.Lerp(tile.LeftGroundY, tile.RightGroundY, t);
+
+                var roll = rng.Randf();
+                var chosen = roll < 0.45f ? groundTypes[0]
+                    : roll < 0.75f ? groundTypes[1]
+                    : groundTypes[2];
+
+                var enemy = chosen.Instantiate<Node2D>();
+                _spawnedActors.AddChild(enemy);
+                enemy.GlobalPosition = new Vector2(posX, surfaceY);
+            }
+
+            var flyingCount = (int)(rng.Randi() % 2) + 1;
+            for (var i = 0; i < flyingCount; i++)
+            {
+                var t = rng.RandfRange(0.1f, 0.9f);
+                var posX = tile.GetTileLeftX() + t * tile.TileWidth;
+                var surfaceY = tile.Position.Y + Mathf.Lerp(tile.LeftGroundY, tile.RightGroundY, t);
+
+                var enemy = flyingTypes[rng.Randi() % flyingTypes.Length].Instantiate<Node2D>();
+                _spawnedActors.AddChild(enemy);
+                enemy.GlobalPosition = new Vector2(posX, surfaceY - rng.RandfRange(40, 70));
+            }
         }
     }
 

@@ -156,7 +156,7 @@ public partial class RaiderEnemy : EnemyBase
         {
             var slash = slashScene.Instantiate<SlashEffect>();
             AddChild(slash);
-            slash.GlobalPosition = GlobalPosition + new Vector2(Scale.X * 12, -8);
+            slash.GlobalPosition = GlobalPosition + new Vector2(Scale.X * 18, -12);
             slash.SetFacingRight(Scale.X >= 0);
         }
 

@@ -81,6 +81,8 @@ min_level_tiles = 32
 [node name="Player" parent="." instance=ExtResource("2")]
 position = Vector2(200, 96)
 
+[node name="SpawnedActors" type="Node2D" parent="."]
+
 [node name="Hud" parent="." instance=ExtResource("3")]
 
 

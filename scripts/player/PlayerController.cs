@@ -319,9 +319,11 @@ public partial class PlayerController : CharacterBody2D
 		UpdateFailedLandingVisual(deltaSeconds);
 	}
 
+	public bool GodMode { get; set; }
+
 	public void TakeDamage(int amount)
 	{
-		if (amount <= 0 || IsDead || _invulnerabilityTimeRemaining > 0.0f)
+		if (amount <= 0 || IsDead || _invulnerabilityTimeRemaining > 0.0f || GodMode)
 		{
 			return;
 		}

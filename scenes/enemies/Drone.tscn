@@ -3,18 +3,22 @@
 [ext_resource type="Script" path="res://scripts/enemies/DroneEnemy.cs" id="1"]
 
 [sub_resource type="CircleShape2D" id="1"]
-radius = 8.0
+radius = 12.0
 
 [sub_resource type="RectangleShape2D" id="2"]
-size = Vector2(14, 12)
+size = Vector2(22, 16)
 
 [node name="Drone" type="CharacterBody2D"]
 gravity_scale = 0.0
 script = ExtResource("1")
 
 [node name="Visual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(-8, 0, -2, -6, 6, -4, 8, 0, 6, 4, -2, 6)
+polygon = PackedVector2Array(-11, 0, -4, -9, 7, -7, 11, 0, 7, 7, -4, 9)
 color = Color(0.470588, 0.792157, 0.960784, 1)
+
+[node name="Core" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-4, -4, 4, -4, 4, 4, -4, 4)
+color = Color(0.666667, 0.878431, 1, 1)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("1")
