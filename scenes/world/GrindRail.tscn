@@ -14,6 +14,7 @@ polygon = PackedVector2Array(-48, -1.5, 48, -1.5, 48, 1.5, -48, 1.5)
 color = Color(0.960784, 0.807843, 0.301961, 1)
 
 [node name="Area2D" type="Area2D" parent="."]
+collision_mask = 2
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
 shape = SubResource("1")

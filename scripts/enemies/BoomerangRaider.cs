@@ -14,12 +14,38 @@ public partial class BoomerangRaider : EnemyBase
     private bool _isThrowing;
     private float _throwTimer;
     private PackedScene? _boomerangScene;
+    private Polygon2D? _visual;
+    private Color _visualBaseColor;
+    private float _throwAnimTimer;
 
     public override void _Ready()
     {
         base._Ready();
         _spawnX = GlobalPosition.X;
         _boomerangScene = GD.Load<PackedScene>("res://scenes/projectiles/BoomerangProjectile.tscn");
+        _visual = GetNodeOrNull<Polygon2D>("Visual");
+        if (_visual != null)
+            _visualBaseColor = _visual.Color;
+    }
+
+    public override void _Process(double delta)
+    {
+        base._Process(delta);
+
+        if (_throwAnimTimer > 0 && _visual != null)
+        {
+            _throwAnimTimer -= (float)delta;
+            var t = 1.0f - (_throwAnimTimer / 0.3f);
+            var p = 1.0f - t;
+
+            var tiltAngle = Mathf.Sin(t * Mathf.Pi) * 0.4f;
+            _visual.Rotation = tiltAngle * Scale.X;
+
+            _visual.Color = _visualBaseColor.Lerp(new Color(1, 1, 0.6f), p);
+
+            var sq = 1.0f - Mathf.Sin(t * Mathf.Pi) * 0.2f;
+            _visual.Scale = new Vector2(1.0f / sq, sq);
+        }
     }
 
     protected override void UpdatePatrolState(float delta)
@@ -138,5 +164,7 @@ public partial class BoomerangRaider : EnemyBase
 
         var dir = new Vector2(Scale.X, 0);
         boomerang.Initialize(GlobalPosition, dir, BoomerangSpeed, ContactDamage);
+
+        _throwAnimTimer = 0.3f;
     }
 }

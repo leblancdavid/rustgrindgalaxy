@@ -16,6 +16,9 @@ public partial class DroneEnemy : EnemyBase
     private float _time;
     private float _fireTimer;
     private PackedScene? _bulletScene;
+    private Polygon2D? _coreVisual;
+    private Color _coreBaseColor;
+    private float _firePulseTimer;
 
     public override void _Ready()
     {
@@ -23,6 +26,9 @@ public partial class DroneEnemy : EnemyBase
         _spawnX = GlobalPosition.X;
         _spawnY = GlobalPosition.Y;
         _bulletScene = GD.Load<PackedScene>("res://scenes/projectiles/BulletProjectile.tscn");
+        _coreVisual = GetNodeOrNull<Polygon2D>("Core");
+        if (_coreVisual != null)
+            _coreBaseColor = _coreVisual.Color;
     }
 
     public override void _Process(double delta)
@@ -31,6 +37,16 @@ public partial class DroneEnemy : EnemyBase
             return;
 
         base._Process(delta);
+
+        // Fire pulse animation
+        if (_firePulseTimer > 0 && _coreVisual != null)
+        {
+            _firePulseTimer -= (float)delta;
+            var t = 1.0f - (_firePulseTimer / 0.15f);
+            var pulse = 1.0f - t;
+            _coreVisual.Color = _coreBaseColor.Lerp(new Color(1, 1, 1), pulse);
+            _coreVisual.Scale = new Vector2(1, 1) * (1.0f + pulse * 0.3f);
+        }
     }
 
     protected override void UpdatePatrolState(float delta)
@@ -141,5 +157,11 @@ public partial class DroneEnemy : EnemyBase
 
         var dir = (Player.GlobalPosition - GlobalPosition).Normalized();
         bullet.Initialize(GlobalPosition, dir, 100.0f, ContactDamage);
+
+        // Visual feedback
+        _firePulseTimer = 0.15f;
+        var flash = new MuzzleFlash();
+        AddChild(flash);
+        flash.GlobalPosition = GlobalPosition + new Vector2(Scale.X * 12, 0);
     }
 }

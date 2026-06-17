@@ -12,6 +12,7 @@ public partial class BoostPad : Area2D
 
 	public override void _Ready()
 	{
+		CollisionMask = 2;
 		Rotation = Mathf.DegToRad(AngleDeg);
 		AddCollisionShape();
 		AddVisuals();

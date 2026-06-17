@@ -43,6 +43,8 @@ public partial class LootPickup : Area2D
 
 	public override void _Ready()
 	{
+		CollisionMask = 2;
+
 		var rng = new RandomNumberGenerator();
 		rng.Randomize();
 

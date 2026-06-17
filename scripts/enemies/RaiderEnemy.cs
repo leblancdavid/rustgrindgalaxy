@@ -12,7 +12,9 @@ public partial class RaiderEnemy : EnemyBase
     private float _direction = 1.0f;
     private float _attackCooldownTimer;
     private Area2D? _meleeHitbox;
-    private float _meleeHitboxTimer;
+    private Polygon2D? _bodyVisual;
+    private Polygon2D? _headVisual;
+    private float _attackAnimTimer;
 
     public override void _Ready()
     {
@@ -24,6 +26,8 @@ public partial class RaiderEnemy : EnemyBase
             _meleeHitbox.Monitoring = false;
             _meleeHitbox.BodyEntered += OnMeleeHit;
         }
+        _bodyVisual = GetNodeOrNull<Polygon2D>("Visual");
+        _headVisual = GetNodeOrNull<Polygon2D>("Head");
     }
 
     protected override void UpdatePatrolState(float delta)
@@ -104,11 +108,25 @@ public partial class RaiderEnemy : EnemyBase
         Velocity = velocity;
         MoveAndSlide();
 
+        // Body follow-through animation
+        if (_attackAnimTimer > 0)
+        {
+            _attackAnimTimer -= delta;
+            var t = 1.0f - (_attackAnimTimer / 0.25f);
+            var sq = 1.0f - Mathf.Sin(t * Mathf.Pi) * 0.25f;
+            var v = new Vector2(1.0f / sq, sq);
+            if (_bodyVisual != null)
+                _bodyVisual.Scale = v;
+            if (_headVisual != null)
+                _headVisual.Scale = new Vector2(1.0f / sq, sq);
+        }
+
         _attackCooldownTimer -= delta;
 
         if (_attackCooldownTimer <= 0)
         {
             _attackCooldownTimer = AttackCooldown;
+            _attackAnimTimer = 0.25f;
             PerformMeleeAttack();
         }
     }

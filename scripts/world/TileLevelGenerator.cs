@@ -184,10 +184,20 @@ public partial class TileLevelGenerator : Node2D
         _started = false;
     }
 
+    private static void SetTerrainCollisionMask(Node node, uint mask)
+    {
+        if (node is StaticBody2D body)
+            body.CollisionMask = mask;
+        foreach (var child in node.GetChildren())
+            SetTerrainCollisionMask(child, mask);
+    }
+
     private void AppendAndPlaceTile(TileEntry entry, ref float offsetX)
     {
         var tile = entry.Scene.Instantiate<LevelTile>();
         AddChild(tile);
+
+        SetTerrainCollisionMask(tile, 6u);
 
         tile.FloorSegments = LevelTile.GetDefaultFloorSegments(entry.Name);
 

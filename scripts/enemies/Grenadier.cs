@@ -13,6 +13,9 @@ public partial class Grenadier : EnemyBase
     private float _spawnX;
     private float _spawnY;
     private PackedScene? _grenadeScene;
+    private Polygon2D? _visual;
+    private Color _visualBaseColor;
+    private float _tossAnimTimer;
 
     public override void _Ready()
     {
@@ -20,6 +23,26 @@ public partial class Grenadier : EnemyBase
         _spawnX = GlobalPosition.X;
         _spawnY = GlobalPosition.Y;
         _grenadeScene = GD.Load<PackedScene>("res://scenes/projectiles/GrenadeProjectile.tscn");
+        _visual = GetNodeOrNull<Polygon2D>("Visual");
+        if (_visual != null)
+            _visualBaseColor = _visual.Color;
+    }
+
+    public override void _Process(double delta)
+    {
+        base._Process(delta);
+
+        if (_tossAnimTimer > 0 && _visual != null)
+        {
+            _tossAnimTimer -= (float)delta;
+            var t = 1.0f - (_tossAnimTimer / 0.2f);
+            var p = 1.0f - t;
+            _visual.Rotation = t * 0.3f * Scale.X;
+            _visual.Color = _visualBaseColor.Lerp(new Color(1, 1, 0.6f), p);
+
+            var sq = 1.0f + p * 0.15f;
+            _visual.Scale = new Vector2(1.0f / sq, sq);
+        }
     }
 
     protected override void UpdatePatrolState(float delta)
@@ -94,5 +117,7 @@ public partial class Grenadier : EnemyBase
             1.5f,
             ContactDamage
         );
+
+        _tossAnimTimer = 0.2f;
     }
 }

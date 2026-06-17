@@ -16,17 +16,37 @@ public partial class CombatDroneEnemy : EnemyBase
     private int _shotsFired;
     private bool _isFiring;
     private PackedScene? _bulletScene;
+    private Polygon2D? _barrel;
+    private Polygon2D? _visual;
+    private Color _barrelBaseColor;
+    private float _firePulseTimer;
 
     public override void _Ready()
     {
         base._Ready();
         _bulletScene = GD.Load<PackedScene>("res://scenes/projectiles/BulletProjectile.tscn");
+        _barrel = GetNodeOrNull<Polygon2D>("Barrel");
+        _visual = GetNodeOrNull<Polygon2D>("Visual");
+        if (_barrel != null)
+            _barrelBaseColor = _barrel.Color;
     }
 
     public override void _Process(double delta)
     {
         if (CurrentState == EnemyState.Dead) return;
         base._Process(delta);
+
+        if (_firePulseTimer > 0)
+        {
+            _firePulseTimer -= (float)delta;
+            if (_barrel != null)
+            {
+                var t = 1.0f - (_firePulseTimer / 0.12f);
+                var p = 1.0f - t;
+                _barrel.Color = _barrelBaseColor.Lerp(new Color(1, 1, 0.6f), p);
+                _barrel.Scale = new Vector2(1, 1) * (1.0f + p * 0.2f);
+            }
+        }
     }
 
     protected override void UpdatePatrolState(float delta)
@@ -71,7 +91,6 @@ public partial class CombatDroneEnemy : EnemyBase
             return;
         }
 
-        // Hover in place while firing
         var pos = GlobalPosition;
         pos.Y += Mathf.Sin(_time * HoverSpeed) * HoverAmplitude * 0.3f;
         GlobalPosition = pos;
@@ -103,7 +122,6 @@ public partial class CombatDroneEnemy : EnemyBase
                 _burstTimer = BurstCooldown;
                 _shotsFired = 0;
 
-                // Retreat after burst
                 SetState(EnemyState.Chase);
             }
         }
@@ -151,5 +169,10 @@ public partial class CombatDroneEnemy : EnemyBase
         GetParent().AddChild(bullet);
         var dir = (Player.GlobalPosition - GlobalPosition + randomOffset).Normalized();
         bullet.Initialize(GlobalPosition, dir, BulletSpeed, ContactDamage);
+
+        _firePulseTimer = 0.12f;
+        var flash = new MuzzleFlash();
+        AddChild(flash);
+        flash.GlobalPosition = GlobalPosition + new Vector2(Scale.X * 12, -2);
     }
 }

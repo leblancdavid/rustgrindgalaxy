@@ -87,6 +87,7 @@ polygon = PackedVector2Array(0, 288, 1280, 288, 1280, 296, 0, 296)
 color = Color(0.964706, 0.694118, 0.219608, 1)
 
 [node name="Ground" type="StaticBody2D" parent="."]
+collision_mask = 6
 position = Vector2(640, 312)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
@@ -101,6 +102,7 @@ polygon = PackedVector2Array(160, 232, 320, 232, 320, 236, 160, 236)
 color = Color(0.909804, 0.772549, 0.345098, 1)
 
 [node name="PlatformA" type="StaticBody2D" parent="."]
+collision_mask = 6
 position = Vector2(240, 248)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="PlatformA"]
@@ -115,6 +117,7 @@ polygon = PackedVector2Array(404, 186, 532, 186, 532, 190, 404, 190)
 color = Color(0.909804, 0.772549, 0.345098, 1)
 
 [node name="PlatformB" type="StaticBody2D" parent="."]
+collision_mask = 6
 position = Vector2(468, 202)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="PlatformB"]
@@ -129,6 +132,7 @@ polygon = PackedVector2Array(642, 152, 738, 152, 738, 156, 642, 156)
 color = Color(0.909804, 0.772549, 0.345098, 1)
 
 [node name="PlatformC" type="StaticBody2D" parent="."]
+collision_mask = 6
 position = Vector2(690, 168)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="PlatformC"]
@@ -139,6 +143,7 @@ polygon = PackedVector2Array(820, 276, 948, 252, 948, 272, 820, 296)
 color = Color(0.388235, 0.411765, 0.462745, 1)
 
 [node name="RampA" type="StaticBody2D" parent="."]
+collision_mask = 6
 position = Vector2(884, 274)
 rotation = -0.185348
 
@@ -150,6 +155,7 @@ polygon = PackedVector2Array(972, 252, 1068, 234, 1068, 254, 972, 272)
 color = Color(0.388235, 0.411765, 0.462745, 1)
 
 [node name="RampB" type="StaticBody2D" parent="."]
+collision_mask = 6
 position = Vector2(1020, 253)
 rotation = -0.185348
 
@@ -165,6 +171,7 @@ polygon = PackedVector2Array(1088, 188, 1152, 188, 1152, 192, 1088, 192)
 color = Color(0.909804, 0.772549, 0.345098, 1)
 
 [node name="Bridge" type="StaticBody2D" parent="."]
+collision_mask = 6
 position = Vector2(1120, 204)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Bridge"]
@@ -179,6 +186,7 @@ polygon = PackedVector2Array(1184, 144, 1280, 144, 1280, 148, 1184, 148)
 color = Color(0.909804, 0.772549, 0.345098, 1)
 
 [node name="Landing" type="StaticBody2D" parent="."]
+collision_mask = 6
 position = Vector2(1232, 160)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Landing"]
@@ -189,6 +197,7 @@ polygon = PackedVector2Array(566, 214, 694, 214, 694, 230, 566, 230)
 color = Color(0.278431, 0.294118, 0.345098, 1)
 
 [node name="RailDeck" type="StaticBody2D" parent="."]
+collision_mask = 6
 position = Vector2(630, 222)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="RailDeck"]

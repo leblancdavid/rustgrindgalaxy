@@ -9,6 +9,7 @@ radius = 8.0
 size = Vector2(16, 14)
 
 [node name="ShockDrone" type="CharacterBody2D"]
+collision_layer = 4
 gravity_scale = 0.0
 script = ExtResource("1")
 
@@ -25,6 +26,7 @@ color = Color(1, 1, 0.3, 0.3)
 shape = SubResource("1")
 
 [node name="HurtArea" type="Area2D" parent="."]
+collision_mask = 2
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="HurtArea"]
 shape = SubResource("2")

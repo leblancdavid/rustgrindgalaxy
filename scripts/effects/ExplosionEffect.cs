@@ -12,6 +12,7 @@ public partial class ExplosionEffect : AnimatedSprite2D
         if (DamageRadius > 0)
         {
             _hitbox = new Area2D();
+            _hitbox.CollisionMask = 2;
             var shape = new CollisionShape2D();
             shape.Shape = new CircleShape2D { Radius = DamageRadius };
             _hitbox.AddChild(shape);

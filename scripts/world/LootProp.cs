@@ -61,7 +61,7 @@ public partial class LootProp : Area2D
         var query = new PhysicsShapeQueryParameters2D();
         query.Shape = rectShape;
         query.Transform = new Transform2D(0, GlobalPosition);
-        query.CollisionMask = 1;
+        query.CollisionMask = 2;
 
         foreach (var result in space.IntersectShape(query))
         {

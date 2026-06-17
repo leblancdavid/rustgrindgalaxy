@@ -11,6 +11,7 @@ public partial class GrindBoost : Area2D
 
 	public override void _Ready()
 	{
+		CollisionMask = 2;
 		ZIndex = 2;
 		AddCollisionShape();
 		AddVisuals();

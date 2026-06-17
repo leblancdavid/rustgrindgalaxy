@@ -8,6 +8,7 @@ public partial class LaunchPad : Area2D
 
 	public override void _Ready()
 	{
+		CollisionMask = 2;
 		AddCollisionShape();
 		AddVisuals();
 		BodyEntered += OnBodyEntered;
