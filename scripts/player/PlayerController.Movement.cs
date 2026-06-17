@@ -4,13 +4,10 @@ public partial class PlayerController : CharacterBody2D
 {
 	private void ApplyHorizontalMovement(ref Vector2 velocity, float inputDirection, float deltaSeconds, bool onFloor, float gravity)
 	{
-		if (_pendingBoostImpulse > 0f)
+		if (_pendingBoostImpulse != Vector2.Zero)
 		{
-			var dir = !Mathf.IsZeroApprox(inputDirection) ? Mathf.Sign(inputDirection) : Mathf.Sign(velocity.X);
-			if (dir == 0)
-				dir = 1;
-			velocity.X += dir * _pendingBoostImpulse;
-			_pendingBoostImpulse = 0f;
+			velocity += _pendingBoostImpulse;
+			_pendingBoostImpulse = Vector2.Zero;
 		}
 
 		float slopeAcceleration = 0.0f;

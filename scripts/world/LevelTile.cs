@@ -574,8 +574,8 @@ public partial class LevelTile : Node2D
             new FloorSegment(828, 1280, 60, 60),
         },
         ["RampGap"] = new[] {
-            new FloorSegment(0, 320, 164, 220),
-            new FloorSegment(640, 960, 220, 164),
+            new FloorSegment(0, 320, 164, 108),
+            new FloorSegment(640, 960, 108, 164),
             new FloorSegment(960, 1280, 164, 164),
         },
         ["RailGap"] = new[] {

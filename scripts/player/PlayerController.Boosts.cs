@@ -6,14 +6,14 @@ public partial class PlayerController : CharacterBody2D
 	private float _grindBoostTimer;
 	private float _boostMultiplier = 2.0f;
 
-	private float _pendingBoostImpulse;
+	private Vector2 _pendingBoostImpulse;
 	private float _boostAccelMultiplier = 1.0f;
 
 	public bool HasSpeedBoost => _speedBoostTimer > 0.0f;
 
 	public bool HasGrindBoost => _grindBoostTimer > 0.0f;
 
-	public void ApplySpeedBoost(float multiplier, float duration, float impulse = 0f, float accelMultiplier = 1f)
+	public void ApplySpeedBoost(float multiplier, float duration, Vector2 impulse, float accelMultiplier = 1f)
 	{
 		_boostMultiplier = multiplier;
 		_speedBoostTimer = duration;

@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" path="res://scenes/world/GrindRail.tscn" id="2"]
 
 [sub_resource type="RectangleShape2D" id="1"]
-size = Vector2(564, 16)
+size = Vector2(440, 16)
 
 [sub_resource type="RectangleShape2D" id="2"]
 size = Vector2(564, 16)

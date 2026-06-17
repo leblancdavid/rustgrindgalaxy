@@ -8,9 +8,11 @@ public partial class BoostPad : Area2D
 	[Export] public float BoostAccelMultiplier = 3.0f;
 	[Export] public float PadWidth = 48.0f;
 	[Export] public float PadHeight = 10.0f;
+	[Export] public float AngleDeg = 0f;
 
 	public override void _Ready()
 	{
+		Rotation = Mathf.DegToRad(AngleDeg);
 		AddCollisionShape();
 		AddVisuals();
 		BodyEntered += OnBodyEntered;
@@ -74,6 +76,7 @@ public partial class BoostPad : Area2D
 		if (!player.IsOnFloor())
 			return;
 
-		player.ApplySpeedBoost(BoostMultiplier, BoostDuration, BoostImpulse, BoostAccelMultiplier);
+		var dir = Vector2.Right.Rotated(Rotation);
+		player.ApplySpeedBoost(BoostMultiplier, BoostDuration, dir * BoostImpulse, BoostAccelMultiplier);
 	}
 }
