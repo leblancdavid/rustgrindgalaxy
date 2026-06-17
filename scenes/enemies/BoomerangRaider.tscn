@@ -1,6 +1,6 @@
 [gd_scene load_steps=4 format=3]
 
-[ext_resource type="Script" path="res://scripts/enemies/RaiderEnemy.cs" id="1"]
+[ext_resource type="Script" path="res://scripts/enemies/BoomerangRaider.cs" id="1"]
 
 [sub_resource type="RectangleShape2D" id="1"]
 size = Vector2(12, 18)
@@ -8,15 +8,12 @@ size = Vector2(12, 18)
 [sub_resource type="RectangleShape2D" id="2"]
 size = Vector2(16, 18)
 
-[sub_resource type="RectangleShape2D" id="3"]
-size = Vector2(16, 14)
-
-[node name="Raider" type="CharacterBody2D"]
+[node name="BoomerangRaider" type="CharacterBody2D"]
 script = ExtResource("1")
 
 [node name="Visual" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(-6, -18, 6, -18, 6, 0, -6, 0)
-color = Color(0.85098, 0.380392, 0.32549, 1)
+color = Color(0.6, 0.9, 0.4, 1)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(0, -9)
@@ -27,12 +24,3 @@ position = Vector2(0, -9)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="HurtArea"]
 shape = SubResource("2")
-
-[node name="MeleeHitbox" type="Area2D" parent="."]
-position = Vector2(8, -9)
-monitoring = false
-monitorable = false
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="MeleeHitbox"]
-position = Vector2(8, 0)
-shape = SubResource("3")

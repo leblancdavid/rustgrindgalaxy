@@ -4,8 +4,6 @@ using System.Linq;
 
 public partial class TileLevelIndustrial : MissionLevel
 {
-    private const string RaiderScenePath = "res://scenes/enemies/Raider.tscn";
-    private const string DroneScenePath = "res://scenes/enemies/Drone.tscn";
     private const string PickupScenePath = "res://scenes/world/MineralPickup.tscn";
     private const string ShockHazardScenePath = "res://scenes/world/ShockHazard.tscn";
 
@@ -20,13 +18,10 @@ public partial class TileLevelIndustrial : MissionLevel
 
     public TileLevelGenerator TileGenerator => _tileGenerator;
     private Node2D _spawnedActors = null!;
-    private PackedScene _raiderScene = null!;
-    private PackedScene _droneScene = null!;
+    private EnemySpawner _enemySpawner = null!;
     private PackedScene _pickupScene = null!;
     private PackedScene _shockHazardScene = null!;
     private readonly List<GrindRail> _rails = new();
-    private readonly List<Marker2D> _raiderSpawnMarkers = new();
-    private readonly List<Marker2D> _droneSpawnMarkers = new();
     private readonly List<Marker2D> _pickupSpawnMarkers = new();
     private readonly List<Marker2D> _hazardSpawnMarkers = new();
 
@@ -37,8 +32,9 @@ public partial class TileLevelIndustrial : MissionLevel
         _midStripe = GetNode<ColorRect>("MidStripe");
         _tileGenerator = GetNode<TileLevelGenerator>("TileGenerator");
         _spawnedActors = GetNode<Node2D>("SpawnedActors");
-        _raiderScene = GD.Load<PackedScene>(RaiderScenePath);
-        _droneScene = GD.Load<PackedScene>(DroneScenePath);
+        _enemySpawner = new EnemySpawner();
+        AddChild(_enemySpawner);
+        _enemySpawner.Initialize(_tileGenerator, _spawnedActors);
         _pickupScene = GD.Load<PackedScene>(PickupScenePath);
         _shockHazardScene = GD.Load<PackedScene>(ShockHazardScenePath);
     }
@@ -90,8 +86,7 @@ public partial class TileLevelIndustrial : MissionLevel
     private void RefreshTileCaches()
     {
         _tileGenerator.CollectRails(_rails);
-        _tileGenerator.CollectSpawnMarkers("SpawnMarkers/Raiders", _raiderSpawnMarkers);
-        _tileGenerator.CollectSpawnMarkers("SpawnMarkers/Drones", _droneSpawnMarkers);
+        _enemySpawner.RefreshMarkers();
         _tileGenerator.CollectSpawnMarkers("SpawnMarkers/PickupMarkers", _pickupSpawnMarkers);
         _tileGenerator.CollectSpawnMarkers("SpawnMarkers/Hazards", _hazardSpawnMarkers);
     }
@@ -131,36 +126,18 @@ public partial class TileLevelIndustrial : MissionLevel
 
     private void SpawnMissionContent(MissionRunData mission)
     {
+        _enemySpawner.ClearSpawned();
         foreach (var child in _spawnedActors.GetChildren())
         {
-            child.QueueFree();
+            if (child != _enemySpawner && child is Node2D node && !node.IsQueuedForDeletion())
+                node.QueueFree();
         }
 
         RefreshTileCaches();
         var rng = new RandomNumberGenerator { Seed = (ulong)mission.RunSeed };
-        SpawnEnemies(rng, mission.EnemyDensity);
+        _enemySpawner.SpawnAll(rng, mission.EnemyDensity);
         SpawnPickups(rng, mission.PickupDensity, mission.PrimaryMineral, mission.SecondaryMineral);
         SpawnHazards(rng, mission.HazardDensity, mission.PaletteKey);
-    }
-
-    private void SpawnEnemies(RandomNumberGenerator rng, float enemyDensity)
-    {
-        var raiderCount = Mathf.Clamp(Mathf.RoundToInt(_raiderSpawnMarkers.Count * enemyDensity), 1, _raiderSpawnMarkers.Count);
-        var droneCount = Mathf.Clamp(Mathf.RoundToInt(_droneSpawnMarkers.Count * Mathf.Max(0.35f, enemyDensity - 0.15f)), 0, _droneSpawnMarkers.Count);
-
-        foreach (var marker in PickMarkers(_raiderSpawnMarkers, raiderCount, rng))
-        {
-            var raider = _raiderScene.Instantiate<RaiderEnemy>();
-            _spawnedActors.AddChild(raider);
-            raider.GlobalPosition = marker.GlobalPosition;
-        }
-
-        foreach (var marker in PickMarkers(_droneSpawnMarkers, droneCount, rng))
-        {
-            var drone = _droneScene.Instantiate<DroneEnemy>();
-            _spawnedActors.AddChild(drone);
-            drone.GlobalPosition = marker.GlobalPosition;
-        }
     }
 
     private void SpawnPickups(RandomNumberGenerator rng, float pickupDensity, MineralType primaryMineral, MineralType secondaryMineral)

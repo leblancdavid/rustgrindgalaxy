@@ -1,29 +1,25 @@
 using Godot;
 
-public partial class RaiderEnemy : EnemyBase
+public partial class BoomerangRaider : EnemyBase
 {
-    [Export] public float MoveSpeed { get; set; } = 42.0f;
+    [Export] public float MoveSpeed { get; set; } = 38.0f;
     [Export] public float PatrolDistance { get; set; } = 36.0f;
-    [Export] public float AttackRange { get; set; } = 24.0f;
-    [Export] public float AttackCooldown { get; set; } = 1.5f;
-    [Export] public float ChaseSpeed { get; set; } = 52.0f;
+    [Export] public float ThrowRange { get; set; } = 120.0f;
+    [Export] public float ThrowCooldown { get; set; } = 2.5f;
+    [Export] public float BoomerangSpeed { get; set; } = 90.0f;
 
     private float _spawnX;
     private float _direction = 1.0f;
-    private float _attackCooldownTimer;
-    private Area2D? _meleeHitbox;
-    private float _meleeHitboxTimer;
+    private float _cooldownTimer;
+    private bool _isThrowing;
+    private float _throwTimer;
+    private PackedScene? _boomerangScene;
 
     public override void _Ready()
     {
         base._Ready();
         _spawnX = GlobalPosition.X;
-        _meleeHitbox = GetNodeOrNull<Area2D>("MeleeHitbox");
-        if (_meleeHitbox != null)
-        {
-            _meleeHitbox.Monitoring = false;
-            _meleeHitbox.BodyEntered += OnMeleeHit;
-        }
+        _boomerangScene = GD.Load<PackedScene>("res://scenes/projectiles/BoomerangProjectile.tscn");
     }
 
     protected override void UpdatePatrolState(float delta)
@@ -31,12 +27,9 @@ public partial class RaiderEnemy : EnemyBase
         FaceDirection(_direction);
 
         var gravity = (float)ProjectSettings.GetSetting("physics/2d/default_gravity") * GravityScale;
-
         var velocity = Velocity;
         if (!IsOnFloor())
-        {
             velocity.Y += gravity * delta;
-        }
 
         var minX = _spawnX - PatrolDistance;
         var maxX = _spawnX + PatrolDistance;
@@ -50,20 +43,6 @@ public partial class RaiderEnemy : EnemyBase
         MoveAndSlide();
     }
 
-    protected override void UpdateAlertState(float delta)
-    {
-        FacePlayer();
-        Velocity = new Vector2(0, Velocity.Y);
-        var gravity = (float)ProjectSettings.GetSetting("physics/2d/default_gravity") * GravityScale;
-        if (!IsOnFloor())
-        {
-            var velocity = Velocity;
-            velocity.Y += gravity * delta;
-            Velocity = velocity;
-        }
-        MoveAndSlide();
-    }
-
     protected override void UpdateChaseState(float delta)
     {
         FacePlayer();
@@ -71,20 +50,20 @@ public partial class RaiderEnemy : EnemyBase
         var gravity = (float)ProjectSettings.GetSetting("physics/2d/default_gravity") * GravityScale;
         var velocity = Velocity;
         if (!IsOnFloor())
-        {
             velocity.Y += gravity * delta;
-        }
 
         if (Player != null)
         {
             var dir = Mathf.Sign(Player.GlobalPosition.X - GlobalPosition.X);
-            velocity.X = dir * ChaseSpeed;
+            velocity.X = dir * MoveSpeed;
         }
 
         Velocity = velocity;
         MoveAndSlide();
 
-        if (Player != null && GlobalPosition.DistanceTo(Player.GlobalPosition) <= AttackRange)
+        _cooldownTimer -= delta;
+        if (_cooldownTimer <= 0 && Player != null &&
+            GlobalPosition.DistanceTo(Player.GlobalPosition) <= ThrowRange)
         {
             SetState(EnemyState.Attack);
         }
@@ -97,26 +76,30 @@ public partial class RaiderEnemy : EnemyBase
         var gravity = (float)ProjectSettings.GetSetting("physics/2d/default_gravity") * GravityScale;
         var velocity = Velocity;
         if (!IsOnFloor())
-        {
             velocity.Y += gravity * delta;
-        }
         velocity.X = 0;
         Velocity = velocity;
         MoveAndSlide();
 
-        _attackCooldownTimer -= delta;
-
-        if (_attackCooldownTimer <= 0)
+        if (!_isThrowing)
         {
-            _attackCooldownTimer = AttackCooldown;
-            PerformMeleeAttack();
+            _isThrowing = true;
+            _throwTimer = 0.3f;
+        }
+
+        _throwTimer -= delta;
+        if (_throwTimer <= 0)
+        {
+            ThrowBoomerang();
+            _isThrowing = false;
+            _cooldownTimer = ThrowCooldown;
+            SetState(EnemyState.Chase);
         }
     }
 
     protected override void CheckTransitions()
     {
-        if (Player == null || Player.IsDead)
-            return;
+        if (Player == null || Player.IsDead) return;
 
         var distance = GlobalPosition.DistanceTo(Player.GlobalPosition);
 
@@ -135,44 +118,25 @@ public partial class RaiderEnemy : EnemyBase
             case EnemyState.Chase:
                 if (distance > DetectionRange * 1.5f)
                     SetState(EnemyState.Patrol);
-                else if (distance <= AttackRange)
-                    SetState(EnemyState.Attack);
                 break;
             case EnemyState.Attack:
-                if (distance > AttackRange * 1.3f)
+                if (distance > ThrowRange * 1.5f)
+                {
+                    _isThrowing = false;
                     SetState(EnemyState.Chase);
+                }
                 break;
         }
     }
 
-    private void PerformMeleeAttack()
+    private void ThrowBoomerang()
     {
-        if (_meleeHitbox == null) return;
+        if (_boomerangScene == null || Player == null) return;
 
-        _meleeHitbox.Monitoring = true;
+        var boomerang = _boomerangScene.Instantiate<BoomerangProjectile>();
+        GetParent().AddChild(boomerang);
 
-        var slashScene = GD.Load<PackedScene>("res://scenes/effects/SlashEffect.tscn");
-        if (slashScene != null)
-        {
-            var slash = slashScene.Instantiate<SlashEffect>();
-            AddChild(slash);
-            slash.GlobalPosition = GlobalPosition + new Vector2(Scale.X * 12, -8);
-            slash.SetFacingRight(Scale.X >= 0);
-        }
-
-        var timer = GetTree().CreateTimer(0.2f);
-        timer.Timeout += () =>
-        {
-            if (_meleeHitbox != null)
-                _meleeHitbox.Monitoring = false;
-        };
-    }
-
-    private void OnMeleeHit(Node2D body)
-    {
-        if (body is PlayerController player)
-        {
-            player.TakeDamage(ContactDamage);
-        }
+        var dir = new Vector2(Scale.X, 0);
+        boomerang.Initialize(GlobalPosition, dir, BoomerangSpeed, ContactDamage);
     }
 }

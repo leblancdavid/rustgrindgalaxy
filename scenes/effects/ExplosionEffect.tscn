@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/effects/ExplosionEffect.cs" id="1"]
+[ext_resource type="Texture2D" uid="uid://cddt0bjug4cv8" path="res://animations/explosions/Explosion_1/Explosion_1.png" id="2"]
+
+[node name="ExplosionEffect" type="AnimatedSprite2D"]
+script = ExtResource("1")

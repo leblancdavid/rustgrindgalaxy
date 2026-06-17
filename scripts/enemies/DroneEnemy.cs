@@ -1,52 +1,145 @@
 using Godot;
 
-public partial class DroneEnemy : Area2D
+public partial class DroneEnemy : EnemyBase
 {
-    [Export] public float HoverAmplitude = 8.0f;
-    [Export] public float HoverSpeed = 2.4f;
-    [Export] public float PatrolDistance = 30.0f;
-    [Export] public float PatrolSpeed = 24.0f;
-    [Export] public int ContactDamage = 1;
+    [Export] public float HoverAmplitude { get; set; } = 8.0f;
+    [Export] public float HoverSpeed { get; set; } = 2.4f;
+    [Export] public float PatrolDistance { get; set; } = 30.0f;
+    [Export] public float PatrolSpeed { get; set; } = 24.0f;
+    [Export] public float ChaseSpeed { get; set; } = 32.0f;
+    [Export] public float AttackRange { get; set; } = 80.0f;
+    [Export] public float FireCooldown { get; set; } = 1.5f;
 
     private float _spawnX;
     private float _spawnY;
     private float _direction = 1.0f;
     private float _time;
+    private float _fireTimer;
+    private PackedScene? _bulletScene;
 
     public override void _Ready()
     {
+        base._Ready();
         _spawnX = GlobalPosition.X;
         _spawnY = GlobalPosition.Y;
-        BodyEntered += OnBodyEntered;
+        _bulletScene = GD.Load<PackedScene>("res://scenes/projectiles/BulletProjectile.tscn");
     }
 
     public override void _Process(double delta)
     {
-        _time += (float)delta;
+        if (CurrentState == EnemyState.Dead)
+            return;
+
+        base._Process(delta);
+    }
+
+    protected override void UpdatePatrolState(float delta)
+    {
+        FaceDirection(_direction);
+        _time += delta;
 
         var minX = _spawnX - PatrolDistance;
         var maxX = _spawnX + PatrolDistance;
-        var position = GlobalPosition;
+        var pos = GlobalPosition;
 
-        if (position.X <= minX)
-        {
+        if (pos.X <= minX)
             _direction = 1.0f;
-        }
-        else if (position.X >= maxX)
-        {
+        else if (pos.X >= maxX)
             _direction = -1.0f;
-        }
 
-        position.X += _direction * PatrolSpeed * (float)delta;
-        position.Y = _spawnY + (Mathf.Sin(_time * HoverSpeed) * HoverAmplitude);
-        GlobalPosition = position;
+        pos.X += _direction * PatrolSpeed * delta;
+        pos.Y = _spawnY + (Mathf.Sin(_time * HoverSpeed) * HoverAmplitude);
+        GlobalPosition = pos;
     }
 
-    private void OnBodyEntered(Node2D body)
+    protected override void UpdateChaseState(float delta)
     {
-        if (body is PlayerController player)
+        _time += delta;
+
+        if (Player == null)
         {
-            player.TakeDamage(ContactDamage);
+            SetState(EnemyState.Patrol);
+            return;
         }
+
+        var dir = Mathf.Sign(Player.GlobalPosition.X - GlobalPosition.X);
+        FaceDirection(dir);
+
+        var pos = GlobalPosition;
+        pos.X += dir * ChaseSpeed * delta;
+
+        var targetY = Player.GlobalPosition.Y - 24.0f;
+        targetY = Mathf.Clamp(targetY, _spawnY - HoverAmplitude, _spawnY + HoverAmplitude);
+        pos.Y = Mathf.Lerp(pos.Y, targetY, delta * 2.0f);
+
+        pos.Y += Mathf.Sin(_time * HoverSpeed) * (HoverAmplitude * 0.3f);
+        GlobalPosition = pos;
+
+        _fireTimer -= delta;
+        if (_fireTimer <= 0 && GlobalPosition.DistanceTo(Player.GlobalPosition) <= AttackRange)
+        {
+            _fireTimer = FireCooldown;
+            FireBullet();
+        }
+    }
+
+    protected override void UpdateAttackState(float delta)
+    {
+        FacePlayer();
+
+        _time += delta;
+        var pos = GlobalPosition;
+        pos.Y = _spawnY + (Mathf.Sin(_time * HoverSpeed) * HoverAmplitude);
+        GlobalPosition = pos;
+
+        _fireTimer -= delta;
+        if (_fireTimer <= 0)
+        {
+            _fireTimer = FireCooldown;
+            FireBullet();
+        }
+    }
+
+    protected override void CheckTransitions()
+    {
+        if (Player == null || Player.IsDead)
+            return;
+
+        var distance = GlobalPosition.DistanceTo(Player.GlobalPosition);
+
+        switch (CurrentState)
+        {
+            case EnemyState.Patrol:
+                if (DetectionRange > 0 && distance <= DetectionRange)
+                    SetState(EnemyState.Alert);
+                break;
+            case EnemyState.Alert:
+                if (distance > DetectionRange * 1.5f)
+                    SetState(EnemyState.Patrol);
+                else if (distance <= DetectionRange * 0.7f)
+                    SetState(EnemyState.Chase);
+                break;
+            case EnemyState.Chase:
+                if (distance > DetectionRange * 1.5f)
+                    SetState(EnemyState.Patrol);
+                else if (distance <= AttackRange)
+                    SetState(EnemyState.Attack);
+                break;
+            case EnemyState.Attack:
+                if (Player.IsDead || distance > AttackRange * 1.5f)
+                    SetState(EnemyState.Patrol);
+                break;
+        }
+    }
+
+    private void FireBullet()
+    {
+        if (_bulletScene == null || Player == null) return;
+
+        var bullet = _bulletScene.Instantiate<BulletProjectile>();
+        GetParent().AddChild(bullet);
+
+        var dir = (Player.GlobalPosition - GlobalPosition).Normalized();
+        bullet.Initialize(GlobalPosition, dir, 100.0f, ContactDamage);
     }
 }
