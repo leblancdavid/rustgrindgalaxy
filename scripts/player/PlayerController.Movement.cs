@@ -23,6 +23,14 @@ public partial class PlayerController : CharacterBody2D
 			{
 				velocity.X += slopeAcceleration * deltaSeconds;
 			}
+
+			// Ramp adhesion: pushes player toward floor surface to maintain contact
+			// at high speeds on steep slopes. Only vertical component is used
+			// to avoid altering horizontal speed (which would speed up/slow down
+			// the player on slopes regardless of travel direction).
+			var tangentSpeed = Mathf.Abs(velocity.Dot(floorTangent));
+			var steepness = Mathf.Abs(floorTangent.Dot(Vector2.Down));
+			velocity.Y += -floorNormal.Y * tangentSpeed * steepness * RampAdhesionFactor * deltaSeconds;
 		}
 
 		if (Mathf.IsZeroApprox(inputDirection))

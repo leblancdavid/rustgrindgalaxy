@@ -52,8 +52,9 @@ public partial class PlayerController : CharacterBody2D
 	[Export] public float AirRotationRampUpTime = 0.5f;
 	[Export] public int MaxHealth = 5;
 	[Export] public float InvulnerabilityDuration = 0.75f;
-	[Export] public float FloorSnapDistance = 10.0f;
+	[Export] public float FloorSnapDistance = 20.0f;
 	[Export] public float FloorMaxAngleDegrees = 65.0f;
+	[Export] public float RampAdhesionFactor = 3.0f;
 
 	private const string GrindAction = "grind";
 	private const string TrickFlipAction = "trick_flip";
