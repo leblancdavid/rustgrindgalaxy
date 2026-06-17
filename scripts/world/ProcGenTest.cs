@@ -13,7 +13,9 @@ public partial class ProcGenTest : Node2D
     private ColorRect _spaceRect = null!;
     private ColorRect _upperBand = null!;
     private ColorRect _glowStripe = null!;
-    private Sprite2D _mistFog = null!;
+    private Sprite2D _fogSprite = null!;
+    private ColorRect _darknessRect = null!;
+    private const float FogHalfHeight = 600f;
 
     public override void _Ready()
     {
@@ -80,10 +82,14 @@ public partial class ProcGenTest : Node2D
             }
         }
 
-        _mistFog = MistFog.CreateMist(palette, bgDim, 800);
-        AddChild(_mistFog);
-        MoveChild(_mistFog, 1);
-        _mistFog.Position = new Vector2(-1500, -40);
+        _fogSprite = MistFog.CreateDoubleFog(palette, bgDim, FogHalfHeight);
+        AddChild(_fogSprite);
+        MoveChild(_fogSprite, 1);
+        _fogSprite.Position = new Vector2(-1500, -40);
+
+        var (darkLayer, darkRect) = MistFog.CreateDarknessOverlay();
+        AddChild(darkLayer);
+        _darknessRect = darkRect;
     }
 
     public override void _Process(double delta)
@@ -92,9 +98,11 @@ public partial class ProcGenTest : Node2D
         _hud.UpdateTileName(GetTileLabelText());
         _tileGenerator.UpdateStreaming();
 
-        _mistFog.Position = new Vector2(
-            _camera.GlobalPosition.X - 1500,
-            -40);
+        _fogSprite.Position = new Vector2(_camera.GlobalPosition.X - 1500, -40);
+
+        var midY = -40 + FogHalfHeight;
+        var depth = Mathf.Clamp((_player.GlobalPosition.Y - midY) / FogHalfHeight, 0f, 1f);
+        _darknessRect.Modulate = new Color(0, 0, 0, depth * 0.35f);
 
         var surfaceY = GetSurfaceYAtX(_player.GlobalPosition.X);
         var threshold = surfaceY < float.MaxValue ? surfaceY + 500f : FallRespawnY;

@@ -9,11 +9,14 @@ public partial class TileLevelIndustrial : MissionLevel
     private const string PickupScenePath = "res://scenes/world/MineralPickup.tscn";
     private const string ShockHazardScenePath = "res://scenes/world/ShockHazard.tscn";
 
+    private const float FogHalfHeight = 600f;
+
     private ColorRect _backdrop = null!;
     private ColorRect _upperWall = null!;
     private ColorRect _midStripe = null!;
     private TileLevelGenerator _tileGenerator = null!;
-    private Sprite2D _mistFog = null!;
+    private Sprite2D _fogSprite = null!;
+    private ColorRect _darknessRect = null!;
 
     public TileLevelGenerator TileGenerator => _tileGenerator;
     private Node2D _spawnedActors = null!;
@@ -50,9 +53,11 @@ public partial class TileLevelIndustrial : MissionLevel
         {
             var camera = player.GetNodeOrNull<Camera2D>("Camera2D");
             if (camera != null)
-                _mistFog.Position = new Vector2(
-                    camera.GlobalPosition.X - 1500,
-                    20);
+                _fogSprite.Position = new Vector2(camera.GlobalPosition.X - 1500, 20);
+
+            var midY = 20 + FogHalfHeight;
+            var depth = Mathf.Clamp((player.GlobalPosition.Y - midY) / FogHalfHeight, 0f, 1f);
+            _darknessRect.Modulate = new Color(0, 0, 0, depth * 0.35f);
         }
     }
 
@@ -98,10 +103,14 @@ public partial class TileLevelIndustrial : MissionLevel
         _upperWall.Color = new Color(palette.PrimaryMedium.R * bgDim, palette.PrimaryMedium.G * bgDim, palette.PrimaryMedium.B * bgDim, 1f);
         _midStripe.Color = new Color(palette.PrimaryLight.R * bgDim, palette.PrimaryLight.G * bgDim, palette.PrimaryLight.B * bgDim, 0.35f);
 
-        _mistFog = MistFog.CreateMist(palette, bgDim, 400);
-        AddChild(_mistFog);
-        MoveChild(_mistFog, 3);
-        _mistFog.Position = new Vector2(-1500, 20);
+        _fogSprite = MistFog.CreateDoubleFog(palette, bgDim, FogHalfHeight);
+        AddChild(_fogSprite);
+        MoveChild(_fogSprite, 3);
+        _fogSprite.Position = new Vector2(-1500, 20);
+
+        var (darkLayer, darkRect) = MistFog.CreateDarknessOverlay();
+        AddChild(darkLayer);
+        _darknessRect = darkRect;
     }
 
     private void ApplyModifiers(MissionRunData mission)
