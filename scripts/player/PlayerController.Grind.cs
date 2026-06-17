@@ -68,8 +68,10 @@ public partial class PlayerController : CharacterBody2D
 		var boardRotation = GetRailBoardAngle(rail);
 		var boardOffset = _boardContact.Position.Rotated(boardRotation);
 		GlobalPosition = rail.GetPointAtProgress(_railProgress) - boardOffset;
+		_railTransitionVisualRotation = Rotation - boardRotation;
+		_railTransitionTimer = RailTransitionSmoothDuration;
 		Rotation = boardRotation;
-		_visualContainer.Rotation = 0.0f;
+		_visualContainer.Rotation = _railTransitionVisualRotation;
 		Velocity = rail.Tangent * _railSpeed;
 	}
 
@@ -84,6 +86,7 @@ public partial class PlayerController : CharacterBody2D
 		_balanceValue = 0.0f;
 		_balanceDriftWobble = 1.0f;
 		_balanceDriftWobbleTimer = 0.0f;
+		_railTransitionTimer = 0.0f;
 		if (_balanceIndicator != null)
 		{
 			_balanceIndicator.Visible = false;

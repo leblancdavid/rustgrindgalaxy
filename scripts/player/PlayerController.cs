@@ -33,7 +33,7 @@ public partial class PlayerController : CharacterBody2D
 	[Export] public float GrindVisualMinimumStrength = 0.45f;
 	[Export] public float GrindBobOffsetPixels = 0.75f;
 	[Export] public float BalanceMaxOffset = 1.0f;
-	[Export] public float BalanceDriftRate = 0.8f;
+	[Export] public float BalanceDriftRate = 0.35f;
 	[Export] public float BalanceCorrectionSpeed = 2.5f;
 	[Export] public float BalanceNoiseMagnitude = 0.15f;
 	[Export] public float BalanceNoiseMinFrames = 15f;
@@ -49,6 +49,7 @@ public partial class PlayerController : CharacterBody2D
 	[Export] public float BalanceDriftWobbleInterval = 1.8f;
 	[Export] public float BalanceMinDriftWobbleInterval = 0.4f;
 	[Export] public float BalanceComboRecovery = 0.45f;
+	[Export] public float RailTransitionSmoothDuration = 0.12f;
 	[Export] public float AirRotationRampUpTime = 0.5f;
 	[Export] public int MaxHealth = 5;
 	[Export] public float InvulnerabilityDuration = 0.75f;
@@ -111,6 +112,8 @@ public partial class PlayerController : CharacterBody2D
 	private float _balanceDriftWobble = 1.0f;
 	private float _balanceDriftWobbleTimer;
 	private float _balanceNoiseTimer;
+	private float _railTransitionTimer;
+	private float _railTransitionVisualRotation;
 	private float _grindElapsedTime;
 	private float _airRotationRamp;
 	private float _airRotationRampDirection;

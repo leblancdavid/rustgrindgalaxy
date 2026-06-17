@@ -425,6 +425,7 @@ public partial class PlayerController : CharacterBody2D
 		_balanceValue = 0.0f;
 		_balanceDriftWobble = 1.0f;
 		_balanceDriftWobbleTimer = 0.0f;
+		_railTransitionTimer = 0.0f;
 		_airRotationRamp = 0.0f;
 		_airRotationRampDirection = 0.0f;
 		_boardVisual.Position = _boardVisualBasePosition;

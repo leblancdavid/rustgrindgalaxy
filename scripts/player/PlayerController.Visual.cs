@@ -163,7 +163,16 @@ public partial class PlayerController : CharacterBody2D
 	{
 		if (_activeRail != null)
 		{
-			_visualContainer.Rotation = 0.0f;
+			if (_railTransitionTimer > 0.0f)
+			{
+				var t = 1.0f - (_railTransitionTimer / Mathf.Max(RailTransitionSmoothDuration, 0.001f));
+				_visualContainer.Rotation = Mathf.LerpAngle(_railTransitionVisualRotation, 0.0f, t);
+				_railTransitionTimer -= deltaSeconds;
+			}
+			else
+			{
+				_visualContainer.Rotation = 0.0f;
+			}
 			return;
 		}
 
