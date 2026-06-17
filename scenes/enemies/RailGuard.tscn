@@ -11,6 +11,7 @@ size = Vector2(16, 16)
 [node name="RailGuard" type="CharacterBody2D"]
 collision_layer = 4
 script = ExtResource("1")
+DetectionRange = 180.0
 
 [node name="PathFollow2D" type="PathFollow2D" parent="."]
 

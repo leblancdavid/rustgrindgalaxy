@@ -11,6 +11,7 @@ public partial class BulletProjectile : Area2D
     private Polygon2D? _glow;
     private Polygon2D? _trail;
     private float _totalTime;
+    private bool _hasHit;
 
     public void Initialize(Vector2 position, Vector2 direction, float? speed = null, int? damage = null)
     {
@@ -59,6 +60,8 @@ public partial class BulletProjectile : Area2D
 
     private void OnHit(Node2D body)
     {
+        if (_hasHit) return;
+        _hasHit = true;
         if (body is PlayerController player)
             player.TakeDamage(Damage);
         SpawnHitSpark();

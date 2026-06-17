@@ -12,6 +12,7 @@ size = Vector2(16, 14)
 collision_layer = 4
 gravity_scale = 0.0
 script = ExtResource("1")
+DetectionRange = 130.0
 
 [node name="Visual" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(-8, -4, -4, -8, 4, -8, 8, -4, 8, 4, 4, 8, -4, 8, -8, 4)

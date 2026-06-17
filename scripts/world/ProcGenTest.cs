@@ -144,8 +144,8 @@ public partial class ProcGenTest : Node2D
                     : groundTypes[2];
 
                 var enemy = chosen.Instantiate<Node2D>();
+                enemy.Position = new Vector2(posX, surfaceY);
                 _spawnedActors.AddChild(enemy);
-                enemy.GlobalPosition = new Vector2(posX, surfaceY);
             }
 
             var flyingCount = (int)(rng.Randi() % 2) + 1;
@@ -156,8 +156,8 @@ public partial class ProcGenTest : Node2D
                 var surfaceY = tile.Position.Y + Mathf.Lerp(tile.LeftGroundY, tile.RightGroundY, t);
 
                 var enemy = flyingTypes[rng.Randi() % flyingTypes.Length].Instantiate<Node2D>();
+                enemy.Position = new Vector2(posX, surfaceY - rng.RandfRange(40, 70));
                 _spawnedActors.AddChild(enemy);
-                enemy.GlobalPosition = new Vector2(posX, surfaceY - rng.RandfRange(40, 70));
             }
         }
     }

@@ -172,6 +172,7 @@ public partial class PlayerController : CharacterBody2D
 
 	public override void _Ready()
 	{
+		AddToGroup("player");
 		EnsureGrindInput();
 		_boardContact = GetNode<Marker2D>("BoardContact");
 		_visualContainer = GetNode<Node2D>("VisualContainer");

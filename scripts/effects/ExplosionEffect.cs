@@ -9,6 +9,8 @@ public partial class ExplosionEffect : AnimatedSprite2D
 
     public override void _Ready()
     {
+        BuildSpriteFrames();
+
         if (DamageRadius > 0)
         {
             _hitbox = new Area2D();
@@ -20,8 +22,24 @@ public partial class ExplosionEffect : AnimatedSprite2D
             _hitbox.BodyEntered += OnBodyEntered;
         }
 
-        Connect(AnimationPlayer.SignalName.AnimationFinished, Callable.From(() => QueueFree()));
+        AnimationFinished += () => QueueFree();
         Play();
+    }
+
+    private void BuildSpriteFrames()
+    {
+        var dir = "res://animations/explosions/Explosion_1/";
+        var frames = new SpriteFrames();
+        frames.AddAnimation("default");
+        frames.SetAnimationSpeed("default", 20.0);
+        for (var i = 1; i <= 10; i++)
+        {
+            var tex = GD.Load<Texture2D>($"{dir}Explosion_{i}.png");
+            if (tex != null)
+                frames.AddFrame("default", tex, 0.05f);
+        }
+        if (frames.GetFrameCount("default") > 0)
+            SpriteFrames = frames;
     }
 
     private void OnBodyEntered(Node2D body)

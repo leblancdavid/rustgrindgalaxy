@@ -79,8 +79,8 @@ public partial class EnemySpawner : Node
             foreach (var marker in PickMarkers(markers, count, rng))
             {
                 var enemy = scene.Instantiate<Node2D>();
-                _spawnParent.AddChild(enemy);
                 enemy.GlobalPosition = marker.GlobalPosition;
+                _spawnParent.AddChild(enemy);
                 totalSpawned++;
             }
         }

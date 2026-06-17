@@ -14,11 +14,11 @@ public enum EnemyState
 
 public abstract partial class EnemyBase : CharacterBody2D
 {
-    [Export] public int MaxHealth { get; set; } = 2;
-    [Export] public int ContactDamage { get; set; } = 1;
-    [Export] public float DetectionRange { get; set; } = 0.0f;
-    [Export] public float KnockbackResistance { get; set; } = 0.0f;
-    [Export] public float GravityScale { get; set; } = 1.0f;
+    [Export] public int MaxHealth = 2;
+    [Export] public int ContactDamage = 1;
+    [Export] public float DetectionRange = 0.0f;
+    [Export] public float KnockbackResistance = 0.0f;
+    [Export] public float GravityScale = 1.0f;
 
     public int CurrentHealth { get; private set; }
     public EnemyState CurrentState { get; private set; } = EnemyState.Patrol;
