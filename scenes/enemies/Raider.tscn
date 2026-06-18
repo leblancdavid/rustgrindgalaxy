@@ -1,6 +1,7 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/enemies/RaiderEnemy.cs" id="1"]
+[ext_resource type="Script" path="res://scripts/world/Shadow.cs" id="2"]
 
 [sub_resource type="RectangleShape2D" id="1"]
 size = Vector2(20, 32)
@@ -15,6 +16,11 @@ size = Vector2(24, 20)
 collision_layer = 4
 script = ExtResource("1")
 DetectionRange = 100.0
+
+[node name="Shadow" type="Node2D" parent="."]
+script = ExtResource("2")
+BaseWidth = 22.0
+BaseHeight = 6.0
 
 [node name="VisualContainer" type="Node2D" parent="."]
 

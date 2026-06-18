@@ -1,6 +1,7 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/enemies/DroneEnemy.cs" id="1"]
+[ext_resource type="Script" path="res://scripts/world/Shadow.cs" id="2"]
 
 [sub_resource type="CircleShape2D" id="1"]
 radius = 12.0
@@ -13,6 +14,12 @@ collision_layer = 4
 gravity_scale = 0.0
 script = ExtResource("1")
 DetectionRange = 140.0
+
+[node name="Shadow" type="Node2D" parent="."]
+script = ExtResource("2")
+BaseWidth = 24.0
+BaseHeight = 6.0
+DistanceSmoothing = 4.0
 
 [node name="Visual" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(-11, 0, -4, -9, 7, -7, 11, 0, 7, 7, -4, 9)

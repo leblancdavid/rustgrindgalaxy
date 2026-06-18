@@ -1,6 +1,7 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/enemies/MineLayer.cs" id="1"]
+[ext_resource type="Script" path="res://scripts/world/Shadow.cs" id="2"]
 
 [sub_resource type="RectangleShape2D" id="1"]
 size = Vector2(14, 16)
@@ -15,6 +16,11 @@ size = Vector2(22, 24)
 collision_layer = 4
 script = ExtResource("1")
 DetectionRange = 100.0
+
+[node name="Shadow" type="Node2D" parent="."]
+script = ExtResource("2")
+BaseWidth = 16.0
+BaseHeight = 4.0
 
 [node name="VisualContainer" type="Node2D" parent="."]
 
