@@ -54,6 +54,7 @@ public partial class Grenadier : EnemyBase
         pos.X = _spawnX + Mathf.Sin(_time * 0.3f) * PatrolRange;
         pos.Y = _spawnY + Mathf.Sin(_time * 0.5f) * HoverAmplitude;
         GlobalPosition = pos;
+        ClampAboveFloor(30f);
     }
 
     protected override void UpdateChaseState(float delta)
@@ -74,6 +75,7 @@ public partial class Grenadier : EnemyBase
         var pos = GlobalPosition;
         pos.Y = _spawnY + Mathf.Sin(_time * 0.5f) * HoverAmplitude;
         GlobalPosition = pos;
+        ClampAboveFloor(30f);
 
         FacePlayer();
         LobGrenade();

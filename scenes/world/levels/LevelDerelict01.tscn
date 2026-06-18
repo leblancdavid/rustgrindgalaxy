@@ -81,13 +81,13 @@ BaseSpeed = 170.0
 [node name="Raiders" type="Node2D" parent="SpawnMarkers"]
 
 [node name="RaiderA" type="Marker2D" parent="SpawnMarkers/Raiders"]
-position = Vector2(64, 120)
+position = Vector2(64, 121)
 
 [node name="RaiderB" type="Marker2D" parent="SpawnMarkers/Raiders"]
-position = Vector2(150, 92)
+position = Vector2(150, 93)
 
 [node name="RaiderC" type="Marker2D" parent="SpawnMarkers/Raiders"]
-position = Vector2(264, 146)
+position = Vector2(264, 156)
 
 [node name="Drones" type="Node2D" parent="SpawnMarkers"]
 

@@ -19,11 +19,13 @@ public abstract partial class EnemyBase : CharacterBody2D
     [Export] public float DetectionRange = 0.0f;
     [Export] public float KnockbackResistance = 0.0f;
     [Export] public float GravityScale = 1.0f;
+    [Export] public float GroundSink = 0f;
 
     public int CurrentHealth { get; private set; }
     public EnemyState CurrentState { get; private set; } = EnemyState.Patrol;
 
     protected PlayerController? Player { get; private set; }
+    protected Node2D? VisualContainer { get; private set; }
     protected float HurtFlashTimer;
     protected bool IsHurtFlashing => HurtFlashTimer > 0.0f;
 
@@ -35,12 +37,32 @@ public abstract partial class EnemyBase : CharacterBody2D
     {
         CurrentHealth = MaxHealth;
         Player = GetTree().GetFirstNodeInGroup("player") as PlayerController;
+        VisualContainer = GetNodeOrNull<Node2D>("VisualContainer");
         _hurtArea = GetNodeOrNull<Area2D>("HurtArea");
         if (_hurtArea != null)
         {
             _hurtArea.BodyEntered += OnHurtAreaBodyEntered;
         }
         SetupState(EnemyState.Patrol);
+
+        ApplyGroundSink();
+    }
+
+    private void ApplyGroundSink()
+    {
+        if (GroundSink == 0f) return;
+        if (VisualContainer != null)
+        {
+            VisualContainer.Position += new Vector2(0, GroundSink);
+            return;
+        }
+        foreach (var child in GetChildren())
+        {
+            if (child is Polygon2D poly)
+            {
+                poly.Position += new Vector2(0, GroundSink);
+            }
+        }
     }
 
     public override void _Process(double delta)
@@ -126,9 +148,28 @@ public abstract partial class EnemyBase : CharacterBody2D
 
     protected virtual void ExitState(EnemyState state) { }
 
+    private void UpdateGroundRotation(float delta)
+    {
+        if (VisualContainer == null) return;
+
+        if (IsOnFloor())
+        {
+            var floorNormal = GetFloorNormal();
+            var tangent = new Vector2(floorNormal.Y, -floorNormal.X).Normalized();
+            if (tangent.X < 0f) tangent = -tangent;
+            var targetAngle = tangent.Angle();
+            VisualContainer.Rotation = Mathf.LerpAngle(VisualContainer.Rotation, targetAngle, Mathf.Clamp(10f * delta, 0f, 1f));
+        }
+        else
+        {
+            VisualContainer.Rotation = Mathf.LerpAngle(VisualContainer.Rotation, 0f, Mathf.Clamp(10f * delta, 0f, 1f));
+        }
+    }
+
     protected virtual void UpdateState(float delta)
     {
         _stateTimer += delta;
+        UpdateGroundRotation(delta);
 
         switch (CurrentState)
         {
@@ -203,6 +244,27 @@ public abstract partial class EnemyBase : CharacterBody2D
     {
         if (Player == null) return;
         FaceDirection(Player.GlobalPosition.X - GlobalPosition.X);
+    }
+
+    protected void ClampAboveFloor(float minDistance, float maxRaycastDistance = 500f)
+    {
+        if (minDistance <= 0f) return;
+
+        var spaceState = GetWorld2D().DirectSpaceState;
+        var query = PhysicsRayQueryParameters2D.Create(GlobalPosition, GlobalPosition + new Vector2(0, maxRaycastDistance), 1);
+        var result = spaceState.IntersectRay(query);
+
+        if (result.Count > 0 && result.ContainsKey("position"))
+        {
+            var floorY = ((Vector2)result["position"]).Y;
+            var minY = floorY - minDistance;
+            if (GlobalPosition.Y > minY)
+            {
+                var pos = GlobalPosition;
+                pos.Y = minY;
+                GlobalPosition = pos;
+            }
+        }
     }
 
     private void UpdateHurtFlash(float delta)

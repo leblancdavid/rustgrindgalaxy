@@ -52,6 +52,7 @@ public partial class ShockDrone : EnemyBase
         var pos = GlobalPosition;
         pos.Y = _spawnY + Mathf.Sin(_time * 1.5f) * HoverAmplitude;
         GlobalPosition = pos;
+        ClampAboveFloor(30f);
 
         _cooldownTimer -= delta;
         if (_cooldownTimer <= 0 && Player != null &&
@@ -68,6 +69,7 @@ public partial class ShockDrone : EnemyBase
         var pos = GlobalPosition;
         pos.Y = _spawnY + Mathf.Sin(_time * 1.5f) * HoverAmplitude;
         GlobalPosition = pos;
+        ClampAboveFloor(30f);
 
         FacePlayer();
 
@@ -108,6 +110,7 @@ public partial class ShockDrone : EnemyBase
         var pos = GlobalPosition;
         pos.Y = _spawnY + Mathf.Sin(_time * 1.5f) * HoverAmplitude;
         GlobalPosition = pos;
+        ClampAboveFloor(30f);
 
         // Show vulnerability with dim visual
     }

@@ -16,11 +16,13 @@ collision_layer = 4
 script = ExtResource("1")
 DetectionRange = 100.0
 
-[node name="Visual" type="Polygon2D" parent="."]
+[node name="VisualContainer" type="Node2D" parent="."]
+
+[node name="Visual" type="Polygon2D" parent="VisualContainer"]
 polygon = PackedVector2Array(-7, -16, 7, -16, 7, 0, -7, 0)
 color = Color(0.55, 0.4, 0.2, 1)
 
-[node name="ShieldVisual" type="Polygon2D" parent="."]
+[node name="ShieldVisual" type="Polygon2D" parent="VisualContainer"]
 visible = false
 polygon = PackedVector2Array(-11, -20, 11, -20, 11, 4, -11, 4)
 color = Color(0.3, 0.6, 1, 0.35)

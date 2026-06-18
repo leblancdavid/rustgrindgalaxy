@@ -66,6 +66,7 @@ public partial class DroneEnemy : EnemyBase
         pos.X += _direction * PatrolSpeed * delta;
         pos.Y = _spawnY + (Mathf.Sin(_time * HoverSpeed) * HoverAmplitude);
         GlobalPosition = pos;
+        ClampAboveFloor(30f);
     }
 
     protected override void UpdateChaseState(float delta)
@@ -90,6 +91,7 @@ public partial class DroneEnemy : EnemyBase
 
         pos.Y += Mathf.Sin(_time * HoverSpeed) * (HoverAmplitude * 0.3f);
         GlobalPosition = pos;
+        ClampAboveFloor(30f);
 
         _fireTimer -= delta;
         if (_fireTimer <= 0 && GlobalPosition.DistanceTo(Player.GlobalPosition) <= AttackRange)
@@ -107,6 +109,7 @@ public partial class DroneEnemy : EnemyBase
         var pos = GlobalPosition;
         pos.Y = _spawnY + (Mathf.Sin(_time * HoverSpeed) * HoverAmplitude);
         GlobalPosition = pos;
+        ClampAboveFloor(30f);
 
         _fireTimer -= delta;
         if (_fireTimer <= 0)

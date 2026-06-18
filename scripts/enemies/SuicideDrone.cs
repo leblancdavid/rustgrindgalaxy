@@ -37,6 +37,7 @@ public partial class SuicideDrone : EnemyBase
         var pos = GlobalPosition;
         pos.Y = _spawnY + Mathf.Sin(_time * 2.0f) * HoverAmplitude;
         GlobalPosition = pos;
+        ClampAboveFloor(30f);
     }
 
     protected override void UpdateAlertState(float delta)
@@ -53,6 +54,7 @@ public partial class SuicideDrone : EnemyBase
         var pos = GlobalPosition;
         pos.Y = _spawnY + Mathf.Sin(_time * 2.0f) * HoverAmplitude;
         GlobalPosition = pos;
+        ClampAboveFloor(30f);
 
         FacePlayer();
 

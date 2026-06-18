@@ -55,6 +55,7 @@ public partial class CombatDroneEnemy : EnemyBase
         var pos = GlobalPosition;
         pos.Y += Mathf.Sin(_time * HoverSpeed * 0.5f) * (HoverAmplitude * 0.5f);
         GlobalPosition = pos;
+        ClampAboveFloor(30f);
     }
 
     protected override void UpdateChaseState(float delta)
@@ -71,6 +72,7 @@ public partial class CombatDroneEnemy : EnemyBase
         pos.X = Mathf.Lerp(pos.X, targetX, delta * 2.0f);
         pos.Y = Mathf.Lerp(pos.Y, targetY, delta * 1.5f);
         GlobalPosition = pos;
+        ClampAboveFloor(30f);
 
         FaceDirection(Player.GlobalPosition.X - GlobalPosition.X);
 
@@ -94,6 +96,7 @@ public partial class CombatDroneEnemy : EnemyBase
         var pos = GlobalPosition;
         pos.Y += Mathf.Sin(_time * HoverSpeed) * HoverAmplitude * 0.3f;
         GlobalPosition = pos;
+        ClampAboveFloor(30f);
 
         FacePlayer();
 
