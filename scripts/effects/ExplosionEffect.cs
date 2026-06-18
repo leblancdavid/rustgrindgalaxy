@@ -30,7 +30,8 @@ public partial class ExplosionEffect : AnimatedSprite2D
     {
         var dir = "res://animations/explosions/Explosion_1/";
         var frames = new SpriteFrames();
-        frames.AddAnimation("default");
+        if (!frames.HasAnimation("default"))
+            frames.AddAnimation("default");
         frames.SetAnimationSpeed("default", 20.0);
         for (var i = 1; i <= 10; i++)
         {

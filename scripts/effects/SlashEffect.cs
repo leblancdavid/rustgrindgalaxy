@@ -5,12 +5,6 @@ public partial class SlashEffect : Node2D
     private float _lifetime = 0.2f;
     private float _timer;
     private Polygon2D _arc;
-    private float _startAngle = -0.5f;
-
-    public void SetFacingRight(bool facingRight)
-    {
-        _startAngle = facingRight ? -0.5f : Mathf.Pi - 0.5f;
-    }
 
     public override void _Ready()
     {
@@ -31,15 +25,16 @@ public partial class SlashEffect : Node2D
 
         var progress = 1.0f - (_timer / _lifetime);
         var arcAngle = Mathf.Lerp(0.3f, Mathf.Pi * 0.7f, progress);
-        var radius = Mathf.Lerp(14.0f, 26.0f, progress);
+        var radius = Mathf.Lerp(24.0f, 44.0f, progress);
         var alpha = Mathf.Lerp(1.0f, 0.0f, progress * progress);
 
+        const float startAngle = -0.5f;
         int resolution = 8;
         var points = new Vector2[resolution + 2];
         points[0] = Vector2.Zero;
         for (int i = 0; i <= resolution; i++)
         {
-            float a = _startAngle + (arcAngle * i / resolution);
+            float a = startAngle + (arcAngle * i / resolution);
             points[i + 1] = new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * radius;
         }
 

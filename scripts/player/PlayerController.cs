@@ -324,20 +324,20 @@ public partial class PlayerController : CharacterBody2D
 
 	public void TakeDamage(int amount)
 	{
-		if (amount <= 0 || IsDead || _invulnerabilityTimeRemaining > 0.0f || GodMode)
+		if (amount <= 0 || IsDead || _invulnerabilityTimeRemaining > 0.0f)
+			return;
+
+		if (GodMode)
 		{
+			_invulnerabilityTimeRemaining = InvulnerabilityDuration;
 			return;
 		}
 
 		if (_railArmorTimeRemaining > 0.0f)
-		{
 			amount = Mathf.Max(0, amount - 1);
-		}
 
 		if (amount <= 0)
-		{
 			return;
-		}
 
 		CurrentHealth = Mathf.Max(0, CurrentHealth - amount);
 		_invulnerabilityTimeRemaining = InvulnerabilityDuration;

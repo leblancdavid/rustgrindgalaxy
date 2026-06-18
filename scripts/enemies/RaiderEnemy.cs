@@ -174,8 +174,7 @@ public partial class RaiderEnemy : EnemyBase
         {
             var slash = slashScene.Instantiate<SlashEffect>();
             AddChild(slash);
-            slash.GlobalPosition = GlobalPosition + new Vector2(Scale.X * 18, -12);
-            slash.SetFacingRight(Scale.X >= 0);
+            slash.GlobalPosition = GlobalPosition + new Vector2(0, -12);
         }
 
         var timer = GetTree().CreateTimer(0.2f);
