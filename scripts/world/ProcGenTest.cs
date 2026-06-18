@@ -135,8 +135,9 @@ public partial class ProcGenTest : Node2D
             for (var i = 0; i < groundCount; i++)
             {
                 var t = rng.RandfRange(0.1f, 0.9f);
-                var posX = tile.GetTileLeftX() + t * tile.TileWidth;
-                var surfaceY = tile.Position.Y + Mathf.Lerp(tile.LeftGroundY, tile.RightGroundY, t);
+                var localX = t * tile.TileWidth;
+                var posX = tile.GetTileLeftX() + localX;
+                var surfaceY = tile.Position.Y + tile.GetGroundYAt(localX);
 
                 var roll = rng.Randf();
                 var chosen = roll < 0.45f ? groundTypes[0]
@@ -152,8 +153,9 @@ public partial class ProcGenTest : Node2D
             for (var i = 0; i < flyingCount; i++)
             {
                 var t = rng.RandfRange(0.1f, 0.9f);
-                var posX = tile.GetTileLeftX() + t * tile.TileWidth;
-                var surfaceY = tile.Position.Y + Mathf.Lerp(tile.LeftGroundY, tile.RightGroundY, t);
+                var localX = t * tile.TileWidth;
+                var posX = tile.GetTileLeftX() + localX;
+                var surfaceY = tile.Position.Y + tile.GetGroundYAt(localX);
 
                 var enemy = flyingTypes[rng.Randi() % flyingTypes.Length].Instantiate<Node2D>();
                 enemy.Position = new Vector2(posX, surfaceY - rng.RandfRange(40, 70));

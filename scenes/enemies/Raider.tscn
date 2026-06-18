@@ -15,15 +15,16 @@ size = Vector2(24, 20)
 collision_layer = 4
 script = ExtResource("1")
 DetectionRange = 100.0
-GroundSink = 5.0
 
 [node name="VisualContainer" type="Node2D" parent="."]
 
-[node name="Visual" type="Polygon2D" parent="VisualContainer"]
+[node name="Sprite" type="Node2D" parent="VisualContainer"]
+
+[node name="Visual" type="Polygon2D" parent="VisualContainer/Sprite"]
 polygon = PackedVector2Array(-10, -32, 10, -32, 10, 0, -10, 0)
 color = Color(0.85098, 0.380392, 0.32549, 1)
 
-[node name="Head" type="Polygon2D" parent="VisualContainer"]
+[node name="Head" type="Polygon2D" parent="VisualContainer/Sprite"]
 position = Vector2(0, -32)
 polygon = PackedVector2Array(-6, -6, 6, -6, 6, 0, -6, 0)
 color = Color(0.690196, 0.262745, 0.243137, 1)

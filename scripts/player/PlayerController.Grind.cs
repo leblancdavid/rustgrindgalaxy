@@ -51,13 +51,14 @@ public partial class PlayerController : CharacterBody2D
 		_railArmorTimeRemaining = Mathf.Max(_railArmorTimeRemaining, _resolvedEffects.RailEntryArmorSeconds);
 		_railProgress = Mathf.Clamp(railProgress, 0.0f, 1.0f);
 		var tangentSpeed = Velocity.Dot(rail.Tangent);
+		var playerSpeed = Velocity.Length();
 
 		if (!Mathf.IsZeroApprox(tangentSpeed))
 		{
 			_grindDirection = Mathf.Sign(tangentSpeed);
 		}
 
-		_railSpeed = Mathf.Abs(tangentSpeed);
+		_railSpeed = Mathf.Max(Mathf.Abs(tangentSpeed), playerSpeed * MinGrindEntrySpeedTransfer);
 
 		if (_railSpeed < MinimumRailEntrySpeed)
 		{

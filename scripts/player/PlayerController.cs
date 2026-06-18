@@ -50,6 +50,7 @@ public partial class PlayerController : CharacterBody2D
 	[Export] public float BalanceMinDriftWobbleInterval = 0.4f;
 	[Export] public float BalanceComboRecovery = 0.45f;
 	[Export] public float RailTransitionSmoothDuration = 0.12f;
+	[Export] public float MinGrindEntrySpeedTransfer = 0.4f;
 	[Export] public float AirRotationRampUpTime = 0.5f;
 	[Export] public int MaxHealth = 5;
 	[Export] public float InvulnerabilityDuration = 0.75f;

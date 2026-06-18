@@ -26,8 +26,8 @@ public partial class RaiderEnemy : EnemyBase
             _meleeHitbox.Monitoring = false;
             _meleeHitbox.BodyEntered += OnMeleeHit;
         }
-        _bodyVisual = GetNodeOrNull<Polygon2D>("Visual");
-        _headVisual = GetNodeOrNull<Polygon2D>("Head");
+        _bodyVisual = GetNodeOrNull<Polygon2D>("Sprite/Visual");
+        _headVisual = GetNodeOrNull<Polygon2D>("Sprite/Head");
     }
 
     protected override void UpdatePatrolState(float delta)
@@ -50,6 +50,7 @@ public partial class RaiderEnemy : EnemyBase
             _direction = -1.0f;
 
         velocity.X = _direction * MoveSpeed;
+        ApplyRampAdhesion(ref velocity, delta);
         Velocity = velocity;
         MoveAndSlide();
     }
@@ -85,6 +86,7 @@ public partial class RaiderEnemy : EnemyBase
             velocity.X = dir * ChaseSpeed;
         }
 
+        ApplyRampAdhesion(ref velocity, delta);
         Velocity = velocity;
         MoveAndSlide();
 
@@ -105,6 +107,7 @@ public partial class RaiderEnemy : EnemyBase
             velocity.Y += gravity * delta;
         }
         velocity.X = 0;
+        ApplyRampAdhesion(ref velocity, delta);
         Velocity = velocity;
         MoveAndSlide();
 

@@ -19,13 +19,13 @@ public abstract partial class EnemyBase : CharacterBody2D
     [Export] public float DetectionRange = 0.0f;
     [Export] public float KnockbackResistance = 0.0f;
     [Export] public float GravityScale = 1.0f;
-    [Export] public float GroundSink = 0f;
 
     public int CurrentHealth { get; private set; }
     public EnemyState CurrentState { get; private set; } = EnemyState.Patrol;
 
     protected PlayerController? Player { get; private set; }
     protected Node2D? VisualContainer { get; private set; }
+    protected Node2D? FacingNode { get; private set; }
     protected float HurtFlashTimer;
     protected bool IsHurtFlashing => HurtFlashTimer > 0.0f;
 
@@ -38,31 +38,15 @@ public abstract partial class EnemyBase : CharacterBody2D
         CurrentHealth = MaxHealth;
         Player = GetTree().GetFirstNodeInGroup("player") as PlayerController;
         VisualContainer = GetNodeOrNull<Node2D>("VisualContainer");
+        FacingNode = VisualContainer?.GetNodeOrNull<Node2D>("Sprite");
         _hurtArea = GetNodeOrNull<Area2D>("HurtArea");
+        FloorSnapLength = 20.0f;
+        FloorMaxAngle = Mathf.DegToRad(65f);
         if (_hurtArea != null)
         {
             _hurtArea.BodyEntered += OnHurtAreaBodyEntered;
         }
         SetupState(EnemyState.Patrol);
-
-        ApplyGroundSink();
-    }
-
-    private void ApplyGroundSink()
-    {
-        if (GroundSink == 0f) return;
-        if (VisualContainer != null)
-        {
-            VisualContainer.Position += new Vector2(0, GroundSink);
-            return;
-        }
-        foreach (var child in GetChildren())
-        {
-            if (child is Polygon2D poly)
-            {
-                poly.Position += new Vector2(0, GroundSink);
-            }
-        }
     }
 
     public override void _Process(double delta)
@@ -158,12 +142,23 @@ public abstract partial class EnemyBase : CharacterBody2D
             var tangent = new Vector2(floorNormal.Y, -floorNormal.X).Normalized();
             if (tangent.X < 0f) tangent = -tangent;
             var targetAngle = tangent.Angle();
-            VisualContainer.Rotation = Mathf.LerpAngle(VisualContainer.Rotation, targetAngle, Mathf.Clamp(10f * delta, 0f, 1f));
+            VisualContainer.Rotation = Mathf.LerpAngle(VisualContainer.Rotation, targetAngle, Mathf.Clamp(20f * delta, 0f, 1f));
         }
         else
         {
-            VisualContainer.Rotation = Mathf.LerpAngle(VisualContainer.Rotation, 0f, Mathf.Clamp(10f * delta, 0f, 1f));
+            VisualContainer.Rotation = Mathf.LerpAngle(VisualContainer.Rotation, 0f, Mathf.Clamp(20f * delta, 0f, 1f));
         }
+    }
+
+    protected void ApplyRampAdhesion(ref Vector2 velocity, float delta)
+    {
+        if (!IsOnFloor()) return;
+        var floorNormal = GetFloorNormal();
+        var floorTangent = new Vector2(floorNormal.Y, -floorNormal.X).Normalized();
+        if (floorTangent.X < 0f) floorTangent = -floorTangent;
+        var tangentSpeed = Mathf.Abs(velocity.Dot(floorTangent));
+        var steepness = Mathf.Abs(floorTangent.Dot(Vector2.Down));
+        velocity.Y += -floorNormal.Y * tangentSpeed * steepness * 3.0f * delta;
     }
 
     protected virtual void UpdateState(float delta)
@@ -235,9 +230,10 @@ public abstract partial class EnemyBase : CharacterBody2D
 
     protected void FaceDirection(float directionX)
     {
-        var scale = Scale;
+        if (FacingNode == null) return;
+        var scale = FacingNode.Scale;
         scale.X = directionX >= 0 ? Mathf.Abs(scale.X) : -Mathf.Abs(scale.X);
-        Scale = scale;
+        FacingNode.Scale = scale;
     }
 
     protected void FacePlayer()

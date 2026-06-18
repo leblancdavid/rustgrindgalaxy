@@ -303,7 +303,7 @@ public partial class LevelTile : Node2D
         AddChild(support);
     }
 
-    private float GetGroundYAt(float localX)
+    public float GetGroundYAt(float localX)
     {
         if (FloorSegments == null || FloorSegments.Length == 0)
             return -1f;

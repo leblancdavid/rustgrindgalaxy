@@ -17,7 +17,7 @@ public partial class BombBot : EnemyBase
     public override void _Ready()
     {
         base._Ready();
-        _glowVisual = GetNodeOrNull<Polygon2D>("GlowVisual");
+        _glowVisual = GetNodeOrNull<Polygon2D>("Sprite/GlowVisual");
         if (_glowVisual != null)
             _glowVisual.Visible = false;
     }
@@ -40,6 +40,7 @@ public partial class BombBot : EnemyBase
         if (!IsOnFloor())
             velocity.Y += gravity * delta;
         velocity.X = 0;
+        ApplyRampAdhesion(ref velocity, delta);
         Velocity = velocity;
         MoveAndSlide();
     }
@@ -59,6 +60,7 @@ public partial class BombBot : EnemyBase
             velocity.X = dir * RollSpeed;
         }
 
+        ApplyRampAdhesion(ref velocity, delta);
         Velocity = velocity;
         MoveAndSlide();
 

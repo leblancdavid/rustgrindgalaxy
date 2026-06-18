@@ -23,7 +23,7 @@ public partial class BoomerangRaider : EnemyBase
         base._Ready();
         _spawnX = GlobalPosition.X;
         _boomerangScene = GD.Load<PackedScene>("res://scenes/projectiles/BoomerangProjectile.tscn");
-        _visual = GetNodeOrNull<Polygon2D>("Visual");
+        _visual = GetNodeOrNull<Polygon2D>("Sprite/Visual");
         if (_visual != null)
             _visualBaseColor = _visual.Color;
     }
@@ -39,7 +39,7 @@ public partial class BoomerangRaider : EnemyBase
             var p = 1.0f - t;
 
             var tiltAngle = Mathf.Sin(t * Mathf.Pi) * 0.4f;
-            _visual.Rotation = tiltAngle * Scale.X;
+            _visual.Rotation = tiltAngle * (FacingNode?.Scale.X ?? Scale.X);
 
             _visual.Color = _visualBaseColor.Lerp(new Color(1, 1, 0.6f), p);
 
@@ -65,6 +65,7 @@ public partial class BoomerangRaider : EnemyBase
             _direction = -1.0f;
 
         velocity.X = _direction * MoveSpeed;
+        ApplyRampAdhesion(ref velocity, delta);
         Velocity = velocity;
         MoveAndSlide();
     }
@@ -84,6 +85,7 @@ public partial class BoomerangRaider : EnemyBase
             velocity.X = dir * MoveSpeed;
         }
 
+        ApplyRampAdhesion(ref velocity, delta);
         Velocity = velocity;
         MoveAndSlide();
 
@@ -104,6 +106,7 @@ public partial class BoomerangRaider : EnemyBase
         if (!IsOnFloor())
             velocity.Y += gravity * delta;
         velocity.X = 0;
+        ApplyRampAdhesion(ref velocity, delta);
         Velocity = velocity;
         MoveAndSlide();
 

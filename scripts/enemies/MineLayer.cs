@@ -22,7 +22,7 @@ public partial class MineLayer : EnemyBase
         base._Ready();
         _spawnX = GlobalPosition.X;
         _mineScene = GD.Load<PackedScene>("res://scenes/projectiles/Mine.tscn");
-        _shieldVisual = GetNodeOrNull<Polygon2D>("ShieldVisual");
+        _shieldVisual = GetNodeOrNull<Polygon2D>("Sprite/ShieldVisual");
         UpdateShieldVisual();
     }
 
@@ -73,6 +73,7 @@ public partial class MineLayer : EnemyBase
             _direction = -1.0f;
 
         velocity.X = _direction * MoveSpeed;
+        ApplyRampAdhesion(ref velocity, delta);
         Velocity = velocity;
         MoveAndSlide();
 
