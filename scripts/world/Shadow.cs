@@ -5,16 +5,18 @@ public partial class Shadow : Node2D
 	[Export] public float BaseWidth = 18.0f;
 	[Export] public float BaseHeight = 5.0f;
 	[Export] public float MinScale = 0.4f;
-	[Export] public float MaxAlpha = 0.35f;
+	[Export] public float MaxAlpha = 0.5f;
 	[Export] public float MinAlpha = 0.08f;
 	[Export] public float MaxDistance = 128.0f;
 	[Export] public float GroundOffset = 6.0f;
 	[Export] public float RotationLerpSpeed = 20.0f;
 	[Export] public float DistanceSmoothing = 0.0f;
 	[Export] public uint CollisionMask = 1;
-	[Export] public int EllipseSegments = 16;
+	[Export] public float SizeMultiplier = 1.1f;
 
-	private Polygon2D _poly = null!;
+	private const int TextureSize = 64;
+
+	private Sprite2D _sprite = null!;
 	private CharacterBody2D? _body;
 	private float _currentRotation;
 	private float _smoothedDistance;
@@ -22,19 +24,20 @@ public partial class Shadow : Node2D
 	public override void _Ready()
 	{
 		_body = GetParentOrNull<CharacterBody2D>();
-		_poly = new Polygon2D
+		_sprite = new Sprite2D
 		{
-			Color = new Color(0.0f, 0.0f, 0.0f, MaxAlpha),
-			Polygon = BuildEllipse(BaseWidth, BaseHeight, EllipseSegments),
+			Texture = CreateSoftEllipseTexture(TextureSize),
+			Centered = true,
+			TextureFilter = CanvasItem.TextureFilterEnum.Linear,
 		};
-		AddChild(_poly);
+		AddChild(_sprite);
 	}
 
 	public override void _PhysicsProcess(double delta)
 	{
 		if (_body == null || !IsInstanceValid(_body))
 		{
-			_poly.Visible = false;
+			_sprite.Visible = false;
 			return;
 		}
 
@@ -48,7 +51,7 @@ public partial class Shadow : Node2D
 
 		if (result.Count == 0 || !result.ContainsKey("position"))
 		{
-			_poly.Visible = false;
+			_sprite.Visible = false;
 			LerpRotationTowards(0.0f, delta);
 			return;
 		}
@@ -68,22 +71,22 @@ public partial class Shadow : Node2D
 
 		if (distance < -1.0f || distance > MaxDistance)
 		{
-			_poly.Visible = false;
+			_sprite.Visible = false;
 			LerpRotationTowards(0.0f, delta);
 			return;
 		}
 
-		_poly.Visible = true;
+		_sprite.Visible = true;
 		GlobalPosition = new Vector2(_body.GlobalPosition.X, hitPos.Y + GroundOffset);
 
 		var t = Mathf.Clamp(_smoothedDistance / Mathf.Max(MaxDistance, 0.001f), 0.0f, 1.0f);
 		var scale = Mathf.Lerp(1.0f, MinScale, t);
-		_poly.Scale = new Vector2(scale, scale);
+		_sprite.Scale = new Vector2(
+			BaseWidth * SizeMultiplier * scale / TextureSize,
+			BaseHeight * SizeMultiplier * scale / TextureSize
+		);
 
-		var alpha = Mathf.Lerp(MaxAlpha, MinAlpha, t);
-		var c = _poly.Color;
-		c.A = alpha;
-		_poly.Color = c;
+		_sprite.Modulate = new Color(0.0f, 0.0f, 0.0f, Mathf.Lerp(MaxAlpha, MinAlpha, t));
 
 		LerpRotationTowards(ComputeSlopeRotation(), delta);
 	}
@@ -110,14 +113,21 @@ public partial class Shadow : Node2D
 		return tangent.Angle();
 	}
 
-	private static Vector2[] BuildEllipse(float width, float height, int segments)
+	private static ImageTexture CreateSoftEllipseTexture(int size)
 	{
-		var points = new Vector2[segments];
-		for (var i = 0; i < segments; i++)
+		var img = Image.CreateEmpty(size, size, false, Image.Format.Rgba8);
+		var half = size * 0.5f;
+		for (var x = 0; x < size; x++)
 		{
-			var angle = (float)i / segments * Mathf.Tau;
-			points[i] = new Vector2(Mathf.Cos(angle) * width * 0.5f, Mathf.Sin(angle) * height * 0.5f);
+			for (var y = 0; y < size; y++)
+			{
+				var dx = (x - half) / half;
+				var dy = (y - half) / half;
+				var dist = Mathf.Sqrt(dx * dx + dy * dy);
+				var alpha = Mathf.Clamp(Mathf.Pow(1.0f - dist, 0.5f), 0.0f, 1.0f);
+				img.SetPixel(x, y, new Color(1.0f, 1.0f, 1.0f, alpha));
+			}
 		}
-		return points;
+		return ImageTexture.CreateFromImage(img);
 	}
 }
