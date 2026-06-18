@@ -12,6 +12,7 @@ public partial class BombBot : EnemyBase
     private bool _activated;
     private float _beepTimer;
     private Polygon2D? _glowVisual;
+    private bool _hasExploded;
 
     public override void _Ready()
     {
@@ -128,6 +129,9 @@ public partial class BombBot : EnemyBase
 
     private void Explode()
     {
+        if (_hasExploded) return;
+        _hasExploded = true;
+
         var explosion = GD.Load<PackedScene>("res://scenes/effects/ExplosionEffect.tscn");
         if (explosion != null)
         {

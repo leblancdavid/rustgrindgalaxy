@@ -10,6 +10,8 @@ public partial class ExplosionEffect : AnimatedSprite2D
     public override void _Ready()
     {
         BuildSpriteFrames();
+        Scale = new Vector2(0.21f, 0.21f);
+        ZIndex = 10;
 
         if (DamageRadius > 0)
         {
@@ -22,7 +24,13 @@ public partial class ExplosionEffect : AnimatedSprite2D
             _hitbox.BodyEntered += OnBodyEntered;
         }
 
-        AnimationFinished += () => QueueFree();
+        var timer = new Timer();
+        timer.WaitTime = 1.0;
+        timer.OneShot = true;
+        timer.Autostart = true;
+        timer.Timeout += QueueFree;
+        AddChild(timer);
+
         Play();
     }
 
@@ -32,12 +40,13 @@ public partial class ExplosionEffect : AnimatedSprite2D
         var frames = new SpriteFrames();
         if (!frames.HasAnimation("default"))
             frames.AddAnimation("default");
-        frames.SetAnimationSpeed("default", 20.0);
+        frames.SetAnimationLoop("default", false);
+        frames.SetAnimationSpeed("default", 10.0);
         for (var i = 1; i <= 10; i++)
         {
             var tex = GD.Load<Texture2D>($"{dir}Explosion_{i}.png");
             if (tex != null)
-                frames.AddFrame("default", tex, 0.05f);
+                frames.AddFrame("default", tex, 0.1f);
         }
         if (frames.GetFrameCount("default") > 0)
             SpriteFrames = frames;
