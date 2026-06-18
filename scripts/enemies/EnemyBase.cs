@@ -28,6 +28,7 @@ public abstract partial class EnemyBase : CharacterBody2D
     protected Node2D? FacingNode { get; private set; }
     protected float HurtFlashTimer;
     protected bool IsHurtFlashing => HurtFlashTimer > 0.0f;
+    private float _collisionHalfWidth;
 
     private Area2D? _hurtArea;
     private float _stateTimer;
@@ -42,6 +43,7 @@ public abstract partial class EnemyBase : CharacterBody2D
         _hurtArea = GetNodeOrNull<Area2D>("HurtArea");
         FloorSnapLength = 20.0f;
         FloorMaxAngle = Mathf.DegToRad(65f);
+        _collisionHalfWidth = GetCollisionHalfWidth();
         if (_hurtArea != null)
         {
             _hurtArea.BodyEntered += OnHurtAreaBodyEntered;
@@ -136,18 +138,34 @@ public abstract partial class EnemyBase : CharacterBody2D
     {
         if (VisualContainer == null) return;
 
+        var lerpFactor = Mathf.Clamp(20f * delta, 0f, 1f);
+
         if (IsOnFloor())
         {
             var floorNormal = GetFloorNormal();
             var tangent = new Vector2(floorNormal.Y, -floorNormal.X).Normalized();
             if (tangent.X < 0f) tangent = -tangent;
             var targetAngle = tangent.Angle();
-            VisualContainer.Rotation = Mathf.LerpAngle(VisualContainer.Rotation, targetAngle, Mathf.Clamp(20f * delta, 0f, 1f));
+
+            // Match mid prop formula: baseSink + slope * halfWidth
+            var slope = Mathf.Abs(floorNormal.X) / Mathf.Max(Mathf.Abs(floorNormal.Y), 0.01f);
+            var targetOffset = 5f + slope * _collisionHalfWidth;
+            VisualContainer.Position = new Vector2(0f, Mathf.Lerp(VisualContainer.Position.Y, targetOffset, lerpFactor));
+            VisualContainer.Rotation = Mathf.LerpAngle(VisualContainer.Rotation, targetAngle, lerpFactor);
         }
         else
         {
-            VisualContainer.Rotation = Mathf.LerpAngle(VisualContainer.Rotation, 0f, Mathf.Clamp(20f * delta, 0f, 1f));
+            VisualContainer.Position = new Vector2(0f, Mathf.Lerp(VisualContainer.Position.Y, 0f, lerpFactor));
+            VisualContainer.Rotation = Mathf.LerpAngle(VisualContainer.Rotation, 0f, lerpFactor);
         }
+    }
+
+    private float GetCollisionHalfWidth()
+    {
+        var collisionShape = GetNodeOrNull<CollisionShape2D>("CollisionShape2D");
+        if (collisionShape?.Shape is RectangleShape2D rect)
+            return rect.Size.X * 0.5f;
+        return 0f;
     }
 
     protected void ApplyRampAdhesion(ref Vector2 velocity, float delta)
