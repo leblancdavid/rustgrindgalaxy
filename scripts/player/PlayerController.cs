@@ -267,7 +267,7 @@ public partial class PlayerController : CharacterBody2D
 			}
 		}
 
-		if (TryStartBufferedGrinding(previousBoardContactPoint, GetRailContactPoint(), ref velocity, inputDirection, deltaSeconds, gravity))
+		if (TryStartBufferedGrinding(previousBoardContactPoint, GetRailContactPoint(), ref velocity, inputDirection, deltaSeconds, gravity, wasOnFloor))
 		{
 			Velocity = velocity;
 			_previousBoardContactPoint = GetRailContactPoint();
@@ -305,7 +305,7 @@ public partial class PlayerController : CharacterBody2D
 			UpdateGroundRotationState();
 		}
 
-		if (_activeRail == null && wasOnFloor == false && TryStartBufferedGrinding(previousBoardContactPoint, GetRailContactPoint(), ref velocity, inputDirection, deltaSeconds, gravity))
+		if (_activeRail == null && TryStartBufferedGrinding(previousBoardContactPoint, GetRailContactPoint(), ref velocity, inputDirection, deltaSeconds, gravity, wasOnFloor))
 		{
 			Velocity = velocity;
 			_previousBoardContactPoint = GetRailContactPoint();

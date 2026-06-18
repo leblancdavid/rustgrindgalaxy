@@ -2,8 +2,13 @@ using Godot;
 
 public partial class PlayerController : CharacterBody2D
 {
-	private bool CanStartGrinding()
+	private bool CanStartGrinding(bool wasOnFloor)
 	{
+		if (wasOnFloor)
+		{
+			return false;
+		}
+
 		var grindHeld = Input.IsActionPressed(GrindAction);
 		var grindBuffered = _grindIntentTimeRemaining > 0.0f;
 
@@ -192,9 +197,9 @@ public partial class PlayerController : CharacterBody2D
 		}
 	}
 
-	private bool TryStartBufferedGrinding(Vector2 fromBoardContactPoint, Vector2 toBoardContactPoint, ref Vector2 velocity, float inputDirection, float deltaSeconds, float gravity)
+	private bool TryStartBufferedGrinding(Vector2 fromBoardContactPoint, Vector2 toBoardContactPoint, ref Vector2 velocity, float inputDirection, float deltaSeconds, float gravity, bool wasOnFloor)
 	{
-		if (CanStartGrinding() == false)
+		if (CanStartGrinding(wasOnFloor) == false)
 		{
 			return false;
 		}
