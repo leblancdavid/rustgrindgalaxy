@@ -14,11 +14,15 @@ public enum EnemyState
 
 public abstract partial class EnemyBase : CharacterBody2D
 {
+    private const float ScreenReference = 640f;
+
     [Export] public int MaxHealth = 2;
     [Export] public int ContactDamage = 1;
-    [Export] public float DetectionRange = 0.0f;
+    [Export] public float DetectionRange = 1.5f;
     [Export] public float KnockbackResistance = 0.0f;
     [Export] public float GravityScale = 1.0f;
+
+    protected float AggroDistance => ScreenReference * DetectionRange;
 
     public int CurrentHealth { get; private set; }
     public EnemyState CurrentState { get; private set; } = EnemyState.Patrol;
@@ -230,17 +234,17 @@ public abstract partial class EnemyBase : CharacterBody2D
         switch (CurrentState)
         {
             case EnemyState.Patrol:
-                if (DetectionRange > 0 && distance <= DetectionRange)
+                if (DetectionRange > 0 && distance <= AggroDistance)
                     SetState(EnemyState.Alert);
                 break;
             case EnemyState.Alert:
-                if (distance > DetectionRange * 1.5f)
+                if (distance > AggroDistance * 1.5f)
                     SetState(EnemyState.Patrol);
-                else if (distance <= DetectionRange * 0.7f)
+                else if (distance <= AggroDistance * 0.7f)
                     SetState(EnemyState.Chase);
                 break;
             case EnemyState.Chase:
-                if (distance > DetectionRange * 1.5f)
+                if (distance > AggroDistance * 1.5f)
                     SetState(EnemyState.Patrol);
                 break;
         }

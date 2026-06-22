@@ -12,7 +12,7 @@ size = Vector2(16, 16)
 [node name="RailGuard" type="CharacterBody2D"]
 collision_layer = 4
 script = ExtResource("1")
-DetectionRange = 180.0
+DetectionRange = 1.5
 
 [node name="Shadow" type="Node2D" parent="."]
 script = ExtResource("2")

@@ -92,11 +92,11 @@ public partial class Grenadier : EnemyBase
         switch (CurrentState)
         {
             case EnemyState.Patrol:
-                if (DetectionRange > 0 && distance <= DetectionRange)
+                if (DetectionRange > 0 && distance <= AggroDistance)
                     SetState(EnemyState.Chase);
                 break;
             case EnemyState.Chase:
-                if (distance > DetectionRange * 1.5f)
+                if (distance > AggroDistance * 1.5f)
                     SetState(EnemyState.Patrol);
                 break;
         }

@@ -3,7 +3,6 @@ using Godot;
 public partial class SuicideDrone : EnemyBase
 {
     [Export] public float DiveSpeed { get; set; } = 140.0f;
-    [Export] public float DetectionRangeOverride { get; set; } = 180.0f;
     [Export] public float ExplosionRadius { get; set; } = 32.0f;
     [Export] public int ExplosionDamage { get; set; } = 2;
     [Export] public float HoverAmplitude { get; set; } = 5.0f;
@@ -118,11 +117,11 @@ public partial class SuicideDrone : EnemyBase
         switch (CurrentState)
         {
             case EnemyState.Patrol:
-                if (distance <= DetectionRangeOverride)
+                if (distance <= AggroDistance)
                     SetState(EnemyState.Alert);
                 break;
             case EnemyState.Alert:
-                if (Player.IsDead || distance > DetectionRangeOverride * 1.5f)
+                if (Player.IsDead || distance > AggroDistance * 1.5f)
                 {
                     _lockedOn = false;
                     if (_lockVisual != null)

@@ -97,11 +97,11 @@ public partial class MineLayer : EnemyBase
         switch (CurrentState)
         {
             case EnemyState.Patrol:
-                if (DetectionRange > 0 && distance <= DetectionRange)
+                if (DetectionRange > 0 && distance <= AggroDistance)
                     SetState(EnemyState.Alert);
                 break;
             case EnemyState.Alert:
-                if (distance > DetectionRange * 1.5f)
+                if (distance > AggroDistance * 1.5f)
                     SetState(EnemyState.Patrol);
                 break;
         }

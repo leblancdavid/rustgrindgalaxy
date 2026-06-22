@@ -13,6 +13,7 @@ size = Vector2(14, 12)
 collision_layer = 4
 gravity_scale = 0.0
 script = ExtResource("1")
+DetectionRange = 1.5
 
 [node name="Shadow" type="Node2D" parent="."]
 script = ExtResource("2")

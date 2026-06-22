@@ -129,17 +129,17 @@ public partial class DroneEnemy : EnemyBase
         switch (CurrentState)
         {
             case EnemyState.Patrol:
-                if (DetectionRange > 0 && distance <= DetectionRange)
+                if (DetectionRange > 0 && distance <= AggroDistance)
                     SetState(EnemyState.Alert);
                 break;
             case EnemyState.Alert:
-                if (distance > DetectionRange * 1.5f)
+                if (distance > AggroDistance * 1.5f)
                     SetState(EnemyState.Patrol);
-                else if (distance <= DetectionRange * 0.7f)
+                else if (distance <= AggroDistance * 0.7f)
                     SetState(EnemyState.Chase);
                 break;
             case EnemyState.Chase:
-                if (distance > DetectionRange * 1.5f)
+                if (distance > AggroDistance * 1.5f)
                     SetState(EnemyState.Patrol);
                 else if (distance <= AttackRange)
                     SetState(EnemyState.Attack);

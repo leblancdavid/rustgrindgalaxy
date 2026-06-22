@@ -56,7 +56,7 @@ public partial class ShockDrone : EnemyBase
 
         _cooldownTimer -= delta;
         if (_cooldownTimer <= 0 && Player != null &&
-            GlobalPosition.DistanceTo(Player.GlobalPosition) <= DetectionRange)
+            GlobalPosition.DistanceTo(Player.GlobalPosition) <= AggroDistance)
         {
             SetState(EnemyState.Alert);
         }
@@ -123,11 +123,11 @@ public partial class ShockDrone : EnemyBase
         switch (CurrentState)
         {
             case EnemyState.Patrol:
-                if (DetectionRange > 0 && distance <= DetectionRange)
+                if (DetectionRange > 0 && distance <= AggroDistance)
                     SetState(EnemyState.Alert);
                 break;
             case EnemyState.Alert:
-                if (Player.IsDead || distance > DetectionRange * 1.5f)
+                if (Player.IsDead || distance > AggroDistance * 1.5f)
                 {
                     _isCharging = false;
                     if (_chargeVisual != null)

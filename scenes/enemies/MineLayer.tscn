@@ -15,7 +15,7 @@ size = Vector2(22, 24)
 [node name="MineLayer" type="CharacterBody2D"]
 collision_layer = 4
 script = ExtResource("1")
-DetectionRange = 100.0
+DetectionRange = 1.5
 
 [node name="Shadow" type="Node2D" parent="."]
 script = ExtResource("2")

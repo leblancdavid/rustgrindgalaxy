@@ -87,7 +87,7 @@ public partial class LaserTurret : EnemyBase
         switch (CurrentState)
         {
             case EnemyState.Patrol:
-                if (DetectionRange > 0 && distance <= DetectionRange)
+                if (DetectionRange > 0 && distance <= AggroDistance)
                 {
                     var angleDiff = Mathf.Abs(Mathf.RadToDeg(AngleToPlayer()));
                     if (angleDiff <= DetectionAngleDegrees * 0.5f)
@@ -95,11 +95,11 @@ public partial class LaserTurret : EnemyBase
                 }
                 break;
             case EnemyState.Alert:
-                if (distance > DetectionRange * 1.2f)
+                if (distance > AggroDistance * 1.2f)
                     SetState(EnemyState.Patrol);
                 break;
             case EnemyState.Attack:
-                if (distance > DetectionRange * 1.5f)
+                if (distance > AggroDistance * 1.5f)
                 {
                     _cooldownTimer = 0;
                     SetState(EnemyState.Patrol);
