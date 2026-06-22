@@ -50,10 +50,11 @@ public partial class Grenadier : EnemyBase
         _time += delta;
         FaceDirection(Mathf.Sin(_time * 0.3f));
 
-        var pos = GlobalPosition;
-        pos.X = _spawnX + Mathf.Sin(_time * 0.3f) * PatrolRange;
-        pos.Y = _spawnY + Mathf.Sin(_time * 0.5f) * HoverAmplitude;
-        GlobalPosition = pos;
+        Velocity = new Vector2(
+            0.3f * Mathf.Cos(_time * 0.3f) * PatrolRange,
+            0.5f * Mathf.Cos(_time * 0.5f) * HoverAmplitude
+        );
+        MoveAndSlide();
         ClampAboveFloor(30f);
     }
 
@@ -72,9 +73,8 @@ public partial class Grenadier : EnemyBase
     protected override void UpdateAttackState(float delta)
     {
         _time += delta;
-        var pos = GlobalPosition;
-        pos.Y = _spawnY + Mathf.Sin(_time * 0.5f) * HoverAmplitude;
-        GlobalPosition = pos;
+        Velocity = new Vector2(0f, 0.5f * Mathf.Cos(_time * 0.5f) * HoverAmplitude);
+        MoveAndSlide();
         ClampAboveFloor(30f);
 
         FacePlayer();

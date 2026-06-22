@@ -52,9 +52,9 @@ public partial class CombatDroneEnemy : EnemyBase
     protected override void UpdatePatrolState(float delta)
     {
         _time += delta;
-        var pos = GlobalPosition;
-        pos.Y += Mathf.Sin(_time * HoverSpeed * 0.5f) * (HoverAmplitude * 0.5f);
-        GlobalPosition = pos;
+        var hoverOmega = HoverSpeed * 0.5f;
+        Velocity = new Vector2(0f, hoverOmega * Mathf.Cos(_time * hoverOmega) * (HoverAmplitude * 0.5f));
+        MoveAndSlide();
         ClampAboveFloor(30f);
     }
 
@@ -68,10 +68,11 @@ public partial class CombatDroneEnemy : EnemyBase
         var targetX = Player.GlobalPosition.X + offsetX;
         var targetY = Player.GlobalPosition.Y - 20.0f + Mathf.Sin(_time * HoverSpeed * 0.7f) * HoverAmplitude;
 
-        var pos = GlobalPosition;
-        pos.X = Mathf.Lerp(pos.X, targetX, delta * 2.0f);
-        pos.Y = Mathf.Lerp(pos.Y, targetY, delta * 1.5f);
-        GlobalPosition = pos;
+        Velocity = new Vector2(
+            (targetX - GlobalPosition.X) * 2.0f,
+            (targetY - GlobalPosition.Y) * 1.5f
+        );
+        MoveAndSlide();
         ClampAboveFloor(30f);
 
         FaceDirection(Player.GlobalPosition.X - GlobalPosition.X);
@@ -93,9 +94,8 @@ public partial class CombatDroneEnemy : EnemyBase
             return;
         }
 
-        var pos = GlobalPosition;
-        pos.Y += Mathf.Sin(_time * HoverSpeed) * HoverAmplitude * 0.3f;
-        GlobalPosition = pos;
+        Velocity = new Vector2(0f, HoverSpeed * Mathf.Cos(_time * HoverSpeed) * (HoverAmplitude * 0.3f));
+        MoveAndSlide();
         ClampAboveFloor(30f);
 
         FacePlayer();

@@ -11,6 +11,7 @@ size = Vector2(30, 26)
 
 [node name="BoomerangRaider" type="CharacterBody2D"]
 collision_layer = 4
+collision_mask = 5
 script = ExtResource("1")
 DetectionRange = 1.5
 

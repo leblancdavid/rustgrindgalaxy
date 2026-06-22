@@ -51,20 +51,12 @@ public partial class RailGuard : EnemyBase
 
     protected override void UpdatePatrolState(float delta)
     {
-        if (_pathFollow != null)
-        {
-            _pathFollow.Progress += RailSpeed * delta;
-            GlobalPosition = _pathFollow.GlobalPosition;
-        }
+        UpdateRailMovement(delta);
     }
 
     protected override void UpdateChaseState(float delta)
     {
-        if (_pathFollow != null)
-        {
-            _pathFollow.Progress += RailSpeed * delta;
-            GlobalPosition = _pathFollow.GlobalPosition;
-        }
+        UpdateRailMovement(delta);
 
         FacePlayer();
 
@@ -100,11 +92,7 @@ public partial class RailGuard : EnemyBase
 
     protected override void UpdateAttackState(float delta)
     {
-        if (_pathFollow != null)
-        {
-            _pathFollow.Progress += RailSpeed * delta;
-            GlobalPosition = _pathFollow.GlobalPosition;
-        }
+        UpdateRailMovement(delta);
 
         if (_isVulnerable)
         {
@@ -123,6 +111,28 @@ public partial class RailGuard : EnemyBase
         {
             SetState(EnemyState.Chase);
         }
+    }
+
+    private void UpdateRailMovement(float delta)
+    {
+        if (_pathFollow == null) return;
+        _pathFollow.Progress += RailSpeed * delta;
+        var targetPos = _pathFollow.GlobalPosition;
+        var toTarget = targetPos - GlobalPosition;
+        var dist = toTarget.Length();
+        if (dist < 0.01f)
+        {
+            var snapped = GlobalPosition;
+            snapped.X = targetPos.X;
+            GlobalPosition = snapped;
+            return;
+        }
+        var step = Mathf.Min(dist, RailSpeed * delta);
+        Velocity = (toTarget / dist) * (step / Mathf.Max(delta, 0.0001f));
+        MoveAndSlide();
+        var pos = GlobalPosition;
+        pos.X = targetPos.X;
+        GlobalPosition = pos;
     }
 
     protected override void CheckTransitions()

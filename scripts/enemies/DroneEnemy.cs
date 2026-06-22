@@ -63,9 +63,8 @@ public partial class DroneEnemy : EnemyBase
         else if (pos.X >= maxX)
             _direction = -1.0f;
 
-        pos.X += _direction * PatrolSpeed * delta;
-        pos.Y = _spawnY + (Mathf.Sin(_time * HoverSpeed) * HoverAmplitude);
-        GlobalPosition = pos;
+        Velocity = new Vector2(_direction * PatrolSpeed, HoverSpeed * Mathf.Cos(_time * HoverSpeed) * HoverAmplitude);
+        MoveAndSlide();
         ClampAboveFloor(30f);
     }
 
@@ -82,15 +81,13 @@ public partial class DroneEnemy : EnemyBase
         var dir = Mathf.Sign(Player.GlobalPosition.X - GlobalPosition.X);
         FaceDirection(dir);
 
-        var pos = GlobalPosition;
-        pos.X += dir * ChaseSpeed * delta;
-
         var targetY = Player.GlobalPosition.Y - 24.0f;
         targetY = Mathf.Clamp(targetY, _spawnY - HoverAmplitude, _spawnY + HoverAmplitude);
-        pos.Y = Mathf.Lerp(pos.Y, targetY, delta * 2.0f);
+        var yVelocity = (targetY - GlobalPosition.Y) * 2.0f
+                        + HoverSpeed * Mathf.Cos(_time * HoverSpeed) * (HoverAmplitude * 0.3f);
 
-        pos.Y += Mathf.Sin(_time * HoverSpeed) * (HoverAmplitude * 0.3f);
-        GlobalPosition = pos;
+        Velocity = new Vector2(dir * ChaseSpeed, yVelocity);
+        MoveAndSlide();
         ClampAboveFloor(30f);
 
         _fireTimer -= delta;
@@ -106,9 +103,8 @@ public partial class DroneEnemy : EnemyBase
         FacePlayer();
 
         _time += delta;
-        var pos = GlobalPosition;
-        pos.Y = _spawnY + (Mathf.Sin(_time * HoverSpeed) * HoverAmplitude);
-        GlobalPosition = pos;
+        Velocity = new Vector2(0f, HoverSpeed * Mathf.Cos(_time * HoverSpeed) * HoverAmplitude);
+        MoveAndSlide();
         ClampAboveFloor(30f);
 
         _fireTimer -= delta;

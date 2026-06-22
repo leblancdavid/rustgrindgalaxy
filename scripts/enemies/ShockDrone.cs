@@ -49,9 +49,8 @@ public partial class ShockDrone : EnemyBase
     {
         _time += delta;
 
-        var pos = GlobalPosition;
-        pos.Y = _spawnY + Mathf.Sin(_time * 1.5f) * HoverAmplitude;
-        GlobalPosition = pos;
+        Velocity = new Vector2(0f, 1.5f * Mathf.Cos(_time * 1.5f) * HoverAmplitude);
+        MoveAndSlide();
         ClampAboveFloor(30f);
 
         _cooldownTimer -= delta;
@@ -66,9 +65,8 @@ public partial class ShockDrone : EnemyBase
     {
         _time += delta;
 
-        var pos = GlobalPosition;
-        pos.Y = _spawnY + Mathf.Sin(_time * 1.5f) * HoverAmplitude;
-        GlobalPosition = pos;
+        Velocity = new Vector2(0f, 1.5f * Mathf.Cos(_time * 1.5f) * HoverAmplitude);
+        MoveAndSlide();
         ClampAboveFloor(30f);
 
         FacePlayer();
@@ -107,12 +105,9 @@ public partial class ShockDrone : EnemyBase
     {
         _time += delta;
 
-        var pos = GlobalPosition;
-        pos.Y = _spawnY + Mathf.Sin(_time * 1.5f) * HoverAmplitude;
-        GlobalPosition = pos;
+        Velocity = new Vector2(0f, 1.5f * Mathf.Cos(_time * 1.5f) * HoverAmplitude);
+        MoveAndSlide();
         ClampAboveFloor(30f);
-
-        // Show vulnerability with dim visual
     }
 
     protected override void CheckTransitions()

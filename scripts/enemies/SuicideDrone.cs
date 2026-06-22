@@ -6,12 +6,14 @@ public partial class SuicideDrone : EnemyBase
     [Export] public float ExplosionRadius { get; set; } = 32.0f;
     [Export] public int ExplosionDamage { get; set; } = 2;
     [Export] public float HoverAmplitude { get; set; } = 5.0f;
+    [Export] public float MaxDiveTime { get; set; } = 1.5f;
 
     private float _time;
     private float _spawnY;
     private bool _lockedOn;
     private float _lockOnTimer;
     private Vector2 _diveTarget;
+    private float _diveTimer;
     private Polygon2D? _lockVisual;
     private bool _hasDied;
 
@@ -33,9 +35,8 @@ public partial class SuicideDrone : EnemyBase
     protected override void UpdatePatrolState(float delta)
     {
         _time += delta;
-        var pos = GlobalPosition;
-        pos.Y = _spawnY + Mathf.Sin(_time * 2.0f) * HoverAmplitude;
-        GlobalPosition = pos;
+        Velocity = new Vector2(0f, 2.0f * Mathf.Cos(_time * 2.0f) * HoverAmplitude);
+        MoveAndSlide();
         ClampAboveFloor(30f);
     }
 
@@ -50,9 +51,8 @@ public partial class SuicideDrone : EnemyBase
             return;
         }
 
-        var pos = GlobalPosition;
-        pos.Y = _spawnY + Mathf.Sin(_time * 2.0f) * HoverAmplitude;
-        GlobalPosition = pos;
+        Velocity = new Vector2(0f, 2.0f * Mathf.Cos(_time * 2.0f) * HoverAmplitude);
+        MoveAndSlide();
         ClampAboveFloor(30f);
 
         FacePlayer();
@@ -76,6 +76,7 @@ public partial class SuicideDrone : EnemyBase
         if (_lockOnTimer <= 0)
         {
             _diveTarget = Player.GlobalPosition;
+            _diveTimer = MaxDiveTime;
             SetState(EnemyState.Chase);
         }
     }
@@ -87,18 +88,20 @@ public partial class SuicideDrone : EnemyBase
 
         // Dive toward target
         var pos = GlobalPosition;
-        var dir = (_diveTarget - pos).Normalized();
-        pos += dir * DiveSpeed * delta;
+        var toTarget = _diveTarget - pos;
+        var dir = toTarget.LengthSquared() > 0.01f ? toTarget.Normalized() : Vector2.Zero;
+        Velocity = dir * DiveSpeed;
+        MoveAndSlide();
+        FaceDirection(dir.X);
+
+        _diveTimer -= delta;
 
         // Check for contact with player or terrain
-        if (pos.DistanceTo(_diveTarget) < 8.0f || pos.Y > _spawnY + 150)
+        if (GlobalPosition.DistanceTo(_diveTarget) < 8.0f || GlobalPosition.Y > _spawnY + 150 || _diveTimer <= 0f)
         {
             Explode();
             return;
         }
-
-        GlobalPosition = pos;
-        FaceDirection(dir.X);
 
         // Check if we hit the player
         if (Player != null && GlobalPosition.DistanceTo(Player.GlobalPosition) < 16.0f)
