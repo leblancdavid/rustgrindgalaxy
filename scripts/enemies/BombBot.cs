@@ -60,6 +60,7 @@ public partial class BombBot : EnemyBase
             velocity.X = dir * RollSpeed;
         }
 
+        _desiredHorizontalVelocity = new Vector2(velocity.X, velocity.Y);
         ApplyRampAdhesion(ref velocity, delta);
         Velocity = velocity;
         MoveAndSlide();

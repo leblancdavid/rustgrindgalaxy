@@ -50,6 +50,7 @@ public partial class RaiderEnemy : EnemyBase
             _direction = -1.0f;
 
         velocity.X = _direction * MoveSpeed;
+        _desiredHorizontalVelocity = new Vector2(velocity.X, velocity.Y);
         ApplyRampAdhesion(ref velocity, delta);
         Velocity = velocity;
         MoveAndSlide();
@@ -86,6 +87,7 @@ public partial class RaiderEnemy : EnemyBase
             velocity.X = dir * ChaseSpeed;
         }
 
+        _desiredHorizontalVelocity = new Vector2(velocity.X, velocity.Y);
         ApplyRampAdhesion(ref velocity, delta);
         Velocity = velocity;
         MoveAndSlide();

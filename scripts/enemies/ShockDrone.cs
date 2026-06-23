@@ -21,6 +21,9 @@ public partial class ShockDrone : EnemyBase
     public override void _Ready()
     {
         base._Ready();
+        var rng = new RandomNumberGenerator();
+        rng.Randomize();
+        InitializeHoverVariance(rng, HoverAmplitude * 0.5f);
         _spawnY = GlobalPosition.Y;
         _shockwaveScene = GD.Load<PackedScene>("res://scenes/projectiles/Shockwave.tscn");
         _chargeVisual = GetNodeOrNull<Polygon2D>("ChargeVisual");
@@ -49,7 +52,7 @@ public partial class ShockDrone : EnemyBase
     {
         _time += delta;
 
-        Velocity = new Vector2(0f, 1.5f * Mathf.Cos(_time * 1.5f) * HoverAmplitude);
+        Velocity = new Vector2(0f, 1.5f * Mathf.Cos(_time * 1.5f + _hoverPhase) * (HoverAmplitude * _hoverAmplitudeScale));
         MoveAndSlide();
         ClampAboveFloor(30f);
 
@@ -65,7 +68,7 @@ public partial class ShockDrone : EnemyBase
     {
         _time += delta;
 
-        Velocity = new Vector2(0f, 1.5f * Mathf.Cos(_time * 1.5f) * HoverAmplitude);
+        Velocity = new Vector2(0f, 1.5f * Mathf.Cos(_time * 1.5f + _hoverPhase) * (HoverAmplitude * _hoverAmplitudeScale));
         MoveAndSlide();
         ClampAboveFloor(30f);
 
@@ -105,7 +108,7 @@ public partial class ShockDrone : EnemyBase
     {
         _time += delta;
 
-        Velocity = new Vector2(0f, 1.5f * Mathf.Cos(_time * 1.5f) * HoverAmplitude);
+        Velocity = new Vector2(0f, 1.5f * Mathf.Cos(_time * 1.5f + _hoverPhase) * (HoverAmplitude * _hoverAmplitudeScale));
         MoveAndSlide();
         ClampAboveFloor(30f);
     }
@@ -164,4 +167,8 @@ public partial class ShockDrone : EnemyBase
             ? ((Vector2)result["position"]).Y
             : GlobalPosition.Y + 100;
     }
+
+    protected override bool IsHoverMover() => true;
+    protected override float GetSeparationRadius() => 16.0f;
+    protected override float GetSeparationStrength() => 35.0f;
 }

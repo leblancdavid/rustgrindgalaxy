@@ -4,7 +4,7 @@ public partial class BoomerangRaider : EnemyBase
 {
     [Export] public float MoveSpeed { get; set; } = 38.0f;
     [Export] public float PatrolDistance { get; set; } = 36.0f;
-    [Export] public float ThrowRange { get; set; } = 120.0f;
+    [Export] public float ThrowRange { get; set; } = 320.0f;
     [Export] public float ThrowCooldown { get; set; } = 2.5f;
     [Export] public float BoomerangSpeed { get; set; } = 90.0f;
 
@@ -65,6 +65,7 @@ public partial class BoomerangRaider : EnemyBase
             _direction = -1.0f;
 
         velocity.X = _direction * MoveSpeed;
+        _desiredHorizontalVelocity = new Vector2(velocity.X, velocity.Y);
         ApplyRampAdhesion(ref velocity, delta);
         Velocity = velocity;
         MoveAndSlide();
@@ -85,6 +86,7 @@ public partial class BoomerangRaider : EnemyBase
             velocity.X = dir * MoveSpeed;
         }
 
+        _desiredHorizontalVelocity = new Vector2(velocity.X, velocity.Y);
         ApplyRampAdhesion(ref velocity, delta);
         Velocity = velocity;
         MoveAndSlide();

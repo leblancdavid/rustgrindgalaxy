@@ -7,7 +7,7 @@ public partial class DroneEnemy : EnemyBase
     [Export] public float PatrolDistance { get; set; } = 30.0f;
     [Export] public float PatrolSpeed { get; set; } = 24.0f;
     [Export] public float ChaseSpeed { get; set; } = 32.0f;
-    [Export] public float AttackRange { get; set; } = 80.0f;
+    [Export] public float AttackRange { get; set; } = 320.0f;
     [Export] public float FireCooldown { get; set; } = 1.5f;
 
     private float _spawnX;
@@ -23,6 +23,9 @@ public partial class DroneEnemy : EnemyBase
     public override void _Ready()
     {
         base._Ready();
+        var rng = new RandomNumberGenerator();
+        rng.Randomize();
+        InitializeHoverVariance(rng, HoverAmplitude * 0.5f);
         _spawnX = GlobalPosition.X;
         _spawnY = GlobalPosition.Y;
         _bulletScene = GD.Load<PackedScene>("res://scenes/projectiles/BulletProjectile.tscn");
@@ -63,7 +66,8 @@ public partial class DroneEnemy : EnemyBase
         else if (pos.X >= maxX)
             _direction = -1.0f;
 
-        Velocity = new Vector2(_direction * PatrolSpeed, HoverSpeed * Mathf.Cos(_time * HoverSpeed) * HoverAmplitude);
+        _desiredHorizontalVelocity = new Vector2(_direction * PatrolSpeed, 0f);
+        Velocity = new Vector2(_direction * PatrolSpeed, HoverSpeed * Mathf.Cos(_time * HoverSpeed + _hoverPhase) * HoverAmplitude * _hoverAmplitudeScale);
         MoveAndSlide();
         ClampAboveFloor(30f);
     }
@@ -81,11 +85,12 @@ public partial class DroneEnemy : EnemyBase
         var dir = Mathf.Sign(Player.GlobalPosition.X - GlobalPosition.X);
         FaceDirection(dir);
 
-        var targetY = Player.GlobalPosition.Y - 24.0f;
-        targetY = Mathf.Clamp(targetY, _spawnY - HoverAmplitude, _spawnY + HoverAmplitude);
+        var targetY = Player.GlobalPosition.Y - 24.0f + _hoverYOffset;
+        targetY = Mathf.Clamp(targetY, _spawnY - HoverAmplitude * _hoverAmplitudeScale, _spawnY + HoverAmplitude * _hoverAmplitudeScale);
         var yVelocity = (targetY - GlobalPosition.Y) * 2.0f
-                        + HoverSpeed * Mathf.Cos(_time * HoverSpeed) * (HoverAmplitude * 0.3f);
+                        + HoverSpeed * Mathf.Cos(_time * HoverSpeed + _hoverPhase) * (HoverAmplitude * 0.3f * _hoverAmplitudeScale);
 
+        _desiredHorizontalVelocity = new Vector2(dir * ChaseSpeed, yVelocity);
         Velocity = new Vector2(dir * ChaseSpeed, yVelocity);
         MoveAndSlide();
         ClampAboveFloor(30f);
@@ -103,7 +108,10 @@ public partial class DroneEnemy : EnemyBase
         FacePlayer();
 
         _time += delta;
-        Velocity = new Vector2(0f, HoverSpeed * Mathf.Cos(_time * HoverSpeed) * HoverAmplitude);
+        var strafeDir = Player != null ? Mathf.Sign(Player.GlobalPosition.X - GlobalPosition.X) : 0f;
+        Velocity = new Vector2(
+            strafeDir * ChaseSpeed * 0.4f,
+            HoverSpeed * Mathf.Cos(_time * HoverSpeed + _hoverPhase) * HoverAmplitude * _hoverAmplitudeScale);
         MoveAndSlide();
         ClampAboveFloor(30f);
 
@@ -155,7 +163,7 @@ public partial class DroneEnemy : EnemyBase
         GetParent().AddChild(bullet);
 
         var dir = (Player.GlobalPosition - GlobalPosition).Normalized();
-        bullet.Initialize(GlobalPosition, dir, 100.0f, ContactDamage);
+        bullet.Initialize(GlobalPosition, dir, 240.0f, ContactDamage);
 
         // Visual feedback
         _firePulseTimer = 0.15f;
@@ -163,4 +171,8 @@ public partial class DroneEnemy : EnemyBase
         AddChild(flash);
         flash.GlobalPosition = GlobalPosition + new Vector2(Scale.X * 12, 0);
     }
+
+    protected override bool IsHoverMover() => true;
+    protected override float GetSeparationRadius() => 16.0f;
+    protected override float GetSeparationStrength() => 35.0f;
 }

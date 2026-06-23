@@ -20,6 +20,9 @@ public partial class SuicideDrone : EnemyBase
     public override void _Ready()
     {
         base._Ready();
+        var rng = new RandomNumberGenerator();
+        rng.Randomize();
+        InitializeHoverVariance(rng, HoverAmplitude * 0.5f);
         _spawnY = GlobalPosition.Y;
         _lockVisual = GetNodeOrNull<Polygon2D>("LockVisual");
         if (_lockVisual != null)
@@ -35,7 +38,7 @@ public partial class SuicideDrone : EnemyBase
     protected override void UpdatePatrolState(float delta)
     {
         _time += delta;
-        Velocity = new Vector2(0f, 2.0f * Mathf.Cos(_time * 2.0f) * HoverAmplitude);
+        Velocity = new Vector2(0f, 2.0f * Mathf.Cos(_time * 2.0f + _hoverPhase) * (HoverAmplitude * _hoverAmplitudeScale));
         MoveAndSlide();
         ClampAboveFloor(30f);
     }
@@ -51,7 +54,7 @@ public partial class SuicideDrone : EnemyBase
             return;
         }
 
-        Velocity = new Vector2(0f, 2.0f * Mathf.Cos(_time * 2.0f) * HoverAmplitude);
+        Velocity = new Vector2(0f, 2.0f * Mathf.Cos(_time * 2.0f + _hoverPhase) * (HoverAmplitude * _hoverAmplitudeScale));
         MoveAndSlide();
         ClampAboveFloor(30f);
 
@@ -90,6 +93,7 @@ public partial class SuicideDrone : EnemyBase
         var pos = GlobalPosition;
         var toTarget = _diveTarget - pos;
         var dir = toTarget.LengthSquared() > 0.01f ? toTarget.Normalized() : Vector2.Zero;
+        _desiredHorizontalVelocity = dir * DiveSpeed;
         Velocity = dir * DiveSpeed;
         MoveAndSlide();
         FaceDirection(dir.X);
@@ -159,4 +163,9 @@ public partial class SuicideDrone : EnemyBase
         }
         QueueFree();
     }
+
+    protected override bool IsHoverMover() => true;
+    protected override float GetSeparationRadius() => 18.0f;
+    protected override float GetSeparationStrength() => 40.0f;
+    protected override bool OnStuckAction() => false;
 }

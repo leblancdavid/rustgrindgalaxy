@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 
 public enum EnemyState
 {
@@ -22,6 +23,14 @@ public abstract partial class EnemyBase : CharacterBody2D
     [Export] public float KnockbackResistance = 0.0f;
     [Export] public float GravityScale = 1.0f;
 
+    [Export] public float SeparationRadius = 22.0f;
+    [Export] public float SeparationStrength = 80.0f;
+    [Export] public float StuckToleranceSeconds = 0.35f;
+    [Export] public float StepUpImpulse = -260.0f;
+    [Export] public float StepUpProbeDistance = 14.0f;
+    [Export] public float StuckActionCooldown = 0.5f;
+    [Export] public float StuckRetryDelay = 0.25f;
+
     protected float AggroDistance => ScreenReference * DetectionRange;
 
     public int CurrentHealth { get; private set; }
@@ -37,11 +46,20 @@ public abstract partial class EnemyBase : CharacterBody2D
     private Area2D? _hurtArea;
     private float _stateTimer;
     private bool _pendingDie;
+    protected Vector2 _desiredHorizontalVelocity;
+    private ProgressWatchdog _progress;
+    private float _lastPositionX;
+    private float _stuckCooldownRemaining;
+    private List<Node2D>? _peerCache;
+    protected float _hoverPhase;
+    protected float _hoverAmplitudeScale = 1.0f;
+    protected float _hoverYOffset;
 
     public override void _Ready()
     {
         CurrentHealth = MaxHealth;
         Player = GetTree().GetFirstNodeInGroup("player") as PlayerController;
+        AddToGroup("mobs");
         VisualContainer = GetNodeOrNull<Node2D>("VisualContainer");
         FacingNode = VisualContainer?.GetNodeOrNull<Node2D>("Sprite");
         _hurtArea = GetNodeOrNull<Area2D>("HurtArea");
@@ -52,6 +70,9 @@ public abstract partial class EnemyBase : CharacterBody2D
         {
             _hurtArea.BodyEntered += OnHurtAreaBodyEntered;
         }
+        _progress = new ProgressWatchdog(StuckToleranceSeconds, 0.3f);
+        _lastPositionX = GlobalPosition.X;
+        DetectionRange = Mathf.Max(DetectionRange, 0.5f);
         SetupState(EnemyState.Patrol);
     }
 
@@ -188,6 +209,8 @@ public abstract partial class EnemyBase : CharacterBody2D
         _stateTimer += delta;
         UpdateGroundRotation(delta);
 
+        _desiredHorizontalVelocity = Vector2.Zero;
+
         switch (CurrentState)
         {
             case EnemyState.Stagger:
@@ -208,6 +231,110 @@ public abstract partial class EnemyBase : CharacterBody2D
         }
 
         CheckTransitions();
+        UpdateSteering(delta);
+    }
+
+    protected virtual void UpdateSteering(float delta)
+    {
+        if (CurrentState == EnemyState.Stagger
+            || CurrentState == EnemyState.Dead
+            || CurrentState == EnemyState.Attack)
+        {
+            _lastPositionX = GlobalPosition.X;
+            return;
+        }
+
+        if (!IsOnFloor() && !IsHoverMover())
+        {
+            _progress.Reset();
+            _lastPositionX = GlobalPosition.X;
+            return;
+        }
+
+        var actualDeltaX = GlobalPosition.X - _lastPositionX;
+        _lastPositionX = GlobalPosition.X;
+        var actualSpeed = actualDeltaX / Mathf.Max(delta, 0.0001f);
+        _progress.Sample(_desiredHorizontalVelocity.X, actualSpeed, delta);
+
+        var push = ComputeSeparationPush();
+        if (push != Vector2.Zero)
+        {
+            GlobalPosition += push * delta;
+        }
+
+        _stuckCooldownRemaining = Mathf.Max(0f, _stuckCooldownRemaining - delta);
+        if (_progress.State == WatchdogState.Stuck && _stuckCooldownRemaining <= 0f)
+        {
+            if (OnStuckAction())
+            {
+                _stuckCooldownRemaining = StuckActionCooldown;
+                MoveAndSlide();
+            }
+            else
+            {
+                _stuckCooldownRemaining = StuckRetryDelay;
+            }
+        }
+    }
+
+    protected virtual bool IsHoverMover() => false;
+
+    protected void InitializeHoverVariance(Godot.RandomNumberGenerator rng, float offsetRange)
+    {
+        _hoverPhase = rng.Randf() * Mathf.Tau;
+        _hoverAmplitudeScale = rng.RandfRange(0.6f, 1.4f);
+        _hoverYOffset = rng.RandfRange(-offsetRange, offsetRange);
+    }
+
+    protected virtual Vector2 ComputeSeparationPush()
+    {
+        return EnemySteering.ComputeSeparationPush(
+            GlobalPosition,
+            GetPeerMobs(),
+            GetSeparationRadius(),
+            GetSeparationStrength());
+    }
+
+    protected virtual float GetSeparationRadius() => SeparationRadius;
+    protected virtual float GetSeparationStrength() => SeparationStrength;
+
+    protected List<Node2D> GetPeerMobs()
+    {
+        if (_peerCache == null)
+            _peerCache = new List<Node2D>(8);
+        _peerCache.Clear();
+        var tree = GetTree();
+        if (tree == null)
+            return _peerCache;
+        foreach (var node in tree.GetNodesInGroup("mobs"))
+        {
+            if (node is Node2D mob && mob != this && !mob.IsQueuedForDeletion())
+                _peerCache.Add(mob);
+        }
+        return _peerCache;
+    }
+
+    protected virtual bool OnStuckAction()
+    {
+        if (!IsOnFloor())
+            return false;
+        if (Mathf.Abs(_desiredHorizontalVelocity.X) < 0.5f)
+            return false;
+        return TryStepUp(Mathf.Sign(_desiredHorizontalVelocity.X));
+    }
+
+    protected bool TryStepUp(int direction)
+    {
+        if (direction == 0)
+            return false;
+        var forward = new Vector2(direction, 0);
+        if (!EnemySteering.CanStepUp(this, forward, StepUpProbeDistance))
+            return false;
+        var v = Velocity;
+        v.Y = StepUpImpulse;
+        v.X = direction * Mathf.Max(40f, Mathf.Abs(v.X));
+        Velocity = v;
+        return true;
     }
 
     protected virtual void UpdateStaggerState(float delta)

@@ -3,11 +3,12 @@ using Godot;
 public partial class CombatDroneEnemy : EnemyBase
 {
     [Export] public float HoverSpeed { get; set; } = 20.0f;
-    [Export] public float BulletSpeed { get; set; } = 120.0f;
+    [Export] public float BulletSpeed { get; set; } = 240.0f;
     [Export] public float BurstCooldown { get; set; } = 1.5f;
     [Export] public int BurstCount { get; set; } = 3;
     [Export] public float BurstSpacing { get; set; } = 0.15f;
-    [Export] public float CombatRange { get; set; } = 100.0f;
+    [Export] public float CombatRange { get; set; } = 320.0f;
+    [Export] public float ChaseSpeed { get; set; } = 60.0f;
     [Export] public float RetreatRange { get; set; } = 40.0f;
     [Export] public float HoverAmplitude { get; set; } = 6.0f;
 
@@ -24,6 +25,9 @@ public partial class CombatDroneEnemy : EnemyBase
     public override void _Ready()
     {
         base._Ready();
+        var rng = new RandomNumberGenerator();
+        rng.Randomize();
+        InitializeHoverVariance(rng, HoverAmplitude * 0.5f);
         _bulletScene = GD.Load<PackedScene>("res://scenes/projectiles/BulletProjectile.tscn");
         _barrel = GetNodeOrNull<Polygon2D>("Barrel");
         _visual = GetNodeOrNull<Polygon2D>("Visual");
@@ -53,7 +57,7 @@ public partial class CombatDroneEnemy : EnemyBase
     {
         _time += delta;
         var hoverOmega = HoverSpeed * 0.5f;
-        Velocity = new Vector2(0f, hoverOmega * Mathf.Cos(_time * hoverOmega) * (HoverAmplitude * 0.5f));
+        Velocity = new Vector2(0f, hoverOmega * Mathf.Cos(_time * hoverOmega + _hoverPhase) * (HoverAmplitude * 0.5f * _hoverAmplitudeScale));
         MoveAndSlide();
         ClampAboveFloor(30f);
     }
@@ -66,12 +70,13 @@ public partial class CombatDroneEnemy : EnemyBase
 
         var offsetX = Scale.X * CombatRange * -0.5f;
         var targetX = Player.GlobalPosition.X + offsetX;
-        var targetY = Player.GlobalPosition.Y - 20.0f + Mathf.Sin(_time * HoverSpeed * 0.7f) * HoverAmplitude;
+        var targetY = Player.GlobalPosition.Y - 20.0f + _hoverYOffset
+                      + Mathf.Sin(_time * HoverSpeed * 0.7f + _hoverPhase) * (HoverAmplitude * _hoverAmplitudeScale);
 
-        Velocity = new Vector2(
-            (targetX - GlobalPosition.X) * 2.0f,
-            (targetY - GlobalPosition.Y) * 1.5f
-        );
+        var velX = (targetX - GlobalPosition.X) * 2.0f;
+        var velY = (targetY - GlobalPosition.Y) * 1.5f;
+        _desiredHorizontalVelocity = new Vector2(velX, velY);
+        Velocity = new Vector2(velX, velY);
         MoveAndSlide();
         ClampAboveFloor(30f);
 
@@ -94,7 +99,10 @@ public partial class CombatDroneEnemy : EnemyBase
             return;
         }
 
-        Velocity = new Vector2(0f, HoverSpeed * Mathf.Cos(_time * HoverSpeed) * (HoverAmplitude * 0.3f));
+        var strafeDir = Mathf.Sign(Player.GlobalPosition.X - GlobalPosition.X);
+        Velocity = new Vector2(
+            strafeDir * ChaseSpeed * 0.4f,
+            HoverSpeed * Mathf.Cos(_time * HoverSpeed + _hoverPhase) * (HoverAmplitude * 0.3f * _hoverAmplitudeScale));
         MoveAndSlide();
         ClampAboveFloor(30f);
 
@@ -178,4 +186,8 @@ public partial class CombatDroneEnemy : EnemyBase
         AddChild(flash);
         flash.GlobalPosition = GlobalPosition + new Vector2(Scale.X * 12, -2);
     }
+
+    protected override bool IsHoverMover() => true;
+    protected override float GetSeparationRadius() => 16.0f;
+    protected override float GetSeparationStrength() => 35.0f;
 }

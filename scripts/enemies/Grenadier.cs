@@ -7,6 +7,7 @@ public partial class Grenadier : EnemyBase
     [Export] public float GrenadeSpeed { get; set; } = 60.0f;
     [Export] public float HoverAmplitude { get; set; } = 4.0f;
     [Export] public float PatrolRange { get; set; } = 40.0f;
+    [Export] public float ThrowRange { get; set; } = 320.0f;
 
     private float _time;
     private float _fireTimer;
@@ -20,8 +21,12 @@ public partial class Grenadier : EnemyBase
     public override void _Ready()
     {
         base._Ready();
+        var rng = new RandomNumberGenerator();
+        rng.Randomize();
+        InitializeHoverVariance(rng, HoverAmplitude * 0.5f);
         _spawnX = GlobalPosition.X;
         _spawnY = GlobalPosition.Y;
+        _fireTimer = FireRate;
         _grenadeScene = GD.Load<PackedScene>("res://scenes/projectiles/GrenadeProjectile.tscn");
         _visual = GetNodeOrNull<Polygon2D>("Visual");
         if (_visual != null)
@@ -50,9 +55,10 @@ public partial class Grenadier : EnemyBase
         _time += delta;
         FaceDirection(Mathf.Sin(_time * 0.3f));
 
+        _desiredHorizontalVelocity = new Vector2(0.3f * Mathf.Cos(_time * 0.3f) * PatrolRange, 0f);
         Velocity = new Vector2(
             0.3f * Mathf.Cos(_time * 0.3f) * PatrolRange,
-            0.5f * Mathf.Cos(_time * 0.5f) * HoverAmplitude
+            0.5f * Mathf.Cos(_time * 0.5f + _hoverPhase) * (HoverAmplitude * _hoverAmplitudeScale)
         );
         MoveAndSlide();
         ClampAboveFloor(30f);
@@ -62,23 +68,30 @@ public partial class Grenadier : EnemyBase
     {
         UpdatePatrolState(delta);
 
-        _fireTimer -= delta;
-        if (_fireTimer <= 0)
+        if (Player == null)
+            return;
+
+        if (GlobalPosition.DistanceTo(Player.GlobalPosition) <= ThrowRange)
         {
-            _fireTimer = FireRate;
-            LobGrenade();
+            _fireTimer -= delta;
+            if (_fireTimer <= 0)
+            {
+                _fireTimer = FireRate;
+                LobGrenade();
+            }
         }
     }
 
     protected override void UpdateAttackState(float delta)
     {
         _time += delta;
-        Velocity = new Vector2(0f, 0.5f * Mathf.Cos(_time * 0.5f) * HoverAmplitude);
+        Velocity = new Vector2(0f, 0.5f * Mathf.Cos(_time * 0.5f + _hoverPhase) * (HoverAmplitude * _hoverAmplitudeScale));
         MoveAndSlide();
         ClampAboveFloor(30f);
 
         FacePlayer();
-        LobGrenade();
+        if (Player != null && GlobalPosition.DistanceTo(Player.GlobalPosition) <= ThrowRange)
+            LobGrenade();
 
         SetState(EnemyState.Chase);
     }
@@ -122,4 +135,8 @@ public partial class Grenadier : EnemyBase
 
         _tossAnimTimer = 0.2f;
     }
+
+    protected override bool IsHoverMover() => true;
+    protected override float GetSeparationRadius() => 16.0f;
+    protected override float GetSeparationStrength() => 35.0f;
 }
