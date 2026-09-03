@@ -22,11 +22,13 @@ PixelLab MCP server is connected via opencode. The following tools are available
 
 ### Characters
 
+> **Only for bipedal/legged characters.** The rig is a humanoid `mannequin`; it re-adds legs and will not preserve legless/custom silhouettes. For our cast use the **image pipeline** + **`animate_image`** (see above / `PIXELLAB_PROMPT_RULES.md`).
+
 | Tool | Use Case | Cost |
 |------|----------|------|
-| `pixellab_create_character` | Full character with directions | 1-9 gen (v3) |
-| `pixellab_animate_character` | Animate existing character | ~1-4 gen/dir |
-| `pixellab_create_character_state` | Character variant | 20-40 gen |
+| `pixellab_create_character` | **Bipedal** character with directions | 1-9 gen (v3) |
+| `pixellab_animate_character` | Animate **bipedal** character (template/custom) | ~1-4 gen/dir |
+| `pixellab_create_character_state` | Bipedal character variant | 20-40 gen |
 
 ### Objects
 
@@ -56,26 +58,26 @@ PixelLab MCP server is connected via opencode. The following tools are available
 
 ## Quick Reference
 
-### Generate Character (v3 mode)
+### Generate a legless character (our cast) — image pipeline
 ```
-pixellab_create_character(
-  description: "boxy mining robot, side view...",
-  mode: "v3",
-  size: 48,
-  view: "side",
-  n_directions: 4
+pixellab_create_image_pro(
+  description: "upright hovering robot, side view facing right, clearly NO legs, body ends in a glowing light-ring beam, pixel art",
+  width: 64, height: 64, no_background: true
 )
+# pick a candidate → edit_image to refine → correct_pixelart → downscale to 48px
 ```
+`create_character` (below) is **bipedal-only** — its `mannequin` skeleton re-adds legs in animations.
 
-### Animate Character
+### Animate FROM our base sprite (keeps it legless) — `animate_image`
 ```
-pixellab_animate_character(
-  character_id: "<uuid>",
-  action_description: "idle hover bob",
-  directions: ["south"],
-  frame_count: 4
+pixellab_animate_image(
+  first_frame_url: "https://api.pixellab.ai/mcp/images/<job>/download",
+  action: "the robot launches upward, beam flares, body stays legless and rigid, no legs",
+  frame_count: 8,
+  no_background: true
 )
 ```
+`animate_character` only suits bipedal characters and requires a registered `character_id` (our free-image sprites have none). See `PIXELLAB_PROMPT_RULES.md`.
 
 ### Reduce Colors
 ```

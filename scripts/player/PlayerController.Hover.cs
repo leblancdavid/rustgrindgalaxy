@@ -31,6 +31,16 @@ public partial class PlayerController : CharacterBody2D
 	[Export] public float GrindScrubSpeed = 5.0f;
 	[Export] public float GrindRewindSpeed = 6.0f;
 
+	[Export] public bool UseIdleAnimation = true;
+	[Export] public bool UseMoveAnimation = true;
+	[Export] public bool UseChargeAnimation = true;
+	[Export] public float IdleAnimFps = 8.0f;
+	[Export] public float MoveAnimFps = 12.0f;
+	[Export] public float MoveSpeedThreshold = 40.0f;
+	[Export] public int MoveLoopTail = 3;
+	[Export] public float ChargeAnimFps = 8.0f;
+	[Export] public int ChargeLoopTail = 3;
+
 	[Export] public bool LogFlipSelection = false;
 
 	private const string AnimRoot = "res://assets/characters/player/anim";
@@ -39,6 +49,9 @@ public partial class PlayerController : CharacterBody2D
 	private float _hoverTime;
 	private float _ringTime;
 	private float _jumpTimer;
+	private float _idleTimer;
+	private float _moveTimer;
+	private float _chargeLoopTimer;
 	private float _flipProgress;
 	private float _grindProgress;
 	private int _facing = 1;
@@ -51,6 +64,9 @@ public partial class PlayerController : CharacterBody2D
 	private Sprite2D? _beamRippleB;
 	private Texture2D? _baseTex;
 	private Texture2D[]? _jumpFrames;
+	private Texture2D[]? _idleFrames;
+	private Texture2D[]? _moveFrames;
+	private Texture2D[]? _chargeFrames;
 	private Texture2D[]? _grindFrames;
 	private Texture2D[]? _flipFrontFrames;
 	private Texture2D[]? _flipBackFrames;
@@ -75,6 +91,9 @@ public partial class PlayerController : CharacterBody2D
 			_beamRippleB = GetNodeOrNull<Sprite2D>("VisualContainer/BeamRippleB");
 			_baseTex = _visual.Texture;
 			_jumpFrames = LoadFrames(AnimRoot + "/jump", "jump_");
+			_idleFrames = LoadFrames(AnimRoot + "/idle", "idle_");
+			_moveFrames = LoadFrames(AnimRoot + "/move", "move_");
+			_chargeFrames = LoadFrames(AnimRoot + "/charge", "charge_");
 			_grindFrames = LoadFrames(AnimRoot + "/grind", "grind_");
 			_flipFrontFrames = LoadFrames(AnimRoot + "/frontflip", "flip_front_");
 			_flipBackFrames = LoadFrames(AnimRoot + "/backflip", "flip_back_");
@@ -141,9 +160,44 @@ public partial class PlayerController : CharacterBody2D
 			return;
 		}
 
-		if (_visual.Texture != _baseTex && _baseTex != null)
+		if (_isChargingJump && UseChargeAnimation && _chargeFrames != null && _chargeFrames.Length > 0)
 		{
-			_visual.Texture = _baseTex;
+			var ratio = MaxJumpHoldTime <= 0.0f
+				? 1.0f
+				: Mathf.Clamp(_jumpChargeTime / MaxJumpHoldTime, 0.0f, 1.0f);
+			if (ratio >= 1.0f)
+			{
+				_chargeLoopTimer += deltaSeconds;
+			}
+			else
+			{
+				_chargeLoopTimer = 0.0f;
+			}
+
+			ApplyPose(_chargeFrames[ChargeIndex(_chargeFrames.Length, ratio, _chargeLoopTimer, ChargeAnimFps, ChargeLoopTail)]);
+			return;
+		}
+
+		var movingGround = Mathf.Abs(Velocity.X) > MoveSpeedThreshold;
+		var groundTex = _baseTex;
+		if (movingGround && UseMoveAnimation && _moveFrames != null && _moveFrames.Length > 0)
+		{
+			_moveTimer += deltaSeconds;
+			groundTex = _moveFrames[MoveIndex(_moveFrames.Length, _moveTimer, MoveAnimFps, MoveLoopTail)];
+		}
+		else
+		{
+			_moveTimer = 0.0f;
+			if (UseIdleAnimation && _idleFrames != null && _idleFrames.Length > 0)
+			{
+				_idleTimer += deltaSeconds;
+				groundTex = _idleFrames[LoopIndex(_idleFrames.Length, _idleTimer, IdleAnimFps)];
+			}
+		}
+
+		if (groundTex != null)
+		{
+			_visual.Texture = groundTex;
 		}
 
 		_landSquash = Mathf.MoveToward(_landSquash, 0.0f, deltaSeconds * 4.0f);
@@ -227,6 +281,73 @@ public partial class PlayerController : CharacterBody2D
 	{
 		var idx = Mathf.RoundToInt(Mathf.Clamp(progress, 0.0f, 1.0f) * (frames.Length - 1));
 		return Mathf.Clamp(idx, 0, frames.Length - 1);
+	}
+
+	private static int LoopIndex(int count, float time, float fps)
+	{
+		if (count <= 1)
+		{
+			return 0;
+		}
+
+		var cycle = 2 * (count - 1);
+		var pos = ((int)(time * fps)) % cycle;
+		return pos < (count - 1) ? pos : cycle - pos;
+	}
+
+	// Plays frames 0..count-1 once (the lean-in), then ping-pongs only the last `tail` frames.
+	private static int MoveIndex(int count, float time, float fps, int tail)
+	{
+		if (count <= 1)
+		{
+			return 0;
+		}
+
+		var steps = (int)(time * fps);
+		if (steps <= count - 1)
+		{
+			return steps;
+		}
+
+		var tailStart = Mathf.Clamp(count - Mathf.Max(1, tail), 0, count - 1);
+		var len = count - tailStart;
+		if (len <= 1)
+		{
+			return count - 1;
+		}
+
+		var period = 2 * (len - 1);
+		var rel = steps - (count - 1);
+		var pos = rel % period;
+		var m = pos <= len - 1 ? (len - 1 - pos) : (period - pos);
+		return tailStart + m;
+	}
+
+	// Charge: builds frames by ratio (0..count-1) while charging, then ping-pongs
+	// only the last `tail` frames once the charge is full and still held.
+	private static int ChargeIndex(int count, float ratio, float holdTime, float fps, int tail)
+	{
+		if (count <= 1)
+		{
+			return 0;
+		}
+
+		if (ratio < 1.0f)
+		{
+			return Mathf.Clamp(Mathf.RoundToInt(ratio * (count - 1)), 0, count - 1);
+		}
+
+		var tailStart = Mathf.Clamp(count - Mathf.Max(1, tail), 0, count - 1);
+		var len = count - tailStart;
+		if (len <= 1)
+		{
+			return count - 1;
+		}
+
+		var period = 2 * (len - 1);
+		var pos = ((int)(holdTime * fps)) % period;
+		var m = pos <= len - 1 ? (len - 1 - pos) : (period - pos);
+		return tailStart + m;
 	}
 
 	private void ApplyPose(Texture2D tex)

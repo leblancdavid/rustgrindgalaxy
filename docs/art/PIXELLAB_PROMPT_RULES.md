@@ -54,11 +54,17 @@ animate_image(
 - Keep `action` **movement-only** (a verb/pose), avoid environmental nouns.
 
 Per-motion notes (our proven set):
-- **jump** — flares the beam + rises; good, body stays rigid
+- **idle** — looping (ping-pong): body still + rigid, only the beam/rings rotate/swirl
+- **move** — looping: leans forward, beam burns brighter/longer
+- **charge** (hold jump) — crouches, beam gathers/brightens; builds by charge ratio 0→1, then tail-loops the last frames while held, hands off to jump on release
+- **jump** — flares the beam + rises; body stays rigid
 - **grind** — low crouch, arms out for balance (rotation/bob stays in-engine)
 - **front flip** — tuck/crouch forward pose; **in-engine supplies the spin**
 - **back flip** — lean-back/arch pose; **in-engine supplies the spin**
 - **whole-body locomotion** (bob, squash, stretch, facing, spin, ripples) = **procedural in-engine**, not AI frames
+
+Playback model: **idle/move/jump loop** (ping-pong avoids seams); **flips + grind scrub** — advance to the held pose while the input is held, **rewind** to neutral on release; **charge** builds by the jump-charge ratio, then tail-loops the last frames while fully held, and hands off to jump on release. See `PlayerController.Hover.cs`.
+
 
 > **CRITICAL GOTCHA (all PixelLab tools):** pass only the fields you use; **omit unused optionals entirely — never send `null`.** E.g. `animate_image` rejects `action: null` with a Pydantic `input_type=NoneType` error; `animate_character` rejects a `null` sibling with "provide either …". This was an MCP-layer null bug — always supply real values.
 
@@ -67,14 +73,18 @@ Concurrency cap is **8 jobs at once** — a 9th returns `need 1 job slots but on
 
 ### Hoverboard Sprite
 
-Generate separately from character using `create_image_pixen`:
+Separate **grayscale** sprite (runtime-tinted like other env art) — a **snowboard deck** (no wheels), not a glowing disc:
 
 ```
-Description: glowing hoverboard, oval light board shape, bright cyan-white glow, no wheels, floating energy disc
-Size: 48x16
-View: side
-No background: true
+create_image_pixflux(
+  description: "grayscale snowboard deck shape, flat elongated board, straight-on side view, no bindings, transparent background, pixel art",
+  width: 48, height: 48, no_background: true
+)
 ```
+
+Gotchas learned:
+- `create_image_pixflux` rejects canvases below **32x32 total area** — `48x16` failed; use `48x48` (or bigger) with the shape drawn inside.
+- The board is generated **long-axis vertical** (a "snowboard"), then **rotated 90° into the PNG** so it lays flat. Do **not** rotate the `Sprite2D` node — `UpdateBoardAnimationTilt`/`ApplyTrickVisual` overwrite `BoardSprite.Rotation` every physics frame (see `AGENTS.md` → Art & Animation Pipeline).
 
 ## Prompt Templates
 
@@ -96,7 +106,9 @@ single color black outline, crisp pixels, no anti-aliasing
 
 ## Grayscale + Runtime Tint Strategy
 
-### Generating Grayscale Assets
+> **Environment only.** Grayscale + runtime tint applies to **props, tiles, and backgrounds**. Characters keep **baked** identity colors and are not tinted — ignore this section for characters and describe their real colors.
+
+### Generating Grayscale Assets (props/tiles)
 
 When generating for runtime tinting:
 1. Use neutral gray descriptions: "gray metal", "dark steel", "light gray panels"
@@ -152,17 +164,31 @@ Regenerate if:
 - Blurry or anti-aliased edges
 - Baked-in shadows in sprite
 
+## Asset Import & Runtime-Load Workflow
+
+End-to-end for each new sprite / animation:
+
+1. Generate at **64px** (transparent). Review via a contact sheet or a looping `preview.html`.
+2. `correct_pixelart` (strength ~0.1) to drop stray corner pixels.
+3. **Downscale to 48px**, nearest-neighbor, to match the sprite grid.
+4. Write a `.import` per PNG (standard `texture`/`CompressedTexture2D` params, unique `uid://…`) or let the **editor auto-import** on focus.
+5. **Reload the project in the Godot editor** so new PNGs import — until then `GD.Load<Texture2D>(res://…)` and `ResourceLoader.Exists` return **null**. `PlayerController.Hover.cs → LoadFrames()` guards on `Exists`, so un-imported frames make that animation silently fall back to procedural.
+6. Keep staging (candidate sheets, `_*.png`, `preview.html`) in a `.gdignore` folder (e.g. `assets/characters/player/_animtest/`) so it never enters the build.
+
 ## File Naming
 
 East-only (west is an in-engine flip), one folder per action:
 
 ```
 assets/characters/<character>/anim/<action>/<frame_NN>.png
-assets/characters/player/player_east.png          # base body (48px)
-assets/characters/player/anim/jump/jump_00.png    # index 0 == base
+assets/characters/player/player_east.png            # base body (48px)
+assets/characters/player/anim/idle/idle_00.png      # index 0 == base
+assets/characters/player/anim/move/move_00.png
+assets/characters/player/anim/charge/charge_00.png
+assets/characters/player/anim/jump/jump_00.png
 assets/characters/player/anim/grind/grind_00.png
 assets/characters/player/anim/backflip/flip_back_00.png
 assets/characters/player/anim/frontflip/flip_front_00.png
-assets/hoverboards/player/hoverboard_snowboard.png
+assets/hoverboards/player/hoverboard_snowboard.png  # grayscale, laid flat (baked 90°)
 ```
 

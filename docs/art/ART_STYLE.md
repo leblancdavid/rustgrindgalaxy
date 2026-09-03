@@ -20,9 +20,11 @@
 
 ## Color Palette Strategy
 
-### Runtime Tint System (Primary Approach)
+### Runtime Tint System — **scope: environment only**
 
-Assets are generated as **grayscale** and receive color at runtime via the mineral-driven `LevelColorPalette`. See [`docs/COLOR_PALETTE_SYSTEM.md`](../COLOR_PALETTE_SYSTEM.md) for full details.
+> **Only environment props, tiles, and backgrounds use runtime tinting.** They are generated **grayscale** and tinted per-level. **Characters keep their baked identity colors** (rust body, orange visor, cyan beam) and are NOT runtime-tinted — do not desaturate the player to grayscale.
+
+Environment assets receive color at runtime via the mineral-driven `LevelColorPalette`. See [`docs/COLOR_PALETTE_SYSTEM.md`](../COLOR_PALETTE_SYSTEM.md) for full details.
 
 **How it works:**
 ```
@@ -81,7 +83,7 @@ All characters use **side-view** (profile), **east-facing** as the only stored v
 
 | Character | Height | Notes |
 |-----------|--------|-------|
-| Player | ~48px | Main character, boxy robot |
+| Player | ~48px | Boxy→ sleek hovering racer mech (c13); east-facing, west = flip |
 | Raider | ~44px | Humanoid enemy |
 | Drone | ~28px | Flying enemy, smaller |
 
@@ -125,6 +127,9 @@ assets/
 │   │   ├── player_east.png          # 48px legless body + ring beam (west = flip)
 │   │   ├── beam_ring.png            # grayscale hover-ring for the swirl overlay
 │   │   └── anim/
+│   │       ├── idle/    idle_00..08.png      # body still, beam rotates (loop)
+│   │       ├── move/    move_00..06.png      # forward lean + brighter beam (intro once, then tail-loop)
+│   │       ├── charge/  charge_00..06.png     # crouch + beam gathers (ratio build, tail-loop at full)
 │   │       ├── jump/    jump_00..08.png
 │   │       ├── grind/   grind_00..NN.png
 │   │       ├── backflip/ flip_back_00..NN.png
@@ -154,13 +159,15 @@ textures/canvas_textures/default_texture_filter=0
 - PNG files with alpha channel
 - Use `Import > Texture > Filter > Nearest` for pixel-perfect
 - y_sort_enabled for proper draw order
+- **New PNGs must be reimported by the Godot editor before `GD.Load`/`ResourceLoader.Exists` succeed at runtime** — drop frames into `res://`, reload the project in-editor, then run. (Runtime anim loaders guard on `Exists` and silently skip un-imported frames.)
+- Keep dev scratch (candidate sheets, previews) in a `.gdignore`'d folder so it never imports into the build.
 
 ## Rejection Criteria
 
 Reject and regenerate if:
 - **Wrong projection** — not side-view
 - **Wrong scale** — too big or too small relative to other assets
-- **Saturated colors** — colors that don't work with runtime tinting
+- **Saturated colors** — *(environment props/tiles only)* hues that break runtime tinting; characters intentionally keep baked accents
 - **Blurry edges** — anti-aliased or fuzzy pixel art
 - **Inconsistent style** — doesn't match other assets
 - **Baked-in shadows** — ground shadows or drop shadows in sprite
