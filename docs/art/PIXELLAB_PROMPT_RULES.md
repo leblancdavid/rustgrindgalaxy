@@ -6,52 +6,64 @@
 
 | Asset Type | Primary Tool | Backup Tool |
 |------------|-------------|-------------|
-| Characters (humanoid/robot) | `create_character` | `create_image_pixflux` |
-| Character animations | `animate_character` | `animate_image` |
-| Hoverboards | `create_image_pixen` | `create_image_pixflux` |
+| Characters (rigid/legless/custom silhouette) | `create_image_pro` (+ `edit_image` to refine) | `create_image_pixflux` |
+| Characters (bipedal, legs ok) | `create_character` | — |
+| Character **poses / motion from our sprite** | `animate_image` | `animate_character` (bipedal only) |
+| VFX (beam, slash, impact) | `animate_image` (simple element) | `create_image_pixflux` |
+| Hoverboards | `create_image_pixflux` | `create_image_pixen` |
 | Props (standalone) | `create_image_pixflux` | `create_image_pixen` |
 | Tiles (platformer) | `create_sidescroller_tileset` | `create_tiles_pro` |
 
-## Character Generation
+> **Legless / non-humanoid rule:** do **NOT** use `create_character` — it rigs the `mannequin` skeleton and every later animation re-adds legs. Generate the body as a **free image** (`create_image_pro` → pick → `edit_image` → `correct_pixelart`) and animate it with **`animate_image`**, which moves our actual sprite and cannot invent limbs.
 
-### Player Robot (Mining Robot with Hoverboard)
 
-Use `create_character` with `mode="v3"` for highest quality.
+## Character Generation (legless hovering robot)
 
-```
-Description: boxy mining robot, rectangular body, glowing cyan visor, chest energy core, industrial panel lines, robot
-Size: 48
-View: side
-Outline: single color black outline
-Shading: basic shading
-Detail: medium detail
-```
+Generate the body as a **free image**, not a rigged character. Proven pipeline:
 
-For accent colors (not runtime-tinted), include in description:
-- "glowing cyan visor" 
-- "orange amber racing stripes" (for racer variant)
+1. **`create_image_pro`** — 16 candidates, transparent, side view. Emphasize the silhouette:
+   ```
+   upright hovering robot, side view facing right, clearly NO legs — sleek angular
+   dark metal body whose lower half ends in a glowing downward cone of light with
+   concentric swirling rings like a UFO tractor beam, glowing visor and chest core,
+   arms at sides, clean silhouette, filling canvas, pixel art
+   ```
+   Keep the description **movement/appearance only** — never say "run", "stand", "feet", "legs" (the model adds limbs).
+2. **Pick** a candidate (reviewed from a contact sheet).
+3. **`edit_image`** to fix details (e.g. `description: "Replace ONLY the rocket flame underneath with a hovering tractor beam: soft cone of light with concentric glowing rings. No fire, no legs."`) — preserves the body, swaps the base.
+4. **`correct_pixelart`** (strength ~0.12) to tidy edges; optionally **`reduce_colors`** to lock the palette.
+5. **Downscale to 48px** (nearest-neighbor) to match the sprite grid, add a `.import`, and mirror for west in-engine.
 
-### Generation Parameters
+`create_character`/`animate_character` are only for **bipedal** characters — they impose the mannequin skeleton and re-add legs. Do not use for our cast.
 
-| Parameter | Value | Notes |
-|-----------|-------|-------|
-| `mode` | `"v3"` | Highest quality, 2-9 generations |
-| `size` | `48` | Player height in pixels |
-| `view` | `"side"` | Platformer profile view |
-| `n_directions` | `4` | N/S/E/W for full coverage |
-| `outline` | `"single color black outline"` | Consistent with art style |
-| `shading` | `"basic shading"` | Clean pixel art look |
-| `detail` | `"medium detail"` | Good detail without clutter |
+## Animating From Our Base Sprite
 
-### Idle Animation
-
-Use `animate_character` with `template_animation_id` or custom `action_description`:
+Use **`animate_image`** with the finalized sprite as `first_frame_url` (the PixelLab download URL works — it's public/UUID-keyed). It moves our exact image; no skeleton, so **no legs can appear**.
 
 ```
-action_description: "subtle hover bob, energy core pulsing"
-frame_count: 4
-directions: ["south"]  (side-view uses south as primary)
+animate_image(
+  first_frame_url: "https://api.pixellab.ai/mcp/images/<job>/download",
+  action: "the whole robot launches straight upward and stretches tall, energy beam flares beneath, body stays legless and rigid, no legs",
+  frame_count: 8,
+  no_background: true
+)
 ```
+
+- `animate_image` returns **frame_count + 1** frames; **index 0 is the input unchanged**, then the generated motion.
+- Fetch a specific frame: `get_image(job_id, index=N)` or the `.../download?index=N` URL.
+- Keep `action` **movement-only** (a verb/pose), avoid environmental nouns.
+
+Per-motion notes (our proven set):
+- **jump** — flares the beam + rises; good, body stays rigid
+- **grind** — low crouch, arms out for balance (rotation/bob stays in-engine)
+- **front flip** — tuck/crouch forward pose; **in-engine supplies the spin**
+- **back flip** — lean-back/arch pose; **in-engine supplies the spin**
+- **whole-body locomotion** (bob, squash, stretch, facing, spin, ripples) = **procedural in-engine**, not AI frames
+
+> **CRITICAL GOTCHA (all PixelLab tools):** pass only the fields you use; **omit unused optionals entirely — never send `null`.** E.g. `animate_image` rejects `action: null` with a Pydantic `input_type=NoneType` error; `animate_character` rejects a `null` sibling with "provide either …". This was an MCP-layer null bug — always supply real values.
+
+Concurrency cap is **8 jobs at once** — a 9th returns `need 1 job slots but only 0 available (8/8 used)`; re-queue after some finish.
+
 
 ### Hoverboard Sprite
 
@@ -102,7 +114,7 @@ These elements keep their color through runtime tinting:
 
 To avoid credit burn:
 
-1. **ONE `create_character` batch** → present results to user for selection
+1. **ONE `create_image_pro` batch** → present results to user for selection
 2. **Visual check** — user picks winner or requests changes
 3. **One more batch** only if needed after feedback
 4. **Two failed batches → STOP** and reassess approach
@@ -142,11 +154,15 @@ Regenerate if:
 
 ## File Naming
 
-```
-{character}_{action}_{direction}_{frame}.png
+East-only (west is an in-engine flip), one folder per action:
 
-Examples:
-player_idle_south_00.png
-player_run_east_03.png
-hoverboard_idle_south_02.png
 ```
+assets/characters/<character>/anim/<action>/<frame_NN>.png
+assets/characters/player/player_east.png          # base body (48px)
+assets/characters/player/anim/jump/jump_00.png    # index 0 == base
+assets/characters/player/anim/grind/grind_00.png
+assets/characters/player/anim/backflip/flip_back_00.png
+assets/characters/player/anim/frontflip/flip_front_00.png
+assets/hoverboards/player/hoverboard_snowboard.png
+```
+

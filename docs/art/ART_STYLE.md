@@ -55,21 +55,27 @@ These are generated with specific accent colors baked in.
 
 ## Character Design
 
-### Player Robot - Boxy Mining Robot
+### Player Robot - Hovering Mech ("c13")
 
-The player is a **boxy mining robot** with a hoverboard. Key features:
-- Boxy/rectangular body (mining robot aesthetic)
-- No legs — floats on a separate hoverboard sprite
-- Energy beam connects body to board
-- Glowing visor and chest energy core as fixed accents
-- Panel lines and industrial details
+The player is a **rigid hovering robot** with **no legs**, riding a separate hoverboard. Final look:
+- Angular rust/red armored body, orange-amber visor and chest core (fixed accents)
+- No legs — the lower body ends in a **swirling cyan light-ring tractor beam** (UFO hover, not a rocket flame)
+- Rides a separate **grayscale snowboard-shaped** hoverboard sprite; the beam glows down onto it
+- Dynamic arms (used for balance in grind/flip poses)
+
+### Generation Method: image pipeline, NOT `create_character`
+
+Legless characters MUST be generated as a free **image**, not via `create_character`:
+- `create_character` builds on the **`mannequin` skeleton**; every template animation then **re-adds legs** (the failure we hit). The static pose may look legless but the rig is bipedal.
+- Instead: `create_image_pro` (multiple candidates, side view) → pick → `edit_image` to refine (e.g. swap flame→ring beam) → `correct_pixelart` → downscale to 48px → import.
 
 ### Side-View Platformer Projection
 
-All characters use **side-view** (profile) projection:
+All characters use **side-view** (profile), **east-facing** as the only stored view:
 - Dominant horizontal axis (left-right movement)
 - Clear silhouette readable against backgrounds
-- Distinct front/back/profile views
+- **West = horizontal flip in-engine** — do not store a west sprite
+- Animations keep the body centered; physics/in-engine transform handles position + rotation
 
 ### Character Size Reference
 
@@ -99,10 +105,16 @@ All characters use **side-view** (profile) projection:
 
 ## Animation Guidelines
 
+Hybrid approach — **in-engine procedural motion + PixelLab pose/VFX frames**:
+
 - **Frame Rate**: 8-12 FPS for retro feel
-- **Idle animations**: Subtle hover bob for hoverboard, energy pulse for robot
-- **Run animations**: 4-6 frames
-- **Attack animations**: 3-5 frames with clear wind-up and impact
+- **Whole-body transforms stay in-engine** (never AI-redraw the body — it drifts / adds legs): hover bob, facing flip, jump/fall stretch, landing squash, air spin, grind tilt/bob, damage flash
+- **Beam / effects**: ring ripple overlay in-engine; `animate_image` (from the base sprite) for beam flares and pose motion — it animates *our image*, no skeleton, so legs can't appear
+- **Jump**: AI frames = beam flare + rise (body rigid)
+- **Grind**: AI pose = low crouch, arms out for balance (rotation/bob in-engine)
+- **Front flip**: AI pose = tuck/crouch forward (the spin is done in-engine)
+- **Back flip**: AI pose = lean back / arch (the spin is done in-engine)
+
 
 ## Asset Structure
 
@@ -110,15 +122,18 @@ All characters use **side-view** (profile) projection:
 assets/
 ├── characters/
 │   ├── player/
-│   │   ├── idle/
-│   │   ├── run/
-│   │   └── attack/
-│   ├── raider/
+│   │   ├── player_east.png          # 48px legless body + ring beam (west = flip)
+│   │   ├── beam_ring.png            # grayscale hover-ring for the swirl overlay
+│   │   └── anim/
+│   │       ├── jump/    jump_00..08.png
+│   │       ├── grind/   grind_00..NN.png
+│   │       ├── backflip/ flip_back_00..NN.png
+│   │       └── frontflip/ flip_front_00..NN.png
+│   ├── raider/          # TODO regenerate legless to match
 │   └── drone/
 ├── hoverboards/
 │   └── player/
-│       ├── idle/
-│       └── run/
+│       └── hoverboard_snowboard.png # grayscale board, laid flat
 └── props/
 ```
 

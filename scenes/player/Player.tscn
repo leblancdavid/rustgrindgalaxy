@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://xgxn58u3e44c" path="res://scripts/world/Shadow.cs" id="2"]
 [ext_resource type="Texture2D" uid="uid://c1player_east" path="res://assets/characters/player/player_east.png" id="3"]
 [ext_resource type="Texture2D" uid="uid://c2hoverboard" path="res://assets/hoverboards/player/hoverboard_snowboard.png" id="4"]
+[ext_resource type="Texture2D" uid="uid://b5mg1cring01a" path="res://assets/characters/player/beam_ring.png" id="5"]
 
 [sub_resource type="RectangleShape2D" id="1"]
 size = Vector2(16, 28)
@@ -26,13 +27,24 @@ position = Vector2(0, 4)
 
 [node name="PlayerSprite" type="Sprite2D" parent="VisualContainer" unique_name_int_hint=40943747]
 z_index = 3
-position = Vector2(0, -24)
+position = Vector2(0, -22)
 texture = ExtResource("3")
 
 [node name="BoardSprite" type="Sprite2D" parent="VisualContainer" unique_name_int_hint=561603112]
 z_index = 2
-position = Vector2(0, 4)
+position = Vector2(0, 2)
+scale = Vector2(0.75, 0.75)
 texture = ExtResource("4")
+
+[node name="BeamRippleA" type="Sprite2D" parent="VisualContainer" unique_id=700000001]
+z_index = 4
+position = Vector2(0, -2)
+texture = ExtResource("5")
+
+[node name="BeamRippleB" type="Sprite2D" parent="VisualContainer" unique_id=700000002]
+z_index = 4
+position = Vector2(0, -2)
+texture = ExtResource("5")
 
 [node name="BoardContact" type="Marker2D" parent="." unique_name_int_hint=634417121]
 position = Vector2(0, 4)
