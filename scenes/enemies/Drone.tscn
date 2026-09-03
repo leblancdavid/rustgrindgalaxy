@@ -1,7 +1,8 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/enemies/DroneEnemy.cs" id="1"]
 [ext_resource type="Script" path="res://scripts/world/Shadow.cs" id="2"]
+[ext_resource type="Texture2D" uid="uid://c4drone_east" path="res://assets/characters/drone/drone_east.png" id="3"]
 
 [sub_resource type="CircleShape2D" id="1"]
 radius = 12.0
@@ -22,13 +23,9 @@ BaseWidth = 24.0
 BaseHeight = 6.0
 DistanceSmoothing = 4.0
 
-[node name="Visual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(-11, 0, -4, -9, 7, -7, 11, 0, 7, 7, -4, 9)
-color = Color(0.470588, 0.792157, 0.960784, 1)
-
-[node name="Core" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(-4, -4, 4, -4, 4, 4, -4, 4)
-color = Color(0.666667, 0.878431, 1, 1)
+[node name="Sprite" type="Sprite2D" parent="."]
+position = Vector2(0, -16)
+texture = ExtResource("3")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("1")

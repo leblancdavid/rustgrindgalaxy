@@ -123,8 +123,8 @@ public partial class PlayerController : CharacterBody2D
 	private bool _isChargingJump;
 	private Marker2D _boardContact = null!;
 	private Node2D _visualContainer = null!;
-	private Polygon2D _boardVisual = null!;
-	private Polygon2D _visual = null!;
+	private Sprite2D _boardVisual = null!;
+	private Sprite2D _visual = null!;
 	private Color _baseColor;
 	private Vector2 _boardVisualBasePosition;
 	private Vector2 _previousBoardContactPoint;
@@ -177,9 +177,9 @@ public partial class PlayerController : CharacterBody2D
 		EnsureGrindInput();
 		_boardContact = GetNode<Marker2D>("BoardContact");
 		_visualContainer = GetNode<Node2D>("VisualContainer");
-		_boardVisual = GetNode<Polygon2D>("VisualContainer/BoardVisual");
-		_visual = GetNode<Polygon2D>("VisualContainer/Visual");
-		_baseColor = _visual.Color;
+		_boardVisual = GetNode<Sprite2D>("VisualContainer/BoardSprite");
+		_visual = GetNode<Sprite2D>("VisualContainer/PlayerSprite");
+		_baseColor = _visual.SelfModulate;
 		_boardVisualBasePosition = _boardVisual.Position;
 		_airRotation = Rotation;
 		_previousBoardContactPoint = GetRailContactPoint();
@@ -346,7 +346,7 @@ public partial class PlayerController : CharacterBody2D
 		if (CurrentHealth <= 0)
 		{
 			Velocity = Vector2.Zero;
-			_visual.Color = new Color(0.35f, 0.35f, 0.35f, 1.0f);
+			_visual.SelfModulate = new Color(0.35f, 0.35f, 0.35f, 1.0f);
 		}
 	}
 
@@ -355,10 +355,10 @@ public partial class PlayerController : CharacterBody2D
 		if (_invulnerabilityTimeRemaining > 0.0f)
 		{
 			var flashOn = Mathf.PosMod(Time.GetTicksMsec() / 100, 2) == 0;
-			_visual.Color = flashOn ? new Color(1.0f, 0.45f, 0.45f, 1.0f) : _baseColor;
+			_visual.SelfModulate = flashOn ? new Color(1.0f, 0.45f, 0.45f, 1.0f) : _baseColor;
 			return;
 		}
 
-		_visual.Color = _baseColor;
+		_visual.SelfModulate = _baseColor;
 	}
 }
