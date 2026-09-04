@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>hoverboard energy idle preview</title>
+<style>
+  body { background:#1c1e22; color:#ccc; font-family:monospace; margin:20px; }
+  canvas { image-rendering:pixelated; border:1px solid #333; margin-right:12px; }
+  .row { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+  .label { width:220px; }
+</style>
+</head>
+<body>
+<h3>hoverboard idle — ping-pong board_00..08 @ 8fps (matches LoopIndex in Hover.cs)</h3>
+<div class="row"><div class="label">raw (white base)</div><canvas id="c0" width="192" height="192"></canvas></div>
+<div class="row"><div class="label">cyan tint a=0.9</div><canvas id="c1" width="192" height="192"></canvas></div>
+<div class="row"><div class="label">magenta tint a=0.6</div><canvas id="c2" width="192" height="192"></canvas></div>
+<div class="row"><div class="label">on rail (rot -15deg)</div><canvas id="c3" width="192" height="192"></canvas></div>
+<script>
+const FPS=8;
+const seq=[...Array(9).keys(), ...[...Array(7).keys()].map(i=>8-i)]; // 0..8,7..1
+let imgs=[];
+let loaded=0;
+for(let i=0;i<9;i++){
+  const img=new Image();
+  img.src="locked_"+i+".png"; // staging copies == shipped board_NN.png
+  img.onload=()=>{ if(++loaded===9) start(); };
+  imgs[i]=img;
+}
+function start(){
+  const ctxs=[0,1,2,3].map(i=>document.getElementById("c"+i).getContext("2d"));
+  ctxs.forEach(c=>c.imageSmoothingEnabled=false);
+  let t=0;
+  function draw(){
+    const idx=seq[Math.floor(t)%seq.length];
+    const img=imgs[idx];
+    ctxs.forEach((c,ci)=>{
+      c.clearRect(0,0,192,192);
+      c.save();
+      c.translate(96,96);
+      if(ci===3) c.rotate(-15*Math.PI/180);
+      if(ci===1){ c.globalAlpha=0.9; }
+      if(ci===2){ c.globalAlpha=0.6; }
+      c.drawImage(img,-48,-48,96,96);
+      if(ci>=1){
+        c.globalCompositeOperation="source-atop";
+        c.globalAlpha= ci===1 ? 0.9 : 0.6;
+        c.fillStyle= ci===1 ? "#50e0ff" : "#ff50c8";
+        c.fillRect(-64,-64,128,128);
+      }
+      c.restore();
+    });
+    t+=FPS/60;
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+</script>
+</body>
+</html>

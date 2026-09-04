@@ -71,6 +71,9 @@ public partial class PlayerController : CharacterBody2D
 		{
 			_grindBobTime = 0.0f;
 
+			var hoverBob = Mathf.Sin(_hoverTime * HoverBobSpeed + 1.7f) * BoardHoverBobAmplitude;
+			_boardVisual.Position = _boardVisualBasePosition + new Vector2(0.0f, hoverBob);
+
 			if (_isChargingJump)
 			{
 				var chargeRatio = MaxJumpHoldTime <= 0.0f

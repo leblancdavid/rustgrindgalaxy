@@ -10,7 +10,8 @@
 | Characters (bipedal, legs ok) | `create_character` | — |
 | Character **poses / motion from our sprite** | `animate_image` | `animate_character` (bipedal only) |
 | VFX (beam, slash, impact) | `animate_image` (simple element) | `create_image_pixflux` |
-| Hoverboards | `create_image_pixflux` | `create_image_pixen` |
+| Hoverboards (base sprite) | `edit_image_pixen` (restyle existing deck PNG) | `create_image_pixflux` |
+| Hoverboards (idle mist loop) | `animate_image` + local shape-lock | — |
 | Props (standalone) | `create_image_pixflux` | `create_image_pixen` |
 | Tiles (platformer) | `create_sidescroller_tileset` | `create_tiles_pro` |
 
@@ -73,18 +74,25 @@ Concurrency cap is **8 jobs at once** — a 9th returns `need 1 job slots but on
 
 ### Hoverboard Sprite
 
-Separate **grayscale** sprite (runtime-tinted like other env art) — a **snowboard deck** (no wheels), not a glowing disc:
+The board is **light, not matter**: a translucent-white energy shape whose silhouette (a snowboard-deck capsule, no wheels) stays fixed while a swirly mist-of-light texture drifts inside it. Ship as **pure grayscale whites** (no black outline) so runtime `Modulate` color + alpha can tint it.
 
-```
-create_image_pixflux(
-  description: "grayscale snowboard deck shape, flat elongated board, straight-on side view, no bindings, transparent background, pixel art",
-  width: 48, height: 48, no_background: true
-)
-```
+Base-still pipeline (proven):
+1. `edit_image_pixen` on the existing deck PNG (48x48) — e.g.
+   ```
+   Recolor ONLY the interior of this exact same board shape: pure white translucent
+   light energy, soft swirly mist texture inside, brighter rim, grayscale white tones
+   only, keep the identical silhouette, transparent background
+   ```
+2. **Shape-lock locally**: AND the edit's pixels with the original alpha mask (the model bloats edges; a PowerShell `GetPixel` loop is enough at 48px). Also inpaint any stray dark pixels from neighbor averages — black specks survive edits.
+
+Idle-loop animation (proven): `animate_image` on the locked base, `frame_count: 8`, `no_background: true`, action like "wisps of glowing mist swirl and drift slowly inside the fixed board silhouette; outline stays exactly still, only interior moves". Then shape-lock every frame to the base mask AND **replace sub-alpha pixels with the base frame's RGB** (don't leave them white — the model fades patches mid-loop). Ship `board_00..08` (frame 0 = base) to `assets/hoverboards/player/anim/idle/`; `PlayerController.Hover.cs → UpdateBoardVisual()` plays it ping-pong (always-on, every state incl. grind/death; it only sets `BoardSprite.Texture`/`Scale`/`Modulate`).
+
+Light look (no gray in art): all board frames ship as **pure white RGB with variable alpha** — the swirl's gray values were converted to transparency (lum 185–255 → alpha 80–255, then re-remapped so the body sits near opaque and only wisps go transparent). This keeps tinting (white × color) clean and lets the board read as white swirling light over any background. `BoardSprite` uses Linear texture filtering (project default is Nearest). `BoardOpacity` export (currently 0.4) scales the whole board+glow. Glow: `assets/hoverboards/player/board_glow.png` — a **pre-baked Gaussian** (CPU separable blur of the binarized silhouette at 4× resolution, 192px covering the same 48 world units, peak-normalized alpha) drawn by a `BoardGlow` child `Sprite2D` of `BoardSprite` with an additive `CanvasItemMaterial` (base local scale 1/4). A dilation-sum fragment shader was the first attempt and removed — it produced angular fades (center-scaled dilations + texture-edge clipping). Exports: `BoardGlowScale` (size multiplier), `BoardGlowStrength` (additive brightness), `BoardGlowColor` (future tinting sets this + board modulate together). Being a child, the glow inherits tilt/bob/spin/flip for free. See `PlayerController.Hover.cs → UpdateBoardVisual()`.
 
 Gotchas learned:
 - `create_image_pixflux` rejects canvases below **32x32 total area** — `48x16` failed; use `48x48` (or bigger) with the shape drawn inside.
 - The board is generated **long-axis vertical** (a "snowboard"), then **rotated 90° into the PNG** so it lays flat. Do **not** rotate the `Sprite2D` node — `UpdateBoardAnimationTilt`/`ApplyTrickVisual` overwrite `BoardSprite.Rotation` every physics frame (see `AGENTS.md` → Art & Animation Pipeline).
+- `edit_image_pixen` may leave **black specks** and grow the silhouette 1-2px — always shape-lock + despeck before using as an animation seed.
 
 ## Prompt Templates
 
@@ -96,12 +104,12 @@ single color black outline, basic shading, medium detail,
 crisp pixels, no anti-aliasing, 16-bit retro game asset
 ```
 
-### Hoverboard (Glowing Board)
+### Hoverboard (Energy Board)
 
 ```
-{glowing_board_description}, side view, pixel art,
-glowing light board, energy effect, bright core,
-single color black outline, crisp pixels, no anti-aliasing
+{energy_board_description}, side view, pixel art,
+translucent white light, swirly mist texture inside, no outline,
+grayscale whites only, crisp pixels, transparent background
 ```
 
 ## Grayscale + Runtime Tint Strategy
@@ -189,6 +197,7 @@ assets/characters/player/anim/jump/jump_00.png
 assets/characters/player/anim/grind/grind_00.png
 assets/characters/player/anim/backflip/flip_back_00.png
 assets/characters/player/anim/frontflip/flip_front_00.png
-assets/hoverboards/player/hoverboard_snowboard.png  # grayscale, laid flat (baked 90°)
+assets/hoverboards/player/hoverboard_snowboard.png  # white energy base, laid flat (baked 90°), shape-locked
+assets/hoverboards/player/anim/idle/board_00.png     # mist-swirl idle loop (00 == base)
 ```
 

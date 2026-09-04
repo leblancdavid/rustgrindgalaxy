@@ -127,6 +127,7 @@ public partial class PlayerController : CharacterBody2D
 	private Sprite2D _visual = null!;
 	private Color _baseColor;
 	private Vector2 _boardVisualBasePosition;
+	private Vector2 _boardVisualBaseScale;
 	private Vector2 _previousBoardContactPoint;
 	private TrickKind _activeTrick;
 	private TrickPhase _activeTrickPhase;
@@ -181,6 +182,7 @@ public partial class PlayerController : CharacterBody2D
 		_visual = GetNode<Sprite2D>("VisualContainer/PlayerSprite");
 		_baseColor = _visual.SelfModulate;
 		_boardVisualBasePosition = _boardVisual.Position;
+		_boardVisualBaseScale = _boardVisual.Scale;
 		_airRotation = Rotation;
 		_previousBoardContactPoint = GetRailContactPoint();
 		CurrentHealth = MaxHealth;

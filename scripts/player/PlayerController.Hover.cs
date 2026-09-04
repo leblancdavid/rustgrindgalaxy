@@ -5,7 +5,9 @@ public partial class PlayerController : CharacterBody2D
 {
 	[Export] public float HoverBobAmplitude = 1.4f;
 	[Export] public float HoverBobSpeed = 4.0f;
+	[Export] public float BoardHoverBobAmplitude = 0.6f;
 	[Export] public float BeamFlickerAmount = 0.14f;
+	[Export] public float BoardOpacity = 0.4f;
 
 	[Export] public float AirStretchAmount = 0.12f;
 	[Export] public float LandSquashAmount = 0.24f;
@@ -41,9 +43,21 @@ public partial class PlayerController : CharacterBody2D
 	[Export] public float ChargeAnimFps = 8.0f;
 	[Export] public int ChargeLoopTail = 3;
 
+	[Export] public bool UseBoardIdleAnimation = true;
+	[Export] public float BoardIdleAnimFps = 8.0f;
+	[Export] public float BoardGlowScale = 1.0f;
+	[Export] public float BoardGlowStrength = 0.7f;
+	[Export] public Color BoardGlowColor = Colors.White;
+
 	[Export] public bool LogFlipSelection = false;
 
 	private const string AnimRoot = "res://assets/characters/player/anim";
+	private const string BoardAnimRoot = "res://assets/hoverboards/player/anim";
+	private const string BoardGlowTexPath = "res://assets/hoverboards/player/board_glow.png";
+	// board_glow.png is a 4x-resolution Gaussian of the board silhouette (192px
+	// covering the same 48 world units as the board frames), so its base scale
+	// relative to BoardSprite is 1/4.
+	private const float BoardGlowBaseScale = 0.25f;
 
 	private bool _animInit;
 	private float _hoverTime;
@@ -71,6 +85,9 @@ public partial class PlayerController : CharacterBody2D
 	private Texture2D[]? _flipFrontFrames;
 	private Texture2D[]? _flipBackFrames;
 	private Texture2D[]? _flipFrames;
+	private Texture2D[]? _boardIdleFrames;
+	private float _boardIdleTimer;
+	private Sprite2D? _boardGlow;
 
 	public override void _Process(double delta)
 	{
@@ -97,6 +114,28 @@ public partial class PlayerController : CharacterBody2D
 			_grindFrames = LoadFrames(AnimRoot + "/grind", "grind_");
 			_flipFrontFrames = LoadFrames(AnimRoot + "/frontflip", "flip_front_");
 			_flipBackFrames = LoadFrames(AnimRoot + "/backflip", "flip_back_");
+			_boardIdleFrames = LoadFrames(BoardAnimRoot + "/idle", "board_");
+			if (_boardVisual != null)
+			{
+				_boardVisual.TextureFilter = CanvasItem.TextureFilterEnum.Linear;
+				if (_boardGlow == null && ResourceLoader.Exists(BoardGlowTexPath))
+				{
+					var glowTex = GD.Load<Texture2D>(BoardGlowTexPath);
+					if (glowTex != null)
+					{
+						var glowMat = new CanvasItemMaterial();
+						glowMat.BlendMode = CanvasItemMaterial.BlendModeEnum.Add;
+						_boardGlow = new Sprite2D
+						{
+							Name = "BoardGlow",
+							Texture = glowTex,
+							Scale = new Vector2(BoardGlowBaseScale, BoardGlowBaseScale),
+							Material = glowMat,
+						};
+						_boardVisual.AddChild(_boardGlow);
+					}
+				}
+			}
 			_animInit = true;
 		}
 
@@ -123,6 +162,8 @@ public partial class PlayerController : CharacterBody2D
 
 		_hoverTime += deltaSeconds;
 		_facing = GetVisualTravelDirection() >= 0.0f ? 1 : -1;
+
+		UpdateBoardVisual(deltaSeconds);
 
 		UpdateFlipProgress(deltaSeconds, airborne);
 		UpdateGrindProgress(deltaSeconds, grinding);
@@ -348,6 +389,33 @@ public partial class PlayerController : CharacterBody2D
 		var pos = ((int)(holdTime * fps)) % period;
 		var m = pos <= len - 1 ? (len - 1 - pos) : (period - pos);
 		return tailStart + m;
+	}
+
+	private void UpdateBoardVisual(float deltaSeconds)
+	{
+		if (_boardVisual == null)
+		{
+			return;
+		}
+
+		_boardVisual.Scale = new Vector2(_boardVisualBaseScale.X * _facing, _boardVisualBaseScale.Y);
+		_boardVisual.Modulate = new Color(1.0f, 1.0f, 1.0f, BoardOpacity);
+
+		if (_boardGlow != null)
+		{
+			var glowColor = new Color(BoardGlowColor.R, BoardGlowColor.G, BoardGlowColor.B, BoardGlowColor.A * BoardGlowStrength);
+			_boardGlow.SelfModulate = glowColor;
+			var glowScale = BoardGlowBaseScale * BoardGlowScale;
+			_boardGlow.Scale = new Vector2(glowScale, glowScale);
+		}
+
+		if (!UseBoardIdleAnimation || _boardIdleFrames == null || _boardIdleFrames.Length == 0)
+		{
+			return;
+		}
+
+		_boardIdleTimer += deltaSeconds;
+		_boardVisual.Texture = _boardIdleFrames[LoopIndex(_boardIdleFrames.Length, _boardIdleTimer, BoardIdleAnimFps)];
 	}
 
 	private void ApplyPose(Texture2D tex)
