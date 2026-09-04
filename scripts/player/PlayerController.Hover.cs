@@ -45,6 +45,10 @@ public partial class PlayerController : CharacterBody2D
 
 	[Export] public bool UseBoardIdleAnimation = true;
 	[Export] public float BoardIdleAnimFps = 8.0f;
+	[Export] public bool UseBoardGrindAnimation = true;
+	[Export] public float BoardGrindAnimFps = 12.0f;
+	[Export] public bool UseBoardMoveAnimation = true;
+	[Export] public float BoardMoveAnimFps = 14.0f;
 	[Export] public float BoardGlowScale = 1.0f;
 	[Export] public float BoardGlowStrength = 0.7f;
 	[Export] public Color BoardGlowColor = Colors.White;
@@ -86,7 +90,10 @@ public partial class PlayerController : CharacterBody2D
 	private Texture2D[]? _flipBackFrames;
 	private Texture2D[]? _flipFrames;
 	private Texture2D[]? _boardIdleFrames;
-	private float _boardIdleTimer;
+	private Texture2D[]? _boardGrindFrames;
+	private Texture2D[]? _boardMoveFrames;
+	private Texture2D[]? _boardFramesApplied;
+	private float _boardAnimTimer;
 	private Sprite2D? _boardGlow;
 
 	public override void _Process(double delta)
@@ -115,6 +122,8 @@ public partial class PlayerController : CharacterBody2D
 			_flipFrontFrames = LoadFrames(AnimRoot + "/frontflip", "flip_front_");
 			_flipBackFrames = LoadFrames(AnimRoot + "/backflip", "flip_back_");
 			_boardIdleFrames = LoadFrames(BoardAnimRoot + "/idle", "board_");
+			_boardGrindFrames = LoadFrames(BoardAnimRoot + "/grind", "board_");
+			_boardMoveFrames = LoadFrames(BoardAnimRoot + "/move", "board_");
 			if (_boardVisual != null)
 			{
 				_boardVisual.TextureFilter = CanvasItem.TextureFilterEnum.Linear;
@@ -135,6 +144,7 @@ public partial class PlayerController : CharacterBody2D
 						_boardVisual.AddChild(_boardGlow);
 					}
 				}
+				InitBoardFx();
 			}
 			_animInit = true;
 		}
@@ -163,7 +173,8 @@ public partial class PlayerController : CharacterBody2D
 		_hoverTime += deltaSeconds;
 		_facing = GetVisualTravelDirection() >= 0.0f ? 1 : -1;
 
-		UpdateBoardVisual(deltaSeconds);
+		UpdateBoardVisual(deltaSeconds, onFloor, grinding);
+		UpdateBoardFx(deltaSeconds, onFloor, grinding, airborne);
 
 		UpdateFlipProgress(deltaSeconds, airborne);
 		UpdateGrindProgress(deltaSeconds, grinding);
@@ -391,7 +402,7 @@ public partial class PlayerController : CharacterBody2D
 		return tailStart + m;
 	}
 
-	private void UpdateBoardVisual(float deltaSeconds)
+	private void UpdateBoardVisual(float deltaSeconds, bool onFloor, bool grinding)
 	{
 		if (_boardVisual == null)
 		{
@@ -409,13 +420,41 @@ public partial class PlayerController : CharacterBody2D
 			_boardGlow.Scale = new Vector2(glowScale, glowScale);
 		}
 
-		if (!UseBoardIdleAnimation || _boardIdleFrames == null || _boardIdleFrames.Length == 0)
+		var frames = PickBoardFrames(onFloor, grinding);
+		var fps = frames == _boardGrindFrames ? BoardGrindAnimFps
+			: frames == _boardMoveFrames ? BoardMoveAnimFps
+			: BoardIdleAnimFps;
+
+		if (frames == null || frames.Length == 0)
 		{
 			return;
 		}
 
-		_boardIdleTimer += deltaSeconds;
-		_boardVisual.Texture = _boardIdleFrames[LoopIndex(_boardIdleFrames.Length, _boardIdleTimer, BoardIdleAnimFps)];
+		if (!ReferenceEquals(frames, _boardFramesApplied))
+		{
+			_boardFramesApplied = frames;
+			_boardAnimTimer = 0.0f;
+		}
+
+		_boardAnimTimer += deltaSeconds;
+		_boardVisual.Texture = frames[LoopIndex(frames.Length, _boardAnimTimer, fps)];
+	}
+
+	// grind > ground-move > idle shimmer; falls back to idle when a set is
+	// missing or disabled, so behavior is unchanged if art has not imported yet.
+	private Texture2D[]? PickBoardFrames(bool onFloor, bool grinding)
+	{
+		if (grinding && UseBoardGrindAnimation && _boardGrindFrames is { Length: > 0 })
+		{
+			return _boardGrindFrames;
+		}
+
+		if (onFloor && !grinding && Mathf.Abs(Velocity.X) > MoveSpeedThreshold && UseBoardMoveAnimation && _boardMoveFrames is { Length: > 0 })
+		{
+			return _boardMoveFrames;
+		}
+
+		return UseBoardIdleAnimation ? _boardIdleFrames : null;
 	}
 
 	private void ApplyPose(Texture2D tex)

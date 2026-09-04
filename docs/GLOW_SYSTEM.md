@@ -1,5 +1,7 @@
 # Glow System
 
+Two glow families live here: **`RectGlow` border glow** (below) for interactable props, and the **baked-Gaussian sprite glow** (see §Soft Emission Glow) for objects that emit light themselves.
+
 Per-object border glow for interactable props. Renders a soft luminous outline that follows the object's shape, with configurable color, thickness, and corner rounding.
 
 ## Goal
@@ -134,6 +136,45 @@ When final art arrives:
 - **MineralPickup** → switch to `CreateCircleGlow(6f, ZIndex + 1)` to match `CircleShape2D` collision
 - **ShockHazard** → switch to `CreateAlphaGlow(texture, 3f, ZIndex + 1)` to follow the zigzag lightning contour
 - Other props with chevron decorations (GrindBoost, BoostPad, LaunchPad) may benefit from `CreateAlphaGlow` if the chevrons become prominent in final art
+
+## Soft Emission Glow (Baked Gaussian Sprite)
+
+`RectGlow` is an attention outline: a bright border ring with the object's interior suppressed. When the object **is** the light — energy boards, lamps, mist auras — use the baked-Gaussian pattern instead: a pre-blurred silhouette texture drawn additively by a child sprite. No shader code at runtime.
+
+### When to use which
+
+| Need | Pattern |
+|---|---|
+| "This prop is interactable" outline ring | `RectGlow.CreateGlow` / `CreateCircleGlow` / `CreateAlphaGlow` |
+| Object glows/emits light, soft halo all around | Baked Gaussian sprite (this section) |
+| Whole-scene bloom | `WorldEnvironment` glow layer — deliberate, not currently used |
+
+### Recipe (once per asset, CPU-side)
+
+1. **Binarize the source mask.** Art that ships with variable alpha (the board's swirl wisps) must be thresholded to a solid silhouette first (`alpha > 102` for the board), or the glow inherits the texture's mottling.
+2. **Work at 4× resolution** (nearest upscale, same world area): gives the Gaussian sub-texel smoothness and room for the halo to fade without clipping. Board: 48px frames → 192px glow canvas.
+3. **Separable Gaussian blur on the alpha channel.** σ in output px ≈ desired halo reach ÷ 2.5 (board: σ=9 ≈ 2–3 world-px past the edge), kernel radius 3σ, edges clamp (no wrap).
+4. **Peak-normalize** the blurred alpha to 255 — the blur eats ~1.5% of the peak at σ=9.
+5. **Save as pure-white RGB + blurred alpha**, e.g. `assets/hoverboards/player/board_glow.png`. The PowerShell/System.Drawing generator used for the board was ad-hoc; if more assets need glows, promote it to a reusable `tools/` script.
+
+### Runtime wiring (per instance)
+
+- `Sprite2D` as a **child of the glowing node** — it inherits position/rotation/scale/bob/flip automatically, so zero transform-mirroring code (see the AGENTS.md "node rotation is overwritten" gotcha). Children draw after their parent, giving "on top of" placement.
+- `CanvasItemMaterial` with `BlendMode = Add` for true light emission (dark background + alpha-blended white reads as gray; additive reads as glow).
+- **Local scale = source-world-px / asset-px**: the 192px board glow uses `0.25` since the parent is already 0.75-scaled. Keep a `BaseScale` const and wrap it in an exported size multiplier.
+- Strength and tint via **`SelfModulate`** (`A = strength × color.A`). Note the modulate chain flows down from the parent: a parent opacity knob (like `BoardOpacity`) dims the glow too — desirable for a unified light object.
+- Guard with `ResourceLoader.Exists(BoardGlowTexPath)` and skip silently, matching `LoadFrames` behavior: **an un-imported PNG means no glow and no error** — reload the editor when a newly added glow asset doesn't show up.
+- Texture filtering: the halo is a smooth alpha ramp, so the sprite needs Linear filtering (either set it on the parent and inherit, or set it on the glow node; project default is Nearest).
+
+### Worked example
+
+`PlayerController.Hover.cs`: glow created in the `_animInit` block, per-frame `SelfModulate`/`Scale` push in `UpdateBoardVisual()`. Exports: `BoardGlowScale` (size multiplier), `BoardGlowStrength` (brightness), `BoardGlowColor` (tint — keep this and the tinted object's modulate driven by the same future palette value).
+
+### Anti-patterns learned
+
+- **Dilation-sum fragment shader** (average of N hard-silhouette samples progressively zoomed about center): the fade follows a center-scaled copy of the shape, which reads angular on elongated sprites, and clips flat where the halo outruns the texture padding. Replaced by the baked Gaussian.
+- **Shader blur of the board sprite** for softness: only smooths interior gradients, hard alpha edges stay hard.
+- **`create_1_direction_object` / PixelLab for the glow**: glow textures are derived from our own art; no generation needed.
 
 ## Design History
 
