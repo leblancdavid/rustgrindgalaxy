@@ -7,7 +7,7 @@ public partial class PlayerController : CharacterBody2D
 	[Export] public float HoverBobSpeed = 4.0f;
 	[Export] public float BoardHoverBobAmplitude = 0.6f;
 	[Export] public float BeamFlickerAmount = 0.14f;
-	[Export] public float BoardOpacity = 0.4f;
+	[Export] public float BoardOpacity = 0.6f;
 
 	[Export] public float AirStretchAmount = 0.12f;
 	[Export] public float LandSquashAmount = 0.24f;
