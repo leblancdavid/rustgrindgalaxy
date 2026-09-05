@@ -12,7 +12,7 @@ public partial class PlayerController : CharacterBody2D
 
 	[Export] public float DustFxAlpha = 0.65f;
 	[Export] public float SparkFxAlpha = 1.0f;
-	[Export] public float WispFxAlpha = 0.4f;
+	[Export] public float WispFxAlpha = 0.25f;
 
 	// Sparks: each burst erupts at a fixed spot/angle on the rail contact point
 	// and its scale grows (SparkGrowFrom -> random burst max) as it plays; bursts
@@ -55,16 +55,20 @@ public partial class PlayerController : CharacterBody2D
 	[Export] public Color SparkFxColor = new Color(0.55f, 0.9f, 1.0f);
 	[Export] public Color WispFxColor = new Color(0.9f, 0.97f, 1.0f);
 
-	// Offsets are in board-local pixels (pre 0.75 board scale); +x is the facing
-	// direction, +y is down. Wisps/sparks are children of BoardSprite so they
-	// inherit flip/tilt/bob/spin; dust lives on its own world-space node and
-	// only borrows the board's transform to compute its spawn anchor. Sparks
+	// Offsets are in pixels: dust in board-local space (pre 0.75 board scale),
+	// wind in VisualContainer-local space; +x is the facing direction, +y is
+	// down. Wind is a child of VisualContainer (drawn behind PlayerSprite) so it
+	// inherits the body's air spin but not the board's tilt/bob/trick rotation;
+	// it mirrors itself for facing/falling. Sparks are children of BoardSprite
+	// so they inherit flip/tilt/bob/spin; dust lives on its own world-space node
+	// and only borrows the board's transform to compute its spawn anchor. Sparks
 	// ignore offsets: their anchor is the board's contact point (center for
 	// now) + SparkContactLiftPixels.
 	// Dust X is a raw trailing offset; dust Y is an adjust ON TOP of the computed
 	// anchor that welds the puff's alpha-bottom to the board's alpha-bottom.
 	[Export] public Vector2 DustFxOffset = new Vector2(-30.0f, 0.0f);
-	[Export] public Vector2 WispFxOffset = new Vector2(-10.0f, -2.0f);
+	// Wind X trails behind the player (mirrored by facing); Y sits behind the torso.
+	[Export] public Vector2 WispFxOffset = new Vector2(-16.0f, -16.0f);
 
 	// Dust: puffs erupt from the board tail at random intervals (mean interval
 	// shrinks with speed), freeze their world anchor so they get LEFT BEHIND as
@@ -97,7 +101,16 @@ public partial class PlayerController : CharacterBody2D
 	[Export] public float DustFxJumpScaleBias = 1.5f;
 
 	[Export] public float FxFadeSpeed = 8.0f;
-	[Export] public float WispFullSpeedRatio = 0.55f;
+	// Total air speed (px/s, horizontal+vertical) at which wind reaches full
+	// target opacity; below it the alpha scales linearly with a small floor so
+	// the effect fades near the jump apex instead of popping off.
+	[Export] public float WispAirFullSpeed = 420.0f;
+	[Export] public float WispMinStrength = 0.1f;
+	// Pulls the wind color toward the level palette (0 = plain WispFxColor,
+	// 1 = pure palette slot). Primary light by default: wind should carry the
+	// level's key glow tint.
+	[Export] public float WispFxTintStrength = 0.7f;
+	[Export] public PaletteSlot WispFxTintSlot = PaletteSlot.PrimaryLight;
 	[Export] public float DustMinStrength = 0.45f;
 
 	private const string BoardFxRoot = "res://assets/hoverboards/player/fx";
@@ -143,6 +156,16 @@ public partial class PlayerController : CharacterBody2D
 		return DustFxColor.Lerp(_levelPalette.Resolve(DustFxTintSlot), Mathf.Clamp(DustFxTintStrength, 0.0f, 1.0f));
 	}
 
+	private Color WindTintedColor()
+	{
+		if (!_hasLevelPalette)
+		{
+			return WispFxColor;
+		}
+
+		return WispFxColor.Lerp(_levelPalette.Resolve(WispFxTintSlot), Mathf.Clamp(WispFxTintStrength, 0.0f, 1.0f));
+	}
+
 	private void InitBoardFx()
 	{
 		_dustFrames = LoadFrames(BoardFxRoot + "/dust", "boardfx_");
@@ -167,7 +190,12 @@ public partial class PlayerController : CharacterBody2D
 		}
 		_dustPrevGlobalPos = GlobalPosition;
 
-		_wispsFx = CreateFxChild(_boardVisual, "BoardWisps", behindParent: true);
+		// Wind rides the body, not the board: a child of VisualContainer (moved
+		// to the front so it draws behind PlayerSprite) so it inherits the air
+		// spin — and therefore the flip direction — but not the board's
+		// tilt/bob/trick swirl. Facing and fall mirroring are applied in ApplyWind.
+		_wispsFx = CreateFxChild(_visualContainer, "WindWisps", behindParent: false);
+		_visualContainer.MoveChild(_wispsFx, 0);
 		_sparksMain = new SparkBurstFx(this, CreateFxChild(_boardVisual, "BoardSparks", behindParent: true), _sparkFrames, 1.0f, 1.0f, 0.0f);
 		_sparksSmall = new SparkBurstFx(this, CreateFxChild(_boardVisual, "BoardSmallSparks", behindParent: true), _sparkFrames, SparkSmallScaleBias, SparkSmallJitterBias, 1.0f);
 	}
@@ -193,6 +221,7 @@ public partial class PlayerController : CharacterBody2D
 		}
 
 		var speed = Mathf.Abs(Velocity.X);
+		var airSpeed = Velocity.Length();
 		var moveRatio = Mathf.Clamp(speed / Mathf.Max(MoveSpeed, 1.0f), 0.0f, 1.0f);
 		var railRatio = Mathf.Clamp(Mathf.Abs(_railSpeed) / Mathf.Max(MaxRailSpeed, 1.0f), 0.0f, 1.0f);
 
@@ -205,7 +234,7 @@ public partial class PlayerController : CharacterBody2D
 		var dustOn = UseDustFx && !IsDead && onFloor && !grinding && speed > MoveSpeedThreshold;
 		var sparkTarget = UseSparkFx && !IsDead && grinding ? SparkFxAlpha : 0.0f;
 		var wispTarget = UseWispFx && !IsDead && airborne
-			? WispFxAlpha * Mathf.Clamp(speed / Mathf.Max(MoveSpeed * WispFullSpeedRatio, 1.0f), 0.25f, 1.0f)
+			? WispFxAlpha * Mathf.Clamp(airSpeed / Mathf.Max(WispAirFullSpeed, 1.0f), WispMinStrength, 1.0f)
 			: 0.0f;
 
 		_sparkAlpha = Mathf.MoveToward(_sparkAlpha, sparkTarget, deltaSeconds * FxFadeSpeed);
@@ -234,7 +263,7 @@ public partial class PlayerController : CharacterBody2D
 			_dustPuffs[i].Update(deltaSeconds);
 		}
 
-		ApplyFx(_wispsFx, _wispFrames, ref _wispTimer, _wispAlpha, WispFxColor, WispFxFps, WispFxOffset, deltaSeconds);
+		ApplyWind(deltaSeconds);
 
 		// Fixed contact anchor for now: the board center (board-local origin,
 		// +y down onto the rail). Each grind trick will eventually provide its
@@ -245,19 +274,32 @@ public partial class PlayerController : CharacterBody2D
 		_sparksSmall?.Update(deltaSeconds, contactLocal, _sparkAlpha, railRatio);
 	}
 
-	private void ApplyFx(Sprite2D node, Texture2D[]? frames, ref float timer, float alpha, Color color, float fps, Vector2 offset, float deltaSeconds)
+	// Wind art authored flowing down-left. The streaks trail on the side the
+	// player is leaving (offset X mirrored by facing) and mirror with the facing
+	// so they always sweep AWAY from the body; Y flips while falling so the
+	// streaks sweep up-left. Rotation comes free from the VisualContainer spin;
+	// the node's own rotation stays zero so the flip/trick code never fights it.
+	private void ApplyWind(float deltaSeconds)
 	{
-		if (alpha <= 0.001f || frames == null || frames.Length == 0)
+		if (_wispsFx == null)
 		{
-			node.Visible = false;
 			return;
 		}
 
-		node.Visible = true;
-		timer += deltaSeconds;
-		node.Texture = frames[((int)(timer * fps)) % frames.Length];
-		node.Position = offset;
-		node.SelfModulate = new Color(color.R, color.G, color.B, alpha / Mathf.Max(BoardOpacity, 0.05f));
+		var frames = _wispFrames;
+		if (_wispAlpha <= 0.001f || frames == null || frames.Length == 0)
+		{
+			_wispsFx.Visible = false;
+			return;
+		}
+
+		_wispsFx.Visible = true;
+		_wispTimer += deltaSeconds;
+		_wispsFx.Texture = frames[((int)(_wispTimer * WispFxFps)) % frames.Length];
+		_wispsFx.Position = new Vector2(_facing * WispFxOffset.X, WispFxOffset.Y);
+		_wispsFx.Scale = new Vector2(_facing, Velocity.Y > 0.0f ? -1.0f : 1.0f);
+		var windColor = WindTintedColor();
+		_wispsFx.SelfModulate = new Color(windColor.R, windColor.G, windColor.B, _wispAlpha);
 	}
 
 	// One bigger puff at the takeoff spot when a ground jump launches.
