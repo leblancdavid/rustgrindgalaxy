@@ -98,6 +98,12 @@ public partial class TileLevelGenerator : Node2D
         _missionLevel = level;
         _rng = new RandomNumberGenerator { Seed = (ulong)seed };
         _colorPalette = colorPalette;
+        // Brightness 0 means the caller passed no palette (struct default);
+        // skip so the player dust keeps its plain tint color.
+        if (colorPalette.Brightness > 0f)
+        {
+            _player?.SetLevelPalette(colorPalette);
+        }
         LoadTilePool();
     }
 

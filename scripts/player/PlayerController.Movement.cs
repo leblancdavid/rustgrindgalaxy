@@ -125,6 +125,8 @@ public partial class PlayerController : CharacterBody2D
 		velocity.Y = chargedJumpVelocity - _resolvedEffects.LaunchHeightBonus;
 		velocity.X = ApplyTakeoffBonus(velocity.X, inputDirection);
 		StartOllieTakeoffTilt(GetRequestedDirection(inputDirection, velocity.X));
+		// Ground takeoff only: rail ollies use the onRail branch above.
+		EmitJumpPuff();
 		return true;
 	}
 

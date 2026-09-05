@@ -10,7 +10,7 @@ public partial class PlayerController : CharacterBody2D
 	[Export] public float SparkFxFps = 16.0f;
 	[Export] public float WispFxFps = 12.0f;
 
-	[Export] public float DustFxAlpha = 0.5f;
+	[Export] public float DustFxAlpha = 0.65f;
 	[Export] public float SparkFxAlpha = 1.0f;
 	[Export] public float WispFxAlpha = 0.4f;
 
@@ -56,30 +56,92 @@ public partial class PlayerController : CharacterBody2D
 	[Export] public Color WispFxColor = new Color(0.9f, 0.97f, 1.0f);
 
 	// Offsets are in board-local pixels (pre 0.75 board scale); +x is the facing
-	// direction, +y is down. FX nodes are children of BoardSprite so they inherit
-	// flip/tilt/bob/spin. Sparks ignore offsets: their anchor is the board's
-	// contact point (center for now) + SparkContactLiftPixels.
-	[Export] public Vector2 DustFxOffset = new Vector2(-30.0f, 8.0f);
+	// direction, +y is down. Wisps/sparks are children of BoardSprite so they
+	// inherit flip/tilt/bob/spin; dust lives on its own world-space node and
+	// only borrows the board's transform to compute its spawn anchor. Sparks
+	// ignore offsets: their anchor is the board's contact point (center for
+	// now) + SparkContactLiftPixels.
+	// Dust X is a raw trailing offset; dust Y is an adjust ON TOP of the computed
+	// anchor that welds the puff's alpha-bottom to the board's alpha-bottom.
+	[Export] public Vector2 DustFxOffset = new Vector2(-30.0f, 0.0f);
 	[Export] public Vector2 WispFxOffset = new Vector2(-10.0f, -2.0f);
+
+	// Dust: puffs erupt from the board tail at random intervals (mean interval
+	// shrinks with speed), freeze their world anchor so they get LEFT BEHIND as
+	// the player drives off, then expand, drift slightly back + lift, and fade
+	// over a short one-shot lifetime. Base size follows speed; jitter varies
+	// each puff's size and animation rate.
+	[Export] public int DustFxPoolSize = 8;
+	[Export] public float DustFxIntervalFast = 0.09f;
+	[Export] public float DustFxIntervalSlow = 0.28f;
+	[Export] public float DustFxLifetime = 0.5f;
+	// Per-puff random size variation (fraction of base, +/-).
+	[Export] public float DustFxScaleJitter = 0.35f;
+	// Scale multiplier the puff expands to by the end of its life.
+	[Export] public float DustFxGrowTo = 1.4f;
+	// Drift velocity (world px/s): backward against facing + a little upward lift.
+	[Export] public float DustFxDriftBack = 26.0f;
+	[Export] public float DustFxDriftLift = 10.0f;
+	// Per-puff animation-speed variation (fraction, +/-).
+	[Export] public float DustFpsJitter = 0.2f;
+	[Export] public float DustFxScaleMin = 0.5f;
+	[Export] public float DustFxScaleMax = 0.85f;
+	[Export] public float DustFxFadeFloor = 0.1f;
+	// Pulls the puff color toward the level's ground palette at spawn so dust
+	// matches the terrain (0 = plain DustFxColor, 1 = pure palette slot).
+	// Light slot by default: dust must read against the dark ground body.
+	[Export] public float DustFxTintStrength = 0.5f;
+	[Export] public PaletteSlot DustFxTintSlot = PaletteSlot.SecondaryLight;
+	// Scale bias for the one-off puff kicked at the takeoff spot when jumping
+	// off the ground (not rails).
+	[Export] public float DustFxJumpScaleBias = 1.5f;
 
 	[Export] public float FxFadeSpeed = 8.0f;
 	[Export] public float WispFullSpeedRatio = 0.55f;
 	[Export] public float DustMinStrength = 0.45f;
 
 	private const string BoardFxRoot = "res://assets/hoverboards/player/fx";
+	// If the level moves the player instantly (respawn/teleport) the frozen world
+	// anchors would fling puffs across the map, so drop them past this step.
+	private const float DustTeleportCutoffPx = 220.0f;
 
-	private Sprite2D? _dustFx;
 	private Sprite2D? _wispsFx;
 	private Texture2D[]? _dustFrames;
 	private Texture2D[]? _sparkFrames;
 	private Texture2D[]? _wispFrames;
-	private float _dustTimer;
 	private float _wispTimer;
-	private float _dustAlpha;
 	private float _sparkAlpha;
 	private float _wispAlpha;
+	private float _dustBottomFromCenter;
+	private float _boardBottomFromCenter;
+	private DustPuffFx[] _dustPuffs = null!;
+	private Node2D _dustFxRoot = null!;
+	private float _dustEmitTimer;
+	private bool _wasDustOn;
+	private Vector2 _dustPrevGlobalPos;
+	private LevelColorPalette _levelPalette;
+	private bool _hasLevelPalette;
 	private SparkBurstFx? _sparksMain;
 	private SparkBurstFx? _sparksSmall;
+
+	// The active level's ground palette; dust puffs tint toward it at spawn so
+	// they match the terrain. Levels that build via TileLevelGenerator.Initialize
+	// get this wired automatically.
+	public void SetLevelPalette(LevelColorPalette palette)
+	{
+		_levelPalette = palette;
+		_hasLevelPalette = true;
+	}
+
+	private Color DustPuffColor()
+	{
+		if (!_hasLevelPalette)
+		{
+			return DustFxColor;
+		}
+
+		return DustFxColor.Lerp(_levelPalette.Resolve(DustFxTintSlot), Mathf.Clamp(DustFxTintStrength, 0.0f, 1.0f));
+	}
 
 	private void InitBoardFx()
 	{
@@ -87,13 +149,30 @@ public partial class PlayerController : CharacterBody2D
 		_sparkFrames = LoadFrames(BoardFxRoot + "/sparks", "boardfx_");
 		_wispFrames = LoadFrames(BoardFxRoot + "/wisps", "boardfx_");
 
-		_dustFx = CreateFxChild("BoardDust", behindParent: true);
-		_wispsFx = CreateFxChild("BoardWisps", behindParent: true);
-		_sparksMain = new SparkBurstFx(this, CreateFxChild("BoardSparks", behindParent: true), _sparkFrames, 1.0f, 1.0f, 0.0f);
-		_sparksSmall = new SparkBurstFx(this, CreateFxChild("BoardSmallSparks", behindParent: true), _sparkFrames, SparkSmallScaleBias, SparkSmallJitterBias, 1.0f);
+		_dustBottomFromCenter = ContentBottomFromCenter(_dustFrames?[0]);
+		_boardBottomFromCenter = ContentBottomFromCenter(_boardIdleFrames?[0] ?? _boardVisual?.Texture);
+
+		// Dust lives OUTSIDE the board/container chain (which rotates, flips,
+		// bobs and squashes): a plain node on the unscaled player root, first
+		// sibling so puffs draw behind the player sprite but over the level.
+		// Puffs then sit in world space with zero compensation math.
+		_dustFxRoot = new Node2D { Name = "DustPuffs" };
+		AddChild(_dustFxRoot);
+		MoveChild(_dustFxRoot, 0);
+
+		_dustPuffs = new DustPuffFx[DustFxPoolSize];
+		for (var i = 0; i < DustFxPoolSize; i++)
+		{
+			_dustPuffs[i] = new DustPuffFx(this, CreateFxChild(_dustFxRoot, $"BoardDust{i:00}", behindParent: false));
+		}
+		_dustPrevGlobalPos = GlobalPosition;
+
+		_wispsFx = CreateFxChild(_boardVisual, "BoardWisps", behindParent: true);
+		_sparksMain = new SparkBurstFx(this, CreateFxChild(_boardVisual, "BoardSparks", behindParent: true), _sparkFrames, 1.0f, 1.0f, 0.0f);
+		_sparksSmall = new SparkBurstFx(this, CreateFxChild(_boardVisual, "BoardSmallSparks", behindParent: true), _sparkFrames, SparkSmallScaleBias, SparkSmallJitterBias, 1.0f);
 	}
 
-	private Sprite2D CreateFxChild(string name, bool behindParent)
+	private Sprite2D CreateFxChild(Node parent, string name, bool behindParent)
 	{
 		var node = new Sprite2D
 		{
@@ -102,13 +181,13 @@ public partial class PlayerController : CharacterBody2D
 			TextureFilter = CanvasItem.TextureFilterEnum.Linear,
 			Visible = false,
 		};
-		_boardVisual.AddChild(node);
+		parent.AddChild(node);
 		return node;
 	}
 
 	private void UpdateBoardFx(float deltaSeconds, bool onFloor, bool grinding, bool airborne)
 	{
-		if (_dustFx == null)
+		if (_wispsFx == null)
 		{
 			return;
 		}
@@ -117,19 +196,44 @@ public partial class PlayerController : CharacterBody2D
 		var moveRatio = Mathf.Clamp(speed / Mathf.Max(MoveSpeed, 1.0f), 0.0f, 1.0f);
 		var railRatio = Mathf.Clamp(Mathf.Abs(_railSpeed) / Mathf.Max(MaxRailSpeed, 1.0f), 0.0f, 1.0f);
 
-		var dustTarget = UseDustFx && !IsDead && onFloor && !grinding && speed > MoveSpeedThreshold
-			? DustFxAlpha * Mathf.Lerp(DustMinStrength, 1.0f, moveRatio)
-			: 0.0f;
+		if ((GlobalPosition - _dustPrevGlobalPos).LengthSquared() > DustTeleportCutoffPx * DustTeleportCutoffPx)
+		{
+			ClearDustPuffs();
+		}
+		_dustPrevGlobalPos = GlobalPosition;
+
+		var dustOn = UseDustFx && !IsDead && onFloor && !grinding && speed > MoveSpeedThreshold;
 		var sparkTarget = UseSparkFx && !IsDead && grinding ? SparkFxAlpha : 0.0f;
 		var wispTarget = UseWispFx && !IsDead && airborne
 			? WispFxAlpha * Mathf.Clamp(speed / Mathf.Max(MoveSpeed * WispFullSpeedRatio, 1.0f), 0.25f, 1.0f)
 			: 0.0f;
 
-		_dustAlpha = Mathf.MoveToward(_dustAlpha, dustTarget, deltaSeconds * FxFadeSpeed);
 		_sparkAlpha = Mathf.MoveToward(_sparkAlpha, sparkTarget, deltaSeconds * FxFadeSpeed);
 		_wispAlpha = Mathf.MoveToward(_wispAlpha, wispTarget, deltaSeconds * FxFadeSpeed);
 
-		ApplyFx(_dustFx, _dustFrames, ref _dustTimer, _dustAlpha, DustFxColor, DustFxFps, DustFxOffset, deltaSeconds);
+		if (dustOn)
+		{
+			// First puff lands the instant movement starts; after that, random
+			// intervals whose mean shrinks with speed (each roll +/-50%).
+			if (!_wasDustOn)
+			{
+				_dustEmitTimer = 0.0f;
+			}
+			_dustEmitTimer -= deltaSeconds;
+			if (_dustEmitTimer <= 0.0f)
+			{
+				EmitDustPuff(DustFxAlpha * Mathf.Lerp(DustMinStrength, 1.0f, moveRatio), moveRatio);
+				var interval = Mathf.Lerp(DustFxIntervalSlow, DustFxIntervalFast, moveRatio);
+				_dustEmitTimer = interval * (0.5f + GD.Randf());
+			}
+		}
+		_wasDustOn = dustOn;
+
+		for (var i = 0; i < _dustPuffs.Length; i++)
+		{
+			_dustPuffs[i].Update(deltaSeconds);
+		}
+
 		ApplyFx(_wispsFx, _wispFrames, ref _wispTimer, _wispAlpha, WispFxColor, WispFxFps, WispFxOffset, deltaSeconds);
 
 		// Fixed contact anchor for now: the board center (board-local origin,
@@ -154,6 +258,64 @@ public partial class PlayerController : CharacterBody2D
 		node.Texture = frames[((int)(timer * fps)) % frames.Length];
 		node.Position = offset;
 		node.SelfModulate = new Color(color.R, color.G, color.B, alpha / Mathf.Max(BoardOpacity, 0.05f));
+	}
+
+	// One bigger puff at the takeoff spot when a ground jump launches.
+	public void EmitJumpPuff()
+	{
+		if (UseDustFx && !IsDead)
+		{
+			EmitDustPuff(DustFxAlpha, 1.0f, DustFxJumpScaleBias);
+		}
+	}
+
+	private void EmitDustPuff(float strength, float moveRatio, float scaleBias = 1.0f)
+	{
+		if (_dustFrames == null || _dustFrames.Length == 0)
+		{
+			return;
+		}
+
+		for (var i = 0; i < _dustPuffs.Length; i++)
+		{
+			if (_dustPuffs[i].Spawn(strength, moveRatio, scaleBias))
+			{
+				return;
+			}
+		}
+	}
+
+	private void ClearDustPuffs()
+	{
+		for (var i = 0; i < _dustPuffs.Length; i++)
+		{
+			_dustPuffs[i].Deactivate();
+		}
+	}
+
+	// Distance from the sprite's center to the bottom of its visible (non-transparent)
+	// content, in texture pixels. Scanned once at init so FX anchoring follows the
+	// art instead of hardcoded numbers.
+	private static float ContentBottomFromCenter(Texture2D? tex)
+	{
+		if (tex == null)
+		{
+			return 0.0f;
+		}
+
+		var img = tex.GetImage();
+		for (var y = img.GetHeight() - 1; y >= 0; y--)
+		{
+			for (var x = 0; x < img.GetWidth(); x++)
+			{
+				if (img.GetPixel(x, y).A > 0.04f)
+				{
+					return y - (img.GetHeight() - 1) * 0.5f;
+				}
+			}
+		}
+
+		return 0.0f;
 	}
 
 	// One spark emitter: eruption at a fixed jittered contact point and angle,
@@ -257,6 +419,100 @@ public partial class PlayerController : CharacterBody2D
 			_burstJitter.X -= _p.SparkSecondaryTrailPixels * _trailBias;
 			var baseScale = Mathf.Lerp(_p.SparkScaleMin, _p.SparkScaleMax, railRatio) * _scaleBias;
 			_maxScale = baseScale * (1.0f + (GD.Randf() * 2.0f - 1.0f) * Mathf.Max(0.0f, _p.SparkBurstScaleJitter));
+		}
+	}
+
+	// One dust puff. Lives on the separate DustPuffs node in world space, so the
+	// board's tilt/flip/bob/spin cannot touch it: it captures a frozen world
+	// anchor of the board bottom at spawn and plays the frame strip once while
+	// growing, drifting and fading in place.
+	private sealed class DustPuffFx
+	{
+		private readonly PlayerController _p;
+		private readonly Sprite2D _node;
+		private bool _active;
+		private float _age;
+		private float _baseWorldScale;
+		private float _pxScale;
+		private float _fps;
+		private float _strength;
+		private Color _color;
+		private Vector2 _worldAnchor;
+		private Vector2 _driftVel;
+
+		public DustPuffFx(PlayerController owner, Sprite2D node)
+		{
+			_p = owner;
+			_node = node;
+		}
+
+		public bool Spawn(float strength, float moveRatio, float scaleBias = 1.0f)
+		{
+			if (_active || _p._dustFrames == null || _p._dustFrames.Length == 0)
+			{
+				return false;
+			}
+
+			// The dust art was authored against the board art, so bake the
+			// board's current world scale in at spawn; afterwards the puff is
+			// fully independent of the board transform.
+			_pxScale = _p._boardVisual.GlobalScale.X;
+			_baseWorldScale = Mathf.Lerp(_p.DustFxScaleMin, _p.DustFxScaleMax, moveRatio)
+				* (1.0f + (GD.Randf() * 2.0f - 1.0f) * Mathf.Max(0.0f, _p.DustFxScaleJitter))
+				* scaleBias * _pxScale;
+
+			_active = true;
+			_age = 0.0f;
+			_strength = strength;
+			_color = _p.DustPuffColor();
+			_fps = _p.DustFxFps * (1.0f + (GD.Randf() * 2.0f - 1.0f) * Mathf.Max(0.0f, _p.DustFpsJitter));
+			// Frozen ground point: the board's alpha-bottom (plus the Y adjust) at
+			// the trailing DustFxOffset.X; the puff's bottom is kept welded to it.
+			_worldAnchor = _p._boardVisual.ToGlobal(new Vector2(_p.DustFxOffset.X, _p._boardBottomFromCenter + _p.DustFxOffset.Y));
+			var driftBias = 0.7f + GD.Randf() * 0.6f;
+			_driftVel = new Vector2(-_p._facing * _p.DustFxDriftBack, -_p.DustFxDriftLift) * driftBias;
+			_node.Visible = true;
+			return true;
+		}
+
+		public void Update(float deltaSeconds)
+		{
+			if (!_active)
+			{
+				return;
+			}
+
+			var frames = _p._dustFrames;
+			if (frames == null || frames.Length == 0)
+			{
+				Deactivate();
+				return;
+			}
+
+			_age += deltaSeconds;
+			var k = _age / Mathf.Max(_p.DustFxLifetime, 0.05f);
+			if (k >= 1.0f)
+			{
+				Deactivate();
+				return;
+			}
+
+			var scale = _baseWorldScale * Mathf.Lerp(1.0f, _p.DustFxGrowTo, k);
+			_node.Texture = frames[Mathf.Min((int)(_age * _fps), frames.Length - 1)];
+			// All-world units: lift the sprite so its content bottom stays on the
+			// frozen anchor while it grows.
+			_node.GlobalPosition = _worldAnchor + _driftVel * _age
+				- new Vector2(0.0f, _p._dustBottomFromCenter * scale - _p.DustFxOffset.Y * _pxScale);
+			_node.Rotation = 0.0f;
+			_node.Scale = Vector2.One * scale;
+			_node.SelfModulate = new Color(_color.R, _color.G, _color.B,
+				_strength * Mathf.Lerp(1.0f, _p.DustFxFadeFloor, k));
+		}
+
+		public void Deactivate()
+		{
+			_active = false;
+			_node.Visible = false;
 		}
 	}
 }
