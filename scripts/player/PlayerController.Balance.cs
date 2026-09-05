@@ -65,10 +65,14 @@ public partial class PlayerController : CharacterBody2D
 			_balanceDriftWobbleTimer = currentWobbleInterval * (float)GD.RandRange(0.5f, 1.5f);
 		}
 
-		// Drift pushes toward the edge on whichever side the needle is on
+		// Drift pushes toward the edge on whichever side the needle is on,
+		// accelerating with the live offset so sloppy entries compound while a
+		// recovered needle calms the rate back down.
 		if (!Mathf.IsZeroApprox(_balanceValue))
 		{
-			var drift = Mathf.Sign(_balanceValue) * currentDriftRate * _balanceDriftWobble * deltaSeconds;
+			var drift = Mathf.Sign(_balanceValue) * currentDriftRate * _balanceDriftWobble
+				* (1.0f + BalanceDriftSeverityScale * (Mathf.Abs(_balanceValue) / Mathf.Max(BalanceMaxOffset, 0.01f)))
+				* deltaSeconds;
 			_balanceValue += drift;
 		}
 

@@ -23,6 +23,11 @@ public partial class PlayerController : CharacterBody2D
 		return Mathf.DegToRad(Mathf.Max(0.0f, LandingToleranceDegrees));
 	}
 
+	private bool IsWithinGrindEntryTolerance(float surfaceAngle)
+	{
+		return Mathf.Abs(GetAngleDifference(surfaceAngle, GetBoardAngle())) <= Mathf.DegToRad(Mathf.Max(0.0f, GrindEntryToleranceDegrees));
+	}
+
 	private static float GetAngleDifference(float targetAngle, float currentAngle)
 	{
 		return NormalizeAngle(currentAngle - targetAngle);

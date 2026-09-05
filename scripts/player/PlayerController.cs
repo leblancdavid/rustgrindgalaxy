@@ -16,6 +16,11 @@ public partial class PlayerController : CharacterBody2D
 	[Export] public float RotationLerpSpeed = 20.0f;
 	[Export] public float RotationSpeedDegrees = 480.0f;
 	[Export] public float LandingToleranceDegrees = 20.0f;
+	[Export] public float GrindEntryToleranceDegrees = 60.0f;
+	[Export] public float GrindEntryBalanceCurvePower = 2.2f;
+	[Export] public float GrindEntryBalanceMaxRatio = 0.85f;
+	[Export] public float BalanceDriftSeverityScale = 0.8f;
+	[Export] public float JunctionBalanceJerkRatio = 0.25f;
 	[Export] public float RailFriction = 12.0f;
 	[Export] public float RailGravityStrength = 900.0f;
 	[Export] public float MinimumRailEntrySpeed = 20.0f;

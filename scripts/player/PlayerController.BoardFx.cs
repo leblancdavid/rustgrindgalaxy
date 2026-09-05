@@ -12,7 +12,7 @@ public partial class PlayerController : CharacterBody2D
 
 	[Export] public float DustFxAlpha = 0.65f;
 	[Export] public float SparkFxAlpha = 1.0f;
-	[Export] public float WispFxAlpha = 0.25f;
+	[Export] public float WispFxAlpha = 0.18f;
 
 	// Sparks: each burst erupts at a fixed spot/angle on the rail contact point
 	// and its scale grows (SparkGrowFrom -> random burst max) as it plays; bursts

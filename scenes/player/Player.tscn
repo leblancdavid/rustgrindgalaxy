@@ -23,7 +23,7 @@ BaseWidth = 24.0
 BaseHeight = 6.0
 
 [node name="VisualContainer" type="Node2D" parent="." unique_name_int_hint=243499029]
-position = Vector2(0, 4)
+position = Vector2(0, 1)
 
 [node name="PlayerSprite" type="Sprite2D" parent="VisualContainer" unique_name_int_hint=40943747]
 z_index = 3

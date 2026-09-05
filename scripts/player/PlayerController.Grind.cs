@@ -32,19 +32,37 @@ public partial class PlayerController : CharacterBody2D
 
 	private void EnterRail(GrindRail rail, float travelDirection, float railProgress)
 	{
+		// Captured before the _activeRail swap so junctions score against the rail being departed.
+		var entryAngleDiff = GetAngleDifference(rail.Angle, GetBoardAngle());
+		var entryRatio = Mathf.Clamp(Mathf.Abs(entryAngleDiff) / Mathf.Max(Mathf.DegToRad(GrindEntryToleranceDegrees), 0.0001f), 0.0f, 1.0f);
+		var entryCurve = Mathf.Sign(entryAngleDiff) * Mathf.Pow(entryRatio, GrindEntryBalanceCurvePower);
+		// Air entries seed the needle off-center toward the over-rotation side
+		// (maxRatio keeps headroom so entry itself can't insta-fail); junctions
+		// keep the live balance and just get a small jerk in the turn direction.
+		if (_activeRail != null)
+		{
+			_balanceValue = Mathf.Clamp(
+				_balanceValue + entryCurve * BalanceMaxOffset * JunctionBalanceJerkRatio,
+				-BalanceMaxOffset,
+				BalanceMaxOffset);
+		}
+		else
+		{
+			_balanceValue = entryCurve * BalanceMaxOffset * GrindEntryBalanceMaxRatio;
+		}
+
 		_activeRail = rail;
 		ClearQueuedTrick();
 		RegisterCompletedTrickName(GetInstalledTrickName(ModuleType.Grind));
 		_railRotationOffset = 0.0f;
 		_grindIntentTimeRemaining = 0.0f;
-		_balanceValue = 0.0f;
 		_balanceDriftWobble = 1.0f;
 		_balanceDriftWobbleTimer = 0.1f;
 		_balanceNoiseTimer = 0.0f;
 		if (_balanceIndicator != null)
 		{
 			_balanceIndicator.Visible = true;
-			_balanceArrow.Position = new Vector2(0.0f, 0.0f);
+			_balanceArrow.Position = new Vector2(_balanceValue / Mathf.Max(BalanceMaxOffset, 0.01f) * BalanceIndicatorWidth * 0.5f, 0.0f);
 		}
 		_grindDirection = Mathf.Sign(travelDirection);
 
@@ -209,7 +227,7 @@ public partial class PlayerController : CharacterBody2D
 			return false;
 		}
 
-		if (IsWithinLandingTolerance(rail!.Angle) == false)
+		if (IsWithinGrindEntryTolerance(rail!.Angle) == false)
 		{
 			return false;
 		}
