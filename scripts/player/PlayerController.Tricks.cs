@@ -76,8 +76,7 @@ public partial class PlayerController : CharacterBody2D
 			case TrickKind.Slot4:
 			{
 				var def = GetTrickDefinition(_activeTrick);
-				var duration = Mathf.Max(1, def.MaxHalfTurns) * TrickSecondsPerHalfTurn;
-				var progress = Mathf.Clamp(_trickElapsed / duration, 0.0f, 1.0f);
+				var progress = Mathf.Clamp(_trickElapsed / def.DurationSeconds, 0.0f, 1.0f);
 				// All axes sweep in parallel; each completes its whole count as
 				// one trick, landing together at progress 1.
 				var sweep = progress * Mathf.Pi;

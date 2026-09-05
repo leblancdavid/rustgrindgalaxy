@@ -68,8 +68,8 @@ public partial class PlayerController : CharacterBody2D
 	private const string TrickGrabConfirmAction = "trick_grab_confirm";
 	private const float FailedLandingSeparation = 2.0f;
 	private const float FailedLandingFallSpeed = 90.0f;
-	// Seconds per 180-degree turn; a trick's duration scales with its busiest axis.
-	private const float TrickSecondsPerHalfTurn = 0.25f;
+	// Spin speed (half-turns per second) used when a definition leaves it at 0.
+	private const float TrickDefaultSpinSpeed = 4.0f;
 	// Floor for |cos(theta)| while an axis flip is edge-on, so the board shows
 	// a thin edge sliver instead of vanishing for a frame.
 	private const float TrickEdgeMinScale = 0.06f;
@@ -100,25 +100,37 @@ public partial class PlayerController : CharacterBody2D
 		public readonly int HalfTurnsX;
 		public readonly int HalfTurnsY;
 		public readonly int HalfTurnsZ;
+		// Half-turns (180 deg) completed per second; 0 falls back to TrickDefaultSpinSpeed.
+		public readonly float SpinSpeed;
 
-		public TrickDefinition(int halfTurnsX, int halfTurnsY, int halfTurnsZ)
+		public TrickDefinition(int halfTurnsX, int halfTurnsY, int halfTurnsZ, float spinSpeed = 0f)
 		{
 			HalfTurnsX = halfTurnsX;
 			HalfTurnsY = halfTurnsY;
 			HalfTurnsZ = halfTurnsZ;
+			SpinSpeed = spinSpeed;
 		}
 
 		public readonly int MaxHalfTurns => Mathf.Max(HalfTurnsX, Mathf.Max(HalfTurnsY, HalfTurnsZ));
+
+		public readonly float DurationSeconds
+		{
+			get
+			{
+				var speed = SpinSpeed > 0.0f ? SpinSpeed : TrickDefaultSpinSpeed;
+				return Mathf.Max(1, MaxHalfTurns) / speed;
+			}
+		}
 	}
 
 	private static TrickDefinition GetTrickDefinition(TrickKind trick)
 	{
 		return trick switch
 		{
-			TrickKind.Slot1 => new TrickDefinition(2, 2, 0),
-			TrickKind.Slot2 => new TrickDefinition(2, 0, 2),
-			TrickKind.Slot3 => new TrickDefinition(0, 2, 2),
-			TrickKind.Slot4 => new TrickDefinition(2, 2, 2),
+			TrickKind.Slot1 => new TrickDefinition(6, 0, 0, 4f),
+			TrickKind.Slot2 => new TrickDefinition(0, 6, 0, 6f),
+			TrickKind.Slot3 => new TrickDefinition(0, 0, 6, 8f),
+			TrickKind.Slot4 => new TrickDefinition(0, 1, 0, 2f),
 			_ => default,
 		};
 	}
