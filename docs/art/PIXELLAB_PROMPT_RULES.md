@@ -188,7 +188,7 @@ End-to-end for each new sprite / animation:
 3. **Downscale to 48px**, nearest-neighbor, to match the sprite grid.
 4. Write a `.import` per PNG (standard `texture`/`CompressedTexture2D` params, unique `uid://…`) or let the **editor auto-import** on focus.
 5. **Reload the project in the Godot editor** so new PNGs import — until then `GD.Load<Texture2D>(res://…)` and `ResourceLoader.Exists` return **null**. `PlayerController.Hover.cs → LoadFrames()` guards on `Exists`, so un-imported frames make that animation silently fall back to procedural.
-6. Keep staging (candidate sheets, `_*.png`, `preview.html`) in a `.gdignore` folder (e.g. `assets/characters/player/_animtest/`) so it never enters the build.
+6. Keep staging (candidate sheets, `_*.png`, `preview.html`) in a `.gdignore` folder named `_staging/` anywhere in `assets/` — `.gitignore` excludes `**/_staging/`, so it never enters the build OR the repo. Reusable processing scripts belong in `tools/` (tracked), not in `_staging`.
 
 ## File Naming
 
@@ -211,5 +211,16 @@ assets/hoverboards/player/anim/move/board_00.png     # ground-glide flow-streak 
 assets/hoverboards/player/fx/dust/boardfx_00.png     # ground-move dust trail (64px, white+alpha, tinted by DustFxColor)
 assets/hoverboards/player/fx/sparks/boardfx_00.png   # grind spark burst (7 usable frames after dead-frame cull)
 assets/hoverboards/player/fx/wisps/boardfx_00.png    # airborne wind streaks
+assets/props/minerals/mineral_00.png                 # 24px grayscale ore/crystal pickup (13 variants, tinted by mineral light color)
+assets/props/minerals/glow/mineral_00.png            # 4x baked-Gaussian glow (tools/make_glow.ps1), child of the art sprite
+assets/props/scrap/scrap_00.png                      # 24px grayscale scrap pickup (6 variants) + reused as shatter fragments
+assets/props/piles/pile_00.png                       # 48x24 grayscale scrap-pile prop (7 variants)
+assets/props/crates/crate_00.png                     # 32px grayscale hazard-stripe crate prop (7 variants)
+assets/props/patches/patch_00.png                    # 24px grayscale mineral-patch prop (2 variants, tinted)
 ```
+
+### Collectible props (minerals / scrap / crates — proven 2026-09)
+
+`create_image_pro` candidate batches on small canvases (32² → 64 candidates, 48²/64×32 → 16; 20 gens/call), grayscale-only prompts ("absolutely no color"), review via contact sheet (`tools/sheet.ps1`, `tools/dl_candidates.ps1`), then per family: `correct_pixelart` (strength 0.1) → `reduce_colors` (16 colors, no dither) → **local nearest resize** to ship size (`tools/resize_nearest.ps1`). Pickups ship at **24px, not 16px** — 16px 2× downscales tested muddy (thin shards vanish, outlines merge). Candidate downloads/sheets/preview PNGs live in `assets/props/_staging/` — pure scratch: `.gdignore`d (Godot) AND gitignored (`.gitignore` has `**/_staging/`), safe to delete anytime; the reusable scripts behind them were promoted to `tools/`. Runtime: `LootVisuals.cs` loads `res://` pools by indexed filename (gaps tolerated), random variant per instance, tint via `Modulate = LevelColorPalette.GetMineralLight(mineral)` (gray × color). Crates/piles keep near-white modulate tints so hazard stripes stay readable. Size knobs are runtime-only for now: `LootVisuals.PickupVisualScale` (0.75) and `LootProp.PropVisualScale` (1.5); once settled, re-bake PNGs at final px and drop to 1.0. Glow per variant via `tools/make_glow.ps1` → `<family>/glow/` (see GLOW_SYSTEM.md).
+
 

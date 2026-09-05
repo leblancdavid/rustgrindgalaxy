@@ -16,8 +16,7 @@ public partial class LootProp : Area2D
 
     private float _width = 30f;
     private float _height = 24f;
-    private Polygon2D _visual;
-    private Node2D _glow;
+    private Sprite2D _visual;
     private MineralType _mineral = MineralType.Cinder;
     private bool _mineralSet;
     private MineralType _primaryMineral = MineralType.Cinder;
@@ -27,7 +26,7 @@ public partial class LootProp : Area2D
 
     private struct FragmentState
     {
-        public Polygon2D Node;
+        public Sprite2D Node;
         public Vector2 Velocity;
         public float RotSpeed;
     }
@@ -37,6 +36,7 @@ public partial class LootProp : Area2D
 
     private const float DebrisGravity = 500f;
     private const float ShatterDuration = 1.2f;
+    private const float PropVisualScale = 1.5f;
 
     public override void _Ready()
     {
@@ -56,7 +56,7 @@ public partial class LootProp : Area2D
             return;
 
         var rectShape = new RectangleShape2D();
-        rectShape.Size = new Vector2(_width, _height);
+        rectShape.Size = new Vector2(_width * PropVisualScale, _height * PropVisualScale);
 
         var query = new PhysicsShapeQueryParameters2D();
         query.Shape = rectShape;
@@ -90,25 +90,33 @@ public partial class LootProp : Area2D
         if (_visual != null)
             return;
 
-        _visual = new Polygon2D();
-        BuildRectPolygon(_visual, _width, _height);
-        _visual.Color = GetTypeColor();
-        AddChild(_visual);
-
-        _glow = RectGlow.CreateGlow(_width + 6f, _height + 6f, ZIndex + 1, new GlowParams
+        var sprite = Type switch
         {
-            Color = new Color(1.0f, 0.85f, 0.2f),
-            BorderThickness = 4f,
-            CornerRadius = 3f,
-            PeakAlpha = 0.45f,
-        });
-        AddChild(_glow);
+            LootType.Crate => LootVisuals.PickCrate(),
+            LootType.Scrap => LootVisuals.PickPile(),
+            LootType.MineralPatch => LootVisuals.PickPatch(),
+            _ => default,
+        };
+
+        _visual = new Sprite2D();
+        _visual.Texture = sprite.Art;
+        if (sprite.Art != null)
+        {
+            _visual.Scale = new Vector2(
+                _width * PropVisualScale / sprite.Art.GetWidth(),
+                _height * PropVisualScale / sprite.Art.GetHeight());
+            LootVisuals.AttachGlow(_visual, sprite);
+        }
+        _visual.Modulate = GetTypeColor();
+        AddChild(_visual);
     }
 
     public void SetMineral(MineralType mineral)
     {
         _mineral = mineral;
         _mineralSet = true;
+        if (_visual != null)
+            _visual.Modulate = GetTypeColor();
     }
 
     public void SetMinerals(MineralType primary, MineralType secondary)
@@ -121,8 +129,8 @@ public partial class LootProp : Area2D
     {
         return Type switch
         {
-            LootType.Crate => new Color(0.45f, 0.35f, 0.22f),
-            LootType.Scrap => new Color(0.50f, 0.48f, 0.45f),
+            LootType.Crate => new Color(0.80f, 0.60f, 0.42f),
+            LootType.Scrap => new Color(0.92f, 0.88f, 0.82f),
             LootType.MineralPatch => GetMineralPatchColor(),
             _ => Colors.White,
         };
@@ -131,18 +139,9 @@ public partial class LootProp : Area2D
     private Color GetMineralPatchColor()
     {
         if (!_mineralSet)
-            return new Color(0.60f, 0.55f, 0.30f);
+            return new Color(0.85f, 0.80f, 0.50f);
 
-        return _mineral switch
-        {
-            MineralType.Cinder => new Color(0.9098f, 0.3804f, 0.2627f),
-            MineralType.Verdant => new Color(0.3725f, 0.7569f, 0.4039f),
-            MineralType.Azure => new Color(0.3569f, 0.6745f, 0.9451f),
-            MineralType.Solar => new Color(0.9686f, 0.8078f, 0.2706f),
-            MineralType.Lumen => new Color(0.9255f, 0.9412f, 0.9804f),
-            MineralType.Umbra => new Color(0.3216f, 0.2745f, 0.4078f),
-            _ => new Color(0.60f, 0.55f, 0.30f),
-        };
+        return LevelColorPalette.GetMineralLight(_mineral);
     }
 
     private void CollectAndShatter(PlayerController player)
@@ -186,7 +185,6 @@ public partial class LootProp : Area2D
     {
         _shattered = true;
         _visual.Visible = false;
-        _glow.Visible = false;
 
         var rng = new RandomNumberGenerator();
         rng.Randomize();
@@ -213,15 +211,22 @@ public partial class LootProp : Area2D
         {
             for (var c = 0; c < cols && used < fragmentCount; c++)
             {
-                var frag = new Polygon2D();
-                BuildRectPolygon(frag, fragW, fragH);
+                var frag = new Sprite2D();
+                frag.Texture = LootVisuals.PickScrap().Art;
+                var sizeJitter = rng.RandfRange(0.5f, 0.95f) * PropVisualScale;
+                if (frag.Texture != null)
+                {
+                    frag.Scale = new Vector2(
+                        fragW * sizeJitter / frag.Texture.GetWidth(),
+                        fragH * sizeJitter / frag.Texture.GetHeight());
+                }
 
                 var colorVar = new Color(
                     Mathf.Clamp(baseColor.R + rng.RandfRange(-0.08f, 0.08f), 0f, 1f),
                     Mathf.Clamp(baseColor.G + rng.RandfRange(-0.08f, 0.08f), 0f, 1f),
                     Mathf.Clamp(baseColor.B + rng.RandfRange(-0.08f, 0.08f), 0f, 1f),
                     1f);
-                frag.Color = colorVar;
+                frag.Modulate = colorVar;
                 frag.ZIndex = ZIndex + 2;
 
                 var localX = -_width / 2f + fragW * (c + 0.5f);
@@ -275,18 +280,5 @@ public partial class LootProp : Area2D
 
         if (_shatterElapsed >= ShatterDuration)
             QueueFree();
-    }
-
-    private static void BuildRectPolygon(Polygon2D poly, float w, float h)
-    {
-        var hw = w / 2f;
-        var hh = h / 2f;
-        poly.Polygon = new Vector2[]
-        {
-            new Vector2(-hw, -hh),
-            new Vector2(hw, -hh),
-            new Vector2(hw, hh),
-            new Vector2(-hw, hh),
-        };
     }
 }

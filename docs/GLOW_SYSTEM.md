@@ -126,16 +126,17 @@ This is how `GrindRail` syncs glow color to its palette slot. Other props can fo
 | LaunchPad | `CreateGlow(PadWidth+6, PadHeight+6, Z+1)` | 54×16 | Default white |
 | ExtractionZone | `CreateGlow(34, 26, Z+1)` | 34×26 | Default white |
 | RespawnBeacon | `CreateGlow(26, 34, Z+1)` | 26×34 | Default white |
-| MineralPickup | `CreateGlow(18, 18, Z+1)` | 18×18 | Square mismatch with crystal shape — candidate for `CreateCircleGlow` |
 | ShockHazard | `CreateGlow(24, 16, Z+1)` | 24×16 | Rectangle mismatch with zigzag shape — candidate for `CreateAlphaGlow` |
+| MineralPickup / LootPickup / LootProp | Baked Gaussian (below) | 4× per-variant textures | `LootVisuals.AttachGlow`, `ShowBehindParent=true`, mineral tint inherited from the sprite's `Modulate` |
 
 ## Migration Candidates
 
 When final art arrives:
 
-- **MineralPickup** → switch to `CreateCircleGlow(6f, ZIndex + 1)` to match `CircleShape2D` collision
 - **ShockHazard** → switch to `CreateAlphaGlow(texture, 3f, ZIndex + 1)` to follow the zigzag lightning contour
 - Other props with chevron decorations (GrindBoost, BoostPad, LaunchPad) may benefit from `CreateAlphaGlow` if the chevrons become prominent in final art
+
+Loot props (2026-09): MineralPickup, LootPickup, and LootProp all switched from `RectGlow`/polygon halos to per-variant baked-Gaussian glow sprites (see next section), generated with `tools/make_glow.ps1`.
 
 ## Soft Emission Glow (Baked Gaussian Sprite)
 
@@ -155,7 +156,7 @@ When final art arrives:
 2. **Work at 4× resolution** (nearest upscale, same world area): gives the Gaussian sub-texel smoothness and room for the halo to fade without clipping. Board: 48px frames → 192px glow canvas.
 3. **Separable Gaussian blur on the alpha channel.** σ in output px ≈ desired halo reach ÷ 2.5 (board: σ=9 ≈ 2–3 world-px past the edge), kernel radius 3σ, edges clamp (no wrap).
 4. **Peak-normalize** the blurred alpha to 255 — the blur eats ~1.5% of the peak at σ=9.
-5. **Save as pure-white RGB + blurred alpha**, e.g. `assets/hoverboards/player/board_glow.png`. The PowerShell/System.Drawing generator used for the board was ad-hoc; if more assets need glows, promote it to a reusable `tools/` script.
+5. **Save as pure-white RGB + blurred alpha**, e.g. `assets/props/minerals/glow/mineral_00.png`. The generator is now a reusable script: `tools/make_glow.ps1 -SrcDir <art dir> -OutDir <art dir>\glow -Factor 4 -Sigma 9` (binarize alpha > 128, nearest 4× upscale, separable Gaussian σ=9 on output px, peak-normalize). **The output canvas gets `-Pad` transparent output px around the silhouette (default 3σ)** — without it the halo clips at the texture edge and reads as a box. Glow filenames mirror the art they belong to. The glow `Sprite2D` stays centered at scale 0.25: symmetric padding keeps the silhouette aligned with the art and the halo simply extends past the art's bounds.
 
 ### Runtime wiring (per instance)
 
@@ -169,6 +170,8 @@ When final art arrives:
 ### Worked example
 
 `PlayerController.Hover.cs`: glow created in the `_animInit` block, per-frame `SelfModulate`/`Scale` push in `UpdateBoardVisual()`. Exports: `BoardGlowScale` (size multiplier), `BoardGlowStrength` (brightness), `BoardGlowColor` (tint — keep this and the tinted object's modulate driven by the same future palette value).
+
+`LootVisuals.AttachGlow()` (set-static version): the glow `Sprite2D` is a child of the loot art sprite with local `Scale = 0.25` (base is 4× texture, so it sits exactly on the art), additive material, `ShowBehindParent = true` (halo around the silhouette, crisp pixel detail on top), `SelfModulate.A = 0.6`. Tinting is free: the child inherits the parent sprite's `Modulate` (mineral color for ores/crystals/patches, warm brown for crates, near-white for scrap). The parent's own scale (`PickupVisualScale` on pickups, `PropVisualScale` on props) automatically sizes the halo.
 
 ### Anti-patterns learned
 

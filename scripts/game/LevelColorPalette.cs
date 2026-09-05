@@ -91,6 +91,11 @@ public struct LevelColorPalette
         };
     }
 
+    public static Color GetMineralLight(MineralType mineral)
+    {
+        return GetMineralColors(mineral).light;
+    }
+
     public static LevelColorPalette FromMinerals(MineralType primary, MineralType secondary)
     {
         var (priLight, priMedium, priDark) = GetMineralColors(primary);

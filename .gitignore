@@ -19,3 +19,6 @@ obj/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Art dev scratch (candidates, contact sheets, previews) — also .gdignore'd so Godot never imports it
+**/_staging/

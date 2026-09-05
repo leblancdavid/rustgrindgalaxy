@@ -160,7 +160,7 @@ textures/canvas_textures/default_texture_filter=0
 - Use `Import > Texture > Filter > Nearest` for pixel-perfect
 - y_sort_enabled for proper draw order
 - **New PNGs must be reimported by the Godot editor before `GD.Load`/`ResourceLoader.Exists` succeed at runtime** — drop frames into `res://`, reload the project in-editor, then run. (Runtime anim loaders guard on `Exists` and silently skip un-imported frames.)
-- Keep dev scratch (candidate sheets, previews) in a `.gdignore`'d folder so it never imports into the build.
+- Keep dev scratch (candidate sheets, previews) in a folder named `_staging/` under `assets/` — it is `.gdignore`'d (never imports into the build) AND gitignored (`**/_staging/` in `.gitignore`, never tracked in the repo). Reusable scripts go in `tools/`.
 
 ## Rejection Criteria
 
