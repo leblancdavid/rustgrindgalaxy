@@ -31,6 +31,9 @@ public partial class PlayerController : CharacterBody2D
 	[Export] public float JumpChargeBoardTiltDegrees = 7.0f;
 	[Export] public float OllieTakeoffTiltDegrees = 12.0f;
 	[Export] public float OllieTiltRecoverSpeed = 10.0f;
+	[Export] public float AirTiltMaxDegrees = 14.0f;
+	[Export] public float AirTiltSpeedRef = 420.0f;
+	[Export] public float AirTiltResponseSpeed = 7.0f;
 	[Export] public float GrindBoardTiltDegrees = 5.0f;
 	[Export] public float GrindTiltResponseSpeed = 8.0f;
 	[Export] public float GrindBobDegrees = 1.5f;

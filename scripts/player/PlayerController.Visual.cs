@@ -96,6 +96,21 @@ public partial class PlayerController : CharacterBody2D
 					: Mathf.Clamp(_jumpChargeTime / MaxJumpHoldTime, 0.0f, 1.0f);
 				targetTilt += -GetVisualTravelDirection() * Mathf.DegToRad(JumpChargeBoardTiltDegrees) * chargeRatio;
 			}
+
+			// Nose follows vertical speed: up while rising, centered at the apex,
+			// down while falling. Skipped while tricks/flips own the rotation and
+			// during failed landings, which carry their own board tilt.
+			var airPitch = IsOnFloor() == false
+				&& !HasActiveTrick()
+				&& !_isFailedLandingFalling
+				&& _airRotationRamp < FlipRotateRampThreshold;
+
+			if (airPitch)
+			{
+				var rise = Mathf.Clamp(-Velocity.Y / Mathf.Max(AirTiltSpeedRef, 1.0f), -1.0f, 1.0f);
+				targetTilt = -GetVisualTravelDirection() * Mathf.DegToRad(AirTiltMaxDegrees) * rise;
+				responseSpeed = AirTiltResponseSpeed;
+			}
 		}
 
 		_boardAnimationTilt = Mathf.LerpAngle(
