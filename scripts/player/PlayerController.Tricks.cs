@@ -42,15 +42,19 @@ public partial class PlayerController : CharacterBody2D
 
 		if (Input.IsActionJustPressed(TrickFlipAction))
 		{
-			StartFlipTrick(TrickKind.FlipX);
+			StartFlipTrick(TrickKind.Slot1);
 		}
 		else if (Input.IsActionJustPressed(TrickGrabAction))
 		{
-			StartFlipTrick(TrickKind.FlipY);
+			StartFlipTrick(TrickKind.Slot2);
 		}
 		else if (Input.IsActionJustPressed(TrickAltFlipAction))
 		{
-			StartFlipTrick(TrickKind.AltFlip);
+			StartFlipTrick(TrickKind.Slot3);
+		}
+		else if (Input.IsActionJustPressed(TrickSlot4Action))
+		{
+			StartFlipTrick(TrickKind.Slot4);
 		}
 		else if (Input.IsActionJustPressed(TrickGrabConfirmAction))
 		{
@@ -66,24 +70,20 @@ public partial class PlayerController : CharacterBody2D
 
 		switch (_activeTrick)
 		{
-			case TrickKind.FlipX:
-			case TrickKind.FlipY:
+			case TrickKind.Slot1:
+			case TrickKind.Slot2:
+			case TrickKind.Slot3:
+			case TrickKind.Slot4:
 			{
-				var progress = Mathf.Clamp(_trickElapsed / FlipDurationSeconds, 0.0f, 1.0f);
-				_trickSpinAngle = progress * Mathf.Tau;
-
-				if (progress >= 1.0f)
-				{
-					CompleteActiveTrick();
-				}
-
-				break;
-			}
-
-			case TrickKind.AltFlip:
-			{
-				var progress = Mathf.Clamp(_trickElapsed / AltFlipDurationSeconds, 0.0f, 1.0f);
-				_trickRotationOffset = progress * Mathf.Tau;
+				var def = GetTrickDefinition(_activeTrick);
+				var duration = Mathf.Max(1, def.MaxHalfTurns) * TrickSecondsPerHalfTurn;
+				var progress = Mathf.Clamp(_trickElapsed / duration, 0.0f, 1.0f);
+				// All axes sweep in parallel; each completes its whole count as
+				// one trick, landing together at progress 1.
+				var sweep = progress * Mathf.Pi;
+				_trickAngleX = def.HalfTurnsX * sweep;
+				_trickAngleY = def.HalfTurnsY * sweep;
+				_trickRotationOffset = def.HalfTurnsZ * sweep;
 
 				if (progress >= 1.0f)
 				{
@@ -152,7 +152,8 @@ public partial class PlayerController : CharacterBody2D
 		_trickElapsed = 0.0f;
 		_trickRotationOffset = 0.0f;
 		_trickRecoveryStartRotation = 0.0f;
-		_trickSpinAngle = 0.0f;
+		_trickAngleX = 0.0f;
+		_trickAngleY = 0.0f;
 		PublishTrickStart(GetInstalledTrickName(ModuleType.Flip));
 	}
 
@@ -165,7 +166,8 @@ public partial class PlayerController : CharacterBody2D
 		_trickElapsed = 0.0f;
 		_trickRotationOffset = 0.0f;
 		_trickRecoveryStartRotation = 0.0f;
-		_trickSpinAngle = 0.0f;
+		_trickAngleX = 0.0f;
+		_trickAngleY = 0.0f;
 		PublishTrickStart(GetInstalledTrickName(ModuleType.Grab));
 	}
 
@@ -182,7 +184,8 @@ public partial class PlayerController : CharacterBody2D
 		_trickElapsed = 0.0f;
 		_trickRotationOffset = 0.0f;
 		_trickRecoveryStartRotation = 0.0f;
-		_trickSpinAngle = 0.0f;
+		_trickAngleX = 0.0f;
+		_trickAngleY = 0.0f;
 		ApplyTrickVisual();
 	}
 
@@ -193,7 +196,8 @@ public partial class PlayerController : CharacterBody2D
 		_trickElapsed = 0.0f;
 		_trickRotationOffset = 0.0f;
 		_trickRecoveryStartRotation = 0.0f;
-		_trickSpinAngle = 0.0f;
+		_trickAngleX = 0.0f;
+		_trickAngleY = 0.0f;
 		ApplyTrickVisual();
 	}
 
@@ -201,17 +205,22 @@ public partial class PlayerController : CharacterBody2D
 	{
 		if (_isChargingJump)
 		{
-			if (TryQueueHeldTrickInput(TrickFlipAction, ref _flipQueueReady, TrickKind.FlipX))
+			if (TryQueueHeldTrickInput(TrickFlipAction, ref _flipQueueReady, TrickKind.Slot1))
 			{
 				return;
 			}
 
-			if (TryQueueHeldTrickInput(TrickGrabAction, ref _grabQueueReady, TrickKind.FlipY))
+			if (TryQueueHeldTrickInput(TrickGrabAction, ref _grabQueueReady, TrickKind.Slot2))
 			{
 				return;
 			}
 
-			if (TryQueueHeldTrickInput(TrickAltFlipAction, ref _altFlipQueueReady, TrickKind.AltFlip))
+			if (TryQueueHeldTrickInput(TrickAltFlipAction, ref _altFlipQueueReady, TrickKind.Slot3))
+			{
+				return;
+			}
+
+			if (TryQueueHeldTrickInput(TrickSlot4Action, ref _slot4QueueReady, TrickKind.Slot4))
 			{
 				return;
 			}
@@ -224,17 +233,22 @@ public partial class PlayerController : CharacterBody2D
 			return;
 		}
 
-		if (TryQueuePressedTrickInput(TrickFlipAction, ref _flipQueueReady, TrickKind.FlipX))
+		if (TryQueuePressedTrickInput(TrickFlipAction, ref _flipQueueReady, TrickKind.Slot1))
 		{
 			return;
 		}
 
-		if (TryQueuePressedTrickInput(TrickAltFlipAction, ref _altFlipQueueReady, TrickKind.AltFlip))
+		if (TryQueuePressedTrickInput(TrickAltFlipAction, ref _altFlipQueueReady, TrickKind.Slot3))
 		{
 			return;
 		}
 
-		if (TryQueuePressedTrickInput(TrickGrabAction, ref _grabQueueReady, TrickKind.FlipY))
+		if (TryQueuePressedTrickInput(TrickGrabAction, ref _grabQueueReady, TrickKind.Slot2))
+		{
+			return;
+		}
+
+		if (TryQueuePressedTrickInput(TrickSlot4Action, ref _slot4QueueReady, TrickKind.Slot4))
 		{
 			return;
 		}
@@ -244,17 +258,22 @@ public partial class PlayerController : CharacterBody2D
 			return;
 		}
 
-		if (TryQueueHeldTrickInput(TrickFlipAction, ref _flipQueueReady, TrickKind.FlipX))
+		if (TryQueueHeldTrickInput(TrickFlipAction, ref _flipQueueReady, TrickKind.Slot1))
 		{
 			return;
 		}
 
-		if (TryQueueHeldTrickInput(TrickGrabAction, ref _grabQueueReady, TrickKind.FlipY))
+		if (TryQueueHeldTrickInput(TrickGrabAction, ref _grabQueueReady, TrickKind.Slot2))
 		{
 			return;
 		}
 
-		if (TryQueueHeldTrickInput(TrickAltFlipAction, ref _altFlipQueueReady, TrickKind.AltFlip))
+		if (TryQueueHeldTrickInput(TrickAltFlipAction, ref _altFlipQueueReady, TrickKind.Slot3))
+		{
+			return;
+		}
+
+		if (TryQueueHeldTrickInput(TrickSlot4Action, ref _slot4QueueReady, TrickKind.Slot4))
 		{
 			return;
 		}
@@ -298,20 +317,15 @@ public partial class PlayerController : CharacterBody2D
 
 		switch (_queuedTrick)
 		{
-			case TrickKind.FlipX:
-				StartFlipTrick(TrickKind.FlipX);
-				return true;
-
-			case TrickKind.FlipY:
-				StartFlipTrick(TrickKind.FlipY);
+			case TrickKind.Slot1:
+			case TrickKind.Slot2:
+			case TrickKind.Slot3:
+			case TrickKind.Slot4:
+				StartFlipTrick(_queuedTrick);
 				return true;
 
 			case TrickKind.Grab:
 				StartGrabTrick();
-				return true;
-
-			case TrickKind.AltFlip:
-				StartFlipTrick(TrickKind.AltFlip);
 				return true;
 		}
 
@@ -327,7 +341,7 @@ public partial class PlayerController : CharacterBody2D
 	{
 		switch (trick)
 		{
-			case TrickKind.FlipX:
+			case TrickKind.Slot1:
 				if (Input.IsActionPressed(TrickFlipAction))
 				{
 					_flipQueueReady = false;
@@ -335,7 +349,7 @@ public partial class PlayerController : CharacterBody2D
 
 				break;
 
-			case TrickKind.FlipY:
+			case TrickKind.Slot2:
 				if (Input.IsActionPressed(TrickGrabAction))
 				{
 					_grabQueueReady = false;
@@ -351,10 +365,18 @@ public partial class PlayerController : CharacterBody2D
 
 				break;
 
-			case TrickKind.AltFlip:
+			case TrickKind.Slot3:
 				if (Input.IsActionPressed(TrickAltFlipAction))
 				{
 					_altFlipQueueReady = false;
+				}
+
+				break;
+
+			case TrickKind.Slot4:
+				if (Input.IsActionPressed(TrickSlot4Action))
+				{
+					_slot4QueueReady = false;
 				}
 
 				break;
@@ -381,6 +403,11 @@ public partial class PlayerController : CharacterBody2D
 		if (Input.IsActionPressed(TrickAltFlipAction) == false)
 		{
 			_altFlipQueueReady = true;
+		}
+
+		if (Input.IsActionPressed(TrickSlot4Action) == false)
+		{
+			_slot4QueueReady = true;
 		}
 	}
 
@@ -486,9 +513,7 @@ public partial class PlayerController : CharacterBody2D
 	{
 		return trick switch
 		{
-			TrickKind.FlipX => GetInstalledTrickName(ModuleType.Flip),
-			TrickKind.FlipY => GetInstalledTrickName(ModuleType.Flip),
-			TrickKind.AltFlip => GetInstalledTrickName(ModuleType.Flip),
+			TrickKind.Slot1 or TrickKind.Slot2 or TrickKind.Slot3 or TrickKind.Slot4 => GetInstalledTrickName(ModuleType.Flip),
 			TrickKind.Grab => GetInstalledTrickName(ModuleType.Grab),
 			_ => string.Empty,
 		};

@@ -53,6 +53,7 @@ public partial class PlayerController : CharacterBody2D
 		EnsureActionKeyBinding(TrickFlipAction, Key.Key1);
 		EnsureActionKeyBinding(TrickGrabAction, Key.Key2);
 		EnsureActionKeyBinding(TrickAltFlipAction, Key.Key3);
+		EnsureActionKeyBinding(TrickSlot4Action, Key.Key4);
 
 		if (InputMap.HasAction(TrickGrabConfirmAction) == false)
 		{

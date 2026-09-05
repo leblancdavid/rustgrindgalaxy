@@ -62,13 +62,14 @@ public partial class PlayerController : CharacterBody2D
 	private const string TrickFlipAction = "trick_flip";
 	private const string TrickGrabAction = "trick_grab";
 	private const string TrickAltFlipAction = "trick_alt_flip";
+	private const string TrickSlot4Action = "trick_slot_4";
 	// Enter-only grab confirm. ui_accept also matches Space (the jump key), so
 	// grab must not listen to it or charging a jump would queue a grab.
 	private const string TrickGrabConfirmAction = "trick_grab_confirm";
 	private const float FailedLandingSeparation = 2.0f;
 	private const float FailedLandingFallSpeed = 90.0f;
-	private const float FlipDurationSeconds = 0.45f;
-	private const float AltFlipDurationSeconds = 0.30f;
+	// Seconds per 180-degree turn; a trick's duration scales with its busiest axis.
+	private const float TrickSecondsPerHalfTurn = 0.25f;
 	// Floor for |cos(theta)| while an axis flip is edge-on, so the board shows
 	// a thin edge sliver instead of vanishing for a frame.
 	private const float TrickEdgeMinScale = 0.06f;
@@ -83,10 +84,43 @@ public partial class PlayerController : CharacterBody2D
 	private enum TrickKind
 	{
 		None,
-		FlipX,
-		FlipY,
+		Slot1,
+		Slot2,
+		Slot3,
+		Slot4,
 		Grab,
-		AltFlip,
+	}
+
+	// Rotations around each screen axis in 180-degree increments. The board is
+	// drawn from the side, so Z turns become in-plane rotation while X/Y turns
+	// are faked by squashing the sprite through the edge-on moment (negative
+	// scale = the mirrored far side), see ApplyTrickVisual.
+	private struct TrickDefinition
+	{
+		public readonly int HalfTurnsX;
+		public readonly int HalfTurnsY;
+		public readonly int HalfTurnsZ;
+
+		public TrickDefinition(int halfTurnsX, int halfTurnsY, int halfTurnsZ)
+		{
+			HalfTurnsX = halfTurnsX;
+			HalfTurnsY = halfTurnsY;
+			HalfTurnsZ = halfTurnsZ;
+		}
+
+		public readonly int MaxHalfTurns => Mathf.Max(HalfTurnsX, Mathf.Max(HalfTurnsY, HalfTurnsZ));
+	}
+
+	private static TrickDefinition GetTrickDefinition(TrickKind trick)
+	{
+		return trick switch
+		{
+			TrickKind.Slot1 => new TrickDefinition(2, 2, 0),
+			TrickKind.Slot2 => new TrickDefinition(2, 0, 2),
+			TrickKind.Slot3 => new TrickDefinition(0, 2, 2),
+			TrickKind.Slot4 => new TrickDefinition(2, 2, 2),
+			_ => default,
+		};
 	}
 
 	private enum TrickPhase
@@ -143,9 +177,11 @@ public partial class PlayerController : CharacterBody2D
 	private bool _grabQueueReady = true;
 	private bool _jumpGrabQueueReady = true;
 	private bool _altFlipQueueReady = true;
+	private bool _slot4QueueReady = true;
 	private float _trickElapsed;
 	private float _trickRotationOffset;
-	private float _trickSpinAngle;
+	private float _trickAngleX;
+	private float _trickAngleY;
 	private Vector2 _trickSquash = Vector2.One;
 	private float _trickRecoveryStartRotation;
 	private readonly List<string> _comboTrickSequence = new();

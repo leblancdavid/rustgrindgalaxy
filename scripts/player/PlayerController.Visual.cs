@@ -38,8 +38,8 @@ public partial class PlayerController : CharacterBody2D
 
 		_trickSquash = _activeTrick switch
 		{
-			TrickKind.FlipX => new Vector2(1.0f, TrickEdgeScale(Mathf.Cos(_trickSpinAngle))),
-			TrickKind.FlipY => new Vector2(TrickEdgeScale(Mathf.Cos(_trickSpinAngle)), 1.0f),
+			TrickKind.Slot1 or TrickKind.Slot2 or TrickKind.Slot3 or TrickKind.Slot4
+				=> new Vector2(TrickEdgeScale(Mathf.Cos(_trickAngleY)), TrickEdgeScale(Mathf.Cos(_trickAngleX))),
 			_ => Vector2.One,
 		};
 	}
