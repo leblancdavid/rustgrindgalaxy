@@ -62,10 +62,16 @@ public partial class PlayerController : CharacterBody2D
 	private const string TrickFlipAction = "trick_flip";
 	private const string TrickGrabAction = "trick_grab";
 	private const string TrickAltFlipAction = "trick_alt_flip";
+	// Enter-only grab confirm. ui_accept also matches Space (the jump key), so
+	// grab must not listen to it or charging a jump would queue a grab.
+	private const string TrickGrabConfirmAction = "trick_grab_confirm";
 	private const float FailedLandingSeparation = 2.0f;
 	private const float FailedLandingFallSpeed = 90.0f;
 	private const float FlipDurationSeconds = 0.45f;
 	private const float AltFlipDurationSeconds = 0.30f;
+	// Floor for |cos(theta)| while an axis flip is edge-on, so the board shows
+	// a thin edge sliver instead of vanishing for a frame.
+	private const float TrickEdgeMinScale = 0.06f;
 	private const float GrabSetupDurationSeconds = 0.10f;
 	private const float GrabReleaseDurationSeconds = 0.12f;
 	private const float FailedLandingVisualRecoverSpeed = 7.5f;
@@ -77,7 +83,8 @@ public partial class PlayerController : CharacterBody2D
 	private enum TrickKind
 	{
 		None,
-		Flip,
+		FlipX,
+		FlipY,
 		Grab,
 		AltFlip,
 	}
@@ -138,6 +145,8 @@ public partial class PlayerController : CharacterBody2D
 	private bool _altFlipQueueReady = true;
 	private float _trickElapsed;
 	private float _trickRotationOffset;
+	private float _trickSpinAngle;
+	private Vector2 _trickSquash = Vector2.One;
 	private float _trickRecoveryStartRotation;
 	private readonly List<string> _comboTrickSequence = new();
 	private float _failedLandingVisualBlend;

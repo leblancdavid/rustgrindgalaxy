@@ -409,7 +409,7 @@ public partial class PlayerController : CharacterBody2D
 			return;
 		}
 
-		_boardVisual.Scale = new Vector2(_boardVisualBaseScale.X * _facing, _boardVisualBaseScale.Y);
+		_boardVisual.Scale = new Vector2(_boardVisualBaseScale.X * _facing * _trickSquash.X, _boardVisualBaseScale.Y * _trickSquash.Y);
 		_boardVisual.Modulate = new Color(1.0f, 1.0f, 1.0f, BoardOpacity);
 
 		if (_boardGlow != null)

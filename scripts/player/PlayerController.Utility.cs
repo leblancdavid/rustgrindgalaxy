@@ -53,6 +53,17 @@ public partial class PlayerController : CharacterBody2D
 		EnsureActionKeyBinding(TrickFlipAction, Key.Key1);
 		EnsureActionKeyBinding(TrickGrabAction, Key.Key2);
 		EnsureActionKeyBinding(TrickAltFlipAction, Key.Key3);
+
+		if (InputMap.HasAction(TrickGrabConfirmAction) == false)
+		{
+			InputMap.AddAction(TrickGrabConfirmAction);
+		}
+
+		InputMap.ActionEraseEvents(TrickGrabConfirmAction);
+		InputMap.ActionAddEvent(TrickGrabConfirmAction, new InputEventKey { Keycode = Key.Enter });
+		InputMap.ActionAddEvent(TrickGrabConfirmAction, new InputEventKey { PhysicalKeycode = Key.Enter });
+		InputMap.ActionAddEvent(TrickGrabConfirmAction, new InputEventKey { Keycode = Key.KpEnter });
+		InputMap.ActionAddEvent(TrickGrabConfirmAction, new InputEventKey { PhysicalKeycode = Key.KpEnter });
 	}
 
 	private static void EnsureActionKeyBinding(string actionName, Key key)

@@ -35,6 +35,21 @@ public partial class PlayerController : CharacterBody2D
 	{
 		var boardFallRotation = Mathf.DegToRad(FailedLandingBoardTiltDegrees) * _failedLandingDirection * _failedLandingVisualBlend;
 		_boardVisual.Rotation = _trickRotationOffset + boardFallRotation + _boardAnimationTilt;
+
+		_trickSquash = _activeTrick switch
+		{
+			TrickKind.FlipX => new Vector2(1.0f, TrickEdgeScale(Mathf.Cos(_trickSpinAngle))),
+			TrickKind.FlipY => new Vector2(TrickEdgeScale(Mathf.Cos(_trickSpinAngle)), 1.0f),
+			_ => Vector2.One,
+		};
+	}
+
+	// Keeps the sign but clamps magnitude, so the sprite mirrors exactly at
+	// the crossover yet never collapses to zero at the edge-on moment.
+	private static float TrickEdgeScale(float value)
+	{
+		var sign = value < 0.0f ? -1.0f : 1.0f;
+		return sign * Mathf.Max(Mathf.Abs(value), TrickEdgeMinScale);
 	}
 
 	private void UpdateBoardAnimationTilt(float deltaSeconds)
