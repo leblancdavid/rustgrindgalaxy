@@ -72,7 +72,7 @@ The module system uses six mineral families.
 | Blue | Azure | airtime, jump height, air control, energy flow |
 | Yellow | Solar | speed, momentum, charge gain, responsiveness |
 | White | Lumen | shields, armor, stability, precision |
-| Black | Umbra | risk-reward, siphon, corruption, debuffs |
+| Purple | Umbra | risk-reward, siphon, corruption, debuffs |
 
 These names should be used in design and gameplay text. UI can still represent them with icons and color coding for readability.
 
@@ -139,6 +139,10 @@ This creates two useful behaviors:
 
 - duplicate mineral modules reward focused investment
 - mixed mineral modules reward broader investment strategies
+
+### Upgrade Limits
+
+Each module can only be refined up to a limit. The limit comes from the player's core system, which provides a total capacity pool divided across module slots (example: core capacity 1000 over 5 slots gives each module a limit of 200). Raising the limit means upgrading the core, not spending more minerals on the module. See `PROGRESSION_SYSTEM.md`.
 
 ## Category Derivation Rules
 

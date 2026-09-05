@@ -118,7 +118,7 @@ public partial class PlayerController : CharacterBody2D
 			get
 			{
 				var speed = SpinSpeed > 0.0f ? SpinSpeed : TrickDefaultSpinSpeed;
-				return Mathf.Max(1, MaxHalfTurns) / speed;
+				return Mathf.Max(1, MaxHalfTurns) / speed ;
 			}
 		}
 	}

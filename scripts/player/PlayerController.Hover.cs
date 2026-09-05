@@ -32,6 +32,8 @@ public partial class PlayerController : CharacterBody2D
 
 	[Export] public float GrindScrubSpeed = 5.0f;
 	[Export] public float GrindRewindSpeed = 6.0f;
+	[Export] public int GrindLoopTail = 5;
+	[Export] public float GrindLoopFps = 6.0f;
 
 	[Export] public bool UseIdleAnimation = true;
 	[Export] public bool UseMoveAnimation = true;
@@ -72,6 +74,7 @@ public partial class PlayerController : CharacterBody2D
 	private float _chargeLoopTimer;
 	private float _flipProgress;
 	private float _grindProgress;
+	private float _grindLoopDirection = -1.0f;
 	private int _facing = 1;
 	private bool _wasOnFloor = true;
 	private float _peakFallVy;
@@ -302,11 +305,36 @@ public partial class PlayerController : CharacterBody2D
 	{
 		if (grinding && UseGrindAnimation && _grindFrames != null && _grindFrames.Length > 0)
 		{
-			_grindProgress = Mathf.Min(1.0f, _grindProgress + deltaSeconds * GrindScrubSpeed);
+			var count = _grindFrames.Length;
+			if (_grindProgress < 1.0f)
+			{
+				_grindProgress = Mathf.Min(1.0f, _grindProgress + deltaSeconds * GrindScrubSpeed);
+				_grindLoopDirection = -1.0f;
+				return;
+			}
+
+			if (count > 1)
+			{
+				var tail = Mathf.Clamp(GrindLoopTail, 1, count);
+				var low = (count - tail) / (float)(count - 1);
+				_grindProgress += _grindLoopDirection * deltaSeconds * GrindLoopFps / (count - 1);
+				if (_grindProgress <= low)
+				{
+					_grindProgress = low;
+					_grindLoopDirection = 1.0f;
+				}
+				else if (_grindProgress >= 1.0f)
+				{
+					_grindProgress = 1.0f;
+					_grindLoopDirection = -1.0f;
+				}
+			}
+
 			return;
 		}
 
 		_grindProgress = Mathf.Max(0.0f, _grindProgress - deltaSeconds * GrindRewindSpeed);
+		_grindLoopDirection = -1.0f;
 	}
 
 	// Chosen by how the body is spinning in air vs. travel direction:

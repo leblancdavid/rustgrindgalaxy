@@ -177,6 +177,19 @@ Upgrades should improve one or more of the following:
 - survivability
 - loadout specialization
 
+### Player And Ship Systems (Vision)
+
+Long-term progression is captured in `PROGRESSION_SYSTEM.md` and `SHIP_SYSTEM.md`. Current direction:
+
+- no XP or character levels; the player upgrades three internal systems (offense, defense, core) by injecting plasma processed from mineral pairs
+- raw minerals must be converted to plasma by the ship's converter; ship upgrades can speed up processing
+- the core system provides the module upgrade capacity pool and gates access to higher difficulty content
+- every mineral must have a use independent of module builds, so all six stay valuable to every player
+- upgrade cost stays deliberately simple: plasma plus one common material per system, no rare components, this is not a crafting game
+- the ship is the industrial backbone: class-ranked modules (`F` to `S+`) for processing, scanning, engines, automated mining (expedition ships, planetary drills, orbital collectors), and probes
+- star systems carry mineral mixes with a richness rating, enemy difficulty scales with abundance, and sectors are the difficulty tiers gated by engine class; pushing the sector ladder with the ship is the meta game loop (see `SHIP_SYSTEM.md`)
+- raiders can attack the ship and its automated assets while the player is on a mission; the scanner feeds a low/medium/high threat indicator, and the player chooses to fight, surrender, or escape (see `SHIP_SYSTEM.md`)
+
 ## Mission Structure
 
 The game should use a mission-based format rather than a continuous world for the early product.
@@ -308,3 +321,4 @@ The slice should include:
 3. How forgiving should rail grinding be in the first playable slice?
 4. Should the hub be a physical scene or a simpler menu-based upgrade layer at first?
 5. What are the first three mission destinations and what unique materials should each provide?
+6. What non-module sinks guarantee every mineral stays useful for every build (see `PROGRESSION_SYSTEM.md`)?

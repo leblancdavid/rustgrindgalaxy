@@ -48,6 +48,8 @@ Suggested initial tiers:
 - `Survey`
 - `Deep Scan`
 
+These tiers are an implementation simplification of the `F`-`S+` class-ranked probes in the ship vision; see `SHIP_SYSTEM.md`.
+
 ### 2. Discovery
 
 A persistent catalog record for a found destination.
