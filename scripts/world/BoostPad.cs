@@ -16,6 +16,7 @@ public partial class BoostPad : Area2D
 		Rotation = Mathf.DegToRad(AngleDeg);
 		AddCollisionShape();
 		AddVisuals();
+		Shadow.Attach(this).MaxAlpha = 0.3f;
 		BodyEntered += OnBodyEntered;
 	}
 

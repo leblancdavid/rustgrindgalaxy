@@ -47,6 +47,14 @@ public partial class Prop : Node2D
             CreateVisual();
         else
             UpdateVisual();
+
+        // Only mid-layer props stand in the play space; background/foreground
+        // dressing and wall-mounted fixtures do not cast.
+        if (Layer == PropLayer.Default && GetNodeOrNull<Shadow>("Shadow") == null)
+        {
+            var shadow = Shadow.Attach(this);
+            shadow.MaxAlpha = 0.3f;
+        }
     }
 
     public void ApplyPalette(LevelColorPalette palette)

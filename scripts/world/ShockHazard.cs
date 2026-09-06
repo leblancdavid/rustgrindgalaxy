@@ -11,6 +11,7 @@ public partial class ShockHazard : Area2D
         _visual = GetNode<Polygon2D>("Visual");
         var glow = RectGlow.CreateGlow(24f, 16f, ZIndex + 1);
         AddChild(glow);
+        Shadow.Attach(this).MaxAlpha = 0.3f;
         BodyEntered += OnBodyEntered;
     }
 

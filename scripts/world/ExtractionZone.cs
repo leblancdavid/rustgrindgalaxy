@@ -9,6 +9,7 @@ public partial class ExtractionZone : Area2D
         _visual = GetNode<Polygon2D>("Visual");
         var glow = RectGlow.CreateGlow(34f, 26f, ZIndex + 1);
         AddChild(glow);
+        Shadow.Attach(this).MaxAlpha = 0.3f;
         BodyEntered += OnBodyEntered;
     }
 

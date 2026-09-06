@@ -17,6 +17,17 @@ public partial class LevelTile : Node2D
     private static readonly float MaxRampAngleRad = Mathf.Pi / 6f; // 30 degrees
     private readonly List<Vector2> _excludedPositions = new();
     private LevelColorPalette _colorPalette;
+    private List<GroundClip.Entry>? _groundEntries;
+
+    public override void _Ready()
+    {
+        _groundEntries = GroundClip.Collect(this);
+    }
+
+    public override void _ExitTree()
+    {
+        GroundClip.Remove(_groundEntries);
+    }
 
     public void ClearExcludedPositions() => _excludedPositions.Clear();
 

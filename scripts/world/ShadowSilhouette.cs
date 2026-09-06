@@ -2,14 +2,18 @@ using System.Runtime.CompilerServices;
 using Godot;
 
 /// <summary>
-/// Bakes sprite textures into black, vertically flipped ground shadows.
-/// The squash and sun skew are applied at runtime by Shadow via the sprite
-/// transform; only the flip is baked so the feet row stays the anchor.
+/// Bakes sprite textures and Polygon2D visuals into black, vertically flipped
+/// ground shadows. The squash and sun skew are applied at runtime by Shadow
+/// via the sprite transform; only the flip is baked so the feet row stays the
+/// anchor.
 /// </summary>
 public static class ShadowSilhouette
 {
-    // Entries die with their source texture (scene reloads do not leak).
+    // Entries die with their source resource (scene reloads do not leak).
     private static readonly ConditionalWeakTable<Texture2D, Texture2D> Cache = new();
+    private static readonly ConditionalWeakTable<Polygon2D, Texture2D> PolygonCache = new();
+
+    private const int MaxBakePixels = 512 * 512;
 
     public static Texture2D? Get(Texture2D? source)
     {
@@ -17,13 +21,25 @@ public static class ShadowSilhouette
             return null;
         if (Cache.TryGetValue(source, out var baked))
             return baked;
-        var result = Bake(source);
+        var result = BakeTexture(source);
         if (result != null)
             Cache.AddOrUpdate(source, result);
         return result;
     }
 
-    private static Texture2D? Bake(Texture2D source)
+    public static Texture2D? Get(Polygon2D? polygon)
+    {
+        if (polygon == null || !GodotObject.IsInstanceValid(polygon))
+            return null;
+        if (PolygonCache.TryGetValue(polygon, out var baked))
+            return baked;
+        var result = BakePolygon(polygon);
+        if (result != null)
+            PolygonCache.AddOrUpdate(polygon, result);
+        return result;
+    }
+
+    private static Texture2D? BakeTexture(Texture2D source)
     {
         var img = source.GetImage();
         if (img == null)
@@ -33,27 +49,115 @@ public static class ShadowSilhouette
         var h = img.GetHeight();
 
         var alpha = new float[w * h];
-        for (var y = 0; y < h; y++)
-            for (var x = 0; x < w; x++)
-                alpha[y * w + x] = img.GetPixel(x, y).A;
-
-        // Flip vertically: the sprite's bottom (feet) becomes the shadow's top
-        // row, so the silhouette stays welded at the ground contact point.
-        var flipped = new float[w * h];
+        var minX = w;
+        var minY = h;
+        var maxX = -1;
+        var maxY = -1;
         for (var y = 0; y < h; y++)
         {
-            var sy = h - 1 - y;
             for (var x = 0; x < w; x++)
-                flipped[y * w + x] = alpha[sy * w + x];
+            {
+                var a = img.GetPixel(x, y).A;
+                alpha[y * w + x] = a;
+                if (a > 0.02f)
+                {
+                    if (x < minX) minX = x;
+                    if (x > maxX) maxX = x;
+                    if (y < minY) minY = y;
+                    if (y > maxY) maxY = y;
+                }
+            }
+        }
+        if (maxX < minX)
+            return null;
+
+        // Flip about the bottommost OPAQUE row, not the canvas edge: sprite art
+        // carries transparent padding, and mirroring that padding would detach
+        // the shadow from the feet.
+        return FinishBake(alpha, w, h, minX, minY, maxX, maxY);
+    }
+
+    private static Texture2D? BakePolygon(Polygon2D polygon)
+    {
+        var pts = polygon.Polygon;
+        if (pts.Length < 3)
+            return null;
+
+        var scale = polygon.Scale;
+        var tp = new Vector2[pts.Length];
+        var minX = float.MaxValue;
+        var minY = float.MaxValue;
+        var maxX = float.MinValue;
+        var maxY = float.MinValue;
+        for (var i = 0; i < pts.Length; i++)
+        {
+            var p = pts[i] * scale;
+            tp[i] = p;
+            minX = Mathf.Min(minX, p.X);
+            maxX = Mathf.Max(maxX, p.X);
+            minY = Mathf.Min(minY, p.Y);
+            maxY = Mathf.Max(maxY, p.Y);
         }
 
-        var blurred = new float[w * h];
-        BoxBlurAlpha(flipped, blurred, w, h);
+        var w = Mathf.Max(1, Mathf.CeilToInt(maxX - minX));
+        var h = Mathf.Max(1, Mathf.CeilToInt(maxY - minY));
+        if (w * h > MaxBakePixels)
+            return null;
 
-        var outImg = Image.CreateEmpty(w, h, false, Image.Format.Rgba8);
+        // Even-odd scanline fill; our visuals are convex rects but this stays
+        // correct for simple concave shapes too.
+        var alpha = new float[w * h];
+        var crossings = new System.Collections.Generic.List<float>(8);
         for (var y = 0; y < h; y++)
-            for (var x = 0; x < w; x++)
-                outImg.SetPixel(x, y, new Color(0f, 0f, 0f, blurred[y * w + x]));
+        {
+            var wy = minY + y + 0.5f;
+            crossings.Clear();
+            for (var i = 0; i < tp.Length; i++)
+            {
+                var a = tp[i];
+                var b = tp[(i + 1) % tp.Length];
+                if ((a.Y <= wy && b.Y > wy) || (b.Y <= wy && a.Y > wy))
+                {
+                    var f = (wy - a.Y) / (b.Y - a.Y);
+                    crossings.Add(a.X + f * (b.X - a.X));
+                }
+            }
+            crossings.Sort();
+            for (var k = 0; k + 1 < crossings.Count; k += 2)
+            {
+                var x0 = Mathf.Clamp(Mathf.CeilToInt(crossings[k] - minX), 0, w - 1);
+                var x1 = Mathf.Clamp(Mathf.FloorToInt(crossings[k + 1] - minX), 0, w - 1);
+                for (var x = x0; x <= x1; x++)
+                    alpha[y * w + x] = 1f;
+            }
+        }
+
+        return FinishBake(alpha, w, h, 0, 0, w - 1, h - 1);
+    }
+
+    private static Texture2D? FinishBake(float[] alpha, int w, int h)
+        => FinishBake(alpha, w, h, 0, 0, w - 1, h - 1);
+
+    private static Texture2D? FinishBake(float[] alpha, int w, int h, int bx0, int by0, int bx1, int by1)
+    {
+        var bw = bx1 - bx0 + 1;
+        var bh = by1 - by0 + 1;
+        if (bw < 1 || bh < 1 || bw * bh > MaxBakePixels)
+            return null;
+
+        // Flip vertically: the region's bottom (feet) becomes the shadow's top
+        // row, so the silhouette stays welded at the ground contact point.
+        var flipped = new float[bw * bh];
+        for (var v = 0; v < bh; v++)
+            for (var u = 0; u < bw; u++)
+                flipped[v * bw + u] = alpha[(by1 - v) * w + (bx0 + u)];
+        var blurred = new float[bw * bh];
+        BoxBlurAlpha(flipped, blurred, bw, bh);
+
+        var outImg = Image.CreateEmpty(bw, bh, false, Image.Format.Rgba8);
+        for (var y = 0; y < bh; y++)
+            for (var x = 0; x < bw; x++)
+                outImg.SetPixel(x, y, new Color(0f, 0f, 0f, blurred[y * bw + x]));
 
         return ImageTexture.CreateFromImage(outImg);
     }

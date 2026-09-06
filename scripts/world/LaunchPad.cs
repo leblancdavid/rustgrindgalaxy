@@ -11,6 +11,7 @@ public partial class LaunchPad : Area2D
 		CollisionMask = 2;
 		AddCollisionShape();
 		AddVisuals();
+		Shadow.Attach(this).MaxAlpha = 0.3f;
 		BodyEntered += OnBodyEntered;
 	}
 

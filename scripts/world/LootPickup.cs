@@ -133,6 +133,7 @@ public partial class LootPickup : Area2D
 		_visual.ZIndex = ZIndex;
 		LootVisuals.AttachGlow(_visual, sprite);
 		AddChild(_visual);
+		Shadow.Attach(this).MaxAlpha = 0.3f;
 	}
 
 	private void BuildScrapVisual()
@@ -144,5 +145,6 @@ public partial class LootPickup : Area2D
 		_visual.ZIndex = ZIndex;
 		LootVisuals.AttachGlow(_visual, sprite);
 		AddChild(_visual);
+		Shadow.Attach(this).MaxAlpha = 0.3f;
 	}
 }

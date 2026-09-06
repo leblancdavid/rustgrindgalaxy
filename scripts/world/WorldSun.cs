@@ -18,7 +18,7 @@ public static class WorldSun
 
     public static void SetFromSeed(ulong seed)
     {
-        var rng = new RandomNumberGenerator { Seed = seed };
+        using var rng = new RandomNumberGenerator { Seed = seed };
         SetAngle(rng.RandfRange(MinAngle, MaxAngle));
     }
 

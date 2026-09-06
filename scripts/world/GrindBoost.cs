@@ -15,6 +15,7 @@ public partial class GrindBoost : Area2D
 		ZIndex = 2;
 		AddCollisionShape();
 		AddVisuals();
+		Shadow.Attach(this).MaxAlpha = 0.3f;
 		BodyEntered += OnBodyEntered;
 	}
 
