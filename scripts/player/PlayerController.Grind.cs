@@ -27,7 +27,28 @@ public partial class PlayerController : CharacterBody2D
 			return false;
 		}
 
+		if (IsRigInvertedForGrindEntry())
+		{
+			return false;
+		}
+
 		return true;
+	}
+
+	// The entry tolerance is measured against the rail slope, which on steep
+	// ramps (up to 60 degrees) could still leave the whole rig past vertical.
+	// Block entry whenever the visual body angle - rail transition plus the
+	// failed-landing body tilt - points the head back down.
+	private bool IsRigInvertedForGrindEntry()
+	{
+		var rigAngle = NormalizeAngle(Rotation + _visualContainer.Rotation);
+
+		if (Mathf.Abs(rigAngle) > Mathf.DegToRad(MaxGrindEntryUprightDegrees))
+		{
+			return true;
+		}
+
+		return Mathf.Abs(NormalizeAngle(rigAngle + _visual.Rotation)) > Mathf.DegToRad(MaxGrindEntryUprightDegrees);
 	}
 
 	private void EnterRail(GrindRail rail, float travelDirection, float railProgress)
@@ -92,7 +113,10 @@ public partial class PlayerController : CharacterBody2D
 		var boardRotation = GetRailBoardAngle(rail);
 		var boardOffset = _boardContact.Position.Rotated(boardRotation);
 		GlobalPosition = rail.GetPointAtProgress(_railProgress) - boardOffset;
-		_railTransitionVisualRotation = Rotation - boardRotation;
+		// Total visual rotation lives on Rotation while grinding and on
+		// _visualContainer while airborne; sum them so air entries keep the
+		// player's actual pose instead of snapping upright for a beat.
+		_railTransitionVisualRotation = NormalizeAngle(Rotation + _visualContainer.Rotation - boardRotation);
 		_railTransitionTimer = RailTransitionSmoothDuration;
 		Rotation = boardRotation;
 		_visualContainer.Rotation = _railTransitionVisualRotation;

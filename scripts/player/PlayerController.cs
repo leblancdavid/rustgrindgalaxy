@@ -76,6 +76,8 @@ public partial class PlayerController : CharacterBody2D
 	private const string TrickGrabConfirmAction = "trick_grab_confirm";
 	private const float FailedLandingSeparation = 2.0f;
 	private const float FailedLandingFallSpeed = 90.0f;
+	// Hard upright limit for air grind entry, independent of rail slope.
+	private const float MaxGrindEntryUprightDegrees = 90.0f;
 	// Spin speed (half-turns per second) used when a definition leaves it at 0.
 	private const float TrickDefaultSpinSpeed = 4.0f;
 	// Floor for |cos(theta)| while an axis flip is edge-on, so the board shows
