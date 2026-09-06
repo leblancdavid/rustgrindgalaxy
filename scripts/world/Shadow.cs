@@ -28,6 +28,15 @@ public partial class Shadow : Node2D
 	// object's bottom pixel row, so 0 makes the shadow flush with the art.
 	// Positive gaps it, negative overlaps into the object.
 	[Export] public float SilhouetteGroundOffset = 0.0f;
+	// Animation frames and the hover bob move the art's bottom row by a few
+	// pixels (player art intentionally overlaps the floor ~2px + 1.4px bob);
+	// only trust a foot row below the ground surface by more than this band,
+	// so grounded shadows sit dead still on the hit line. Smallest real prop
+	// sink (baseSink) is 5px, so 4 separates wobble from genuine overlap.
+	[Export] public float FootTrustBand = 4.0f;
+	// Low-pass rate for shadow Y and quad size (kills animation pops).
+	// 0 disables. X is never filtered, so running shadows do not lag.
+	[Export] public float ContactSmoothing = 20.0f;
 	// Pads/beacons/props are placed centered on or sunk into the floor, so a
 	// ray from their origin starts inside the ground and misses. Retry once
 	// from this height above the origin, accepting only near-level surfaces;
@@ -110,6 +119,10 @@ void fragment() {
 	private float _footMidX;
 	private float _footY;
 	private float _footHalfW;
+	private float _smoothY;
+	private float _smoothW = 24.0f;
+	private float _smoothH = 12.0f;
+	private bool _smoothInit;
 	private bool _hasFoot;
 	private bool _hasSilhouette;
 	private bool _targetLost;
@@ -154,6 +167,7 @@ void fragment() {
 
 	public override void _PhysicsProcess(double delta)
 	{
+		var wasShown = _sprite != null && _sprite.Visible;
 		if (_owner2D == null || !IsInstanceValid(_owner2D))
 		{
 			_sprite.Visible = false;
@@ -252,7 +266,23 @@ void fragment() {
 			if (edge.LengthSquared() > 0.0001f)
 			{
 				var mid = (left + right) * 0.5f;
-				contact = new Vector2(mid.X, Mathf.Max(hitPos.Y, mid.Y));
+				// Characters pivot on the body, not on the swaying art bbox,
+				// but keep the crop's canvas offset so an asymmetric frame's
+				// shadow content still lines up under its feet. The foot row
+				// is only trusted deeper than the band, so hover bob and
+				// per-frame padding never rock a grounded shadow.
+				float cx;
+				if (_owner2D is CharacterBody2D)
+				{
+					var canvasX = FootToWorld(0.0f, _footY).X;
+					cx = ownerPos.X + (mid.X - canvasX);
+				}
+				else
+				{
+					cx = mid.X;
+				}
+				var cy = mid.Y > hitPos.Y + FootTrustBand ? mid.Y : hitPos.Y;
+				contact = new Vector2(cx, cy);
 				edgeDir = edge.Normalized();
 				useSegment = true;
 			}
@@ -268,18 +298,46 @@ void fragment() {
 			return;
 		}
 
+		var tex = _sprite.Texture;
+		var texW = tex != null ? tex.GetWidth() : TextureSize;
+		var texH = tex != null ? tex.GetHeight() : TextureSize;
+
 		var groundOffset = silhouette ? SilhouetteGroundOffset : GroundOffset;
-		GlobalPosition = contact + new Vector2(0.0f, groundOffset);
+		var targetY = contact.Y + groundOffset;
+		// Low-pass the drawn WORLD extents, not the scale factors: the tight
+		// per-frame bbox crop changes texW/texH between animation frames
+		// (walk frames span 24..34px of a 48px canvas), and that step at
+		// foot-swap rate is exactly what reads as jitter. Y is filtered; X
+		// never is, so a running shadow tracks the body without lag.
+		var rawW = texW * sx;
+		var rawH = texH * sy;
+		var jump = !_smoothInit || !wasShown
+			|| Mathf.Abs(targetY - _smoothY) > 24.0f
+			|| Mathf.Abs(rawW - _smoothW) > rawW * 0.5f + 8.0f
+			|| Mathf.Abs(rawH - _smoothH) > rawH * 0.5f + 8.0f;
+		if (jump || ContactSmoothing <= 0.0f)
+		{
+			_smoothY = targetY;
+			_smoothW = rawW;
+			_smoothH = rawH;
+		}
+		else
+		{
+			var a = 1.0f - Mathf.Exp(-ContactSmoothing * (float)delta);
+			_smoothY = Mathf.Lerp(_smoothY, targetY, a);
+			_smoothW = Mathf.Lerp(_smoothW, rawW, a);
+			_smoothH = Mathf.Lerp(_smoothH, rawH, a);
+		}
+		_smoothInit = true;
+		GlobalPosition = new Vector2(contact.X, _smoothY);
+		sx = _smoothW / Mathf.Max(texW, 1);
+		sy = _smoothH / Mathf.Max(texH, 1);
 
 		// Node rotation only hugs the ground for characters standing on slopes;
 		// static props keep 0 because their tilt is already baked into edgeDir.
 		LerpRotationTowards(ComputeSlopeRotation(), delta);
 		var ownerRot = _owner2D != null && IsInstanceValid(_owner2D) ? _owner2D.GlobalRotation : 0.0f;
 		var parentRot = ownerRot + _currentRotation;
-
-		var tex = _sprite.Texture;
-		var texW = tex != null ? tex.GetWidth() : TextureSize;
-		var texH = tex != null ? tex.GetHeight() : TextureSize;
 		var shearX = SunShear() * sx;
 
 		// World-space basis columns of the shadow quad:
