@@ -207,6 +207,7 @@ public partial class TileLevelGenerator : Node2D
         SetTerrainCollisionMask(tile, 6u);
 
         tile.FloorSegments = LevelTile.GetDefaultFloorSegments(entry.Name);
+        tile.BuildRailChains(entry.Name);
 
         var tileY = _activeTiles.Count > 0
             ? _activeTiles[^1].Position.Y + _activeTiles[^1].RightGroundY - tile.LeftGroundY

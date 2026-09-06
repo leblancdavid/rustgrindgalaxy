@@ -1,7 +1,6 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/world/LevelTile.cs" id="1"]
-[ext_resource type="PackedScene" path="res://scenes/world/GrindRail.tscn" id="2"]
 
 [sub_resource type="RectangleShape2D" id="1"]
 size = Vector2(460, 16)
@@ -59,49 +58,6 @@ shape = SubResource("2")
 
 [node name="RampCollision" type="CollisionPolygon2D" parent="RampBody"]
 polygon = PackedVector2Array(460, 60, 520, 81.89, 570, 131.89, 718, 388.16, 768, 438.16, 828, 460, 828, 476, 768, 476, 718, 476, 570, 476, 520, 476, 460, 476)
-
-[node name="Rail1" parent="." instance=ExtResource("2")]
-position = Vector2(490, 43)
-rotation = 0.349
-Width = 63.85
-BaseSpeed = 250.0
-SnapDistanceBelow = 40.0
-NextRailPath = NodePath("../Rail2")
-
-[node name="Rail2" parent="." instance=ExtResource("2")]
-position = Vector2(545, 79)
-rotation = 0.785
-Width = 70.71
-BaseSpeed = 250.0
-SnapDistanceBelow = 40.0
-NextRailPath = NodePath("../Rail3")
-PrevRailPath = NodePath("../Rail1")
-
-[node name="Rail3" parent="." instance=ExtResource("2")]
-position = Vector2(644, 232)
-rotation = 1.047
-Width = 295.9
-BaseSpeed = 250.0
-SnapDistanceBelow = 40.0
-NextRailPath = NodePath("../Rail4")
-PrevRailPath = NodePath("../Rail2")
-
-[node name="Rail4" parent="." instance=ExtResource("2")]
-position = Vector2(743, 385)
-rotation = 0.785
-Width = 70.71
-BaseSpeed = 250.0
-SnapDistanceBelow = 40.0
-NextRailPath = NodePath("../Rail5")
-PrevRailPath = NodePath("../Rail3")
-
-[node name="Rail5" parent="." instance=ExtResource("2")]
-position = Vector2(798, 421)
-rotation = 0.349
-Width = 63.85
-BaseSpeed = 250.0
-SnapDistanceBelow = 40.0
-PrevRailPath = NodePath("../Rail4")
 
 [node name="SpawnMarkers" type="Node2D" parent="."]
 

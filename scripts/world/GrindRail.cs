@@ -22,6 +22,12 @@ public partial class GrindRail : Node2D
     public GrindRail? NextRail => _nextRail;
     public GrindRail? PrevRail => _prevRail;
 
+    public void SetChainLinks(GrindRail? prev, GrindRail? next)
+    {
+        _prevRail = prev;
+        _nextRail = next;
+    }
+
     public Vector2 StartPoint => ToGlobal(new Vector2(-Width * 0.5f, 0.0f));
 
     public Vector2 EndPoint => ToGlobal(new Vector2(Width * 0.5f, 0.0f));

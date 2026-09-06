@@ -227,7 +227,8 @@ These are standalone scene objects, not part of the prop palette system.
 |----------|-------|
 | Visual | `Line2D` child node |
 | Dimensions | Variable width (exported), 10px height collision, Z 1 |
-| Color | Rail line color set via editor in each tile scene |
+| Color | Rail line color set via editor in each tile scene; procedural chains are tinted by `ApplyVisualPalette` |
+| Creation | Hand-placed in flat/stair/gap tile scenes; ramp chain tiles generate them at placement time via `LevelTile.BuildRailChains()` (see `TILE_DESIGN.md#rail-chains`) |
 | Function | Rail-grind interaction zone. Player snaps to rail when overlapping within distance threshold. |
 
 ---

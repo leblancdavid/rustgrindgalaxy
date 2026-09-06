@@ -251,6 +251,75 @@ public partial class LevelTile : Node2D
 
     private static readonly Color RailSupportColor = new Color(0.35f, 0.35f, 0.38f);
     private const float RailSupportWidth = 6.0f;
+    private const string GrindRailScenePath = "res://scenes/world/GrindRail.tscn";
+    private static PackedScene _grindRailScene;
+
+    /// <summary>
+    /// Rails for ramp tiles are generated at a constant perpendicular clearance
+    /// from the floor polyline (see RailChainGeometry) instead of being hand-placed.
+    /// Segment indices are identical for Asc/Desc mirrors and Catwalk variants.
+    /// </summary>
+    private struct RailChainSpec
+    {
+        public int StartSegment;
+        public int EndSegment;
+        public float Clearance;
+        public float BaseSpeed;
+        public float SnapDistanceBelow;
+    }
+
+    private static readonly Dictionary<string, RailChainSpec> _defaultRailChains = new()
+    {
+        ["RampSection"] = new RailChainSpec { StartSegment = 1, EndSegment = 1, Clearance = 36f, BaseSpeed = 220f },
+        ["RampSectionDesc"] = new RailChainSpec { StartSegment = 1, EndSegment = 1, Clearance = 36f, BaseSpeed = 220f },
+        ["GentleRise"] = new RailChainSpec { StartSegment = 1, EndSegment = 1, Clearance = 36f, BaseSpeed = 220f },
+        ["GentleRiseDesc"] = new RailChainSpec { StartSegment = 1, EndSegment = 1, Clearance = 36f, BaseSpeed = 220f },
+        ["MidRise"] = new RailChainSpec { StartSegment = 1, EndSegment = 1, Clearance = 36f, BaseSpeed = 220f },
+        ["MidRiseDesc"] = new RailChainSpec { StartSegment = 1, EndSegment = 1, Clearance = 36f, BaseSpeed = 220f },
+        ["SteepRampAsc"] = new RailChainSpec { StartSegment = 1, EndSegment = 3, Clearance = 36f, BaseSpeed = 220f, SnapDistanceBelow = 40f },
+        ["SteepRampDesc"] = new RailChainSpec { StartSegment = 1, EndSegment = 3, Clearance = 36f, BaseSpeed = 220f, SnapDistanceBelow = 40f },
+        ["SteepRampAsc45"] = new RailChainSpec { StartSegment = 1, EndSegment = 3, Clearance = 36f, BaseSpeed = 220f, SnapDistanceBelow = 40f },
+        ["SteepRampDesc45"] = new RailChainSpec { StartSegment = 1, EndSegment = 3, Clearance = 36f, BaseSpeed = 220f, SnapDistanceBelow = 40f },
+        ["SteepRampAsc60"] = new RailChainSpec { StartSegment = 1, EndSegment = 5, Clearance = 36f, BaseSpeed = 250f, SnapDistanceBelow = 40f },
+        ["SteepRampDesc60"] = new RailChainSpec { StartSegment = 1, EndSegment = 5, Clearance = 36f, BaseSpeed = 250f, SnapDistanceBelow = 40f },
+    };
+
+    public void BuildRailChains(string tileKind)
+    {
+        if (!_defaultRailChains.TryGetValue(tileKind, out var spec))
+            return;
+
+        if (FloorSegments == null || spec.EndSegment >= FloorSegments.Length)
+            return;
+
+        var layouts = RailChainGeometry.Build(FloorSegments, spec.StartSegment, spec.EndSegment, spec.Clearance);
+        _grindRailScene ??= GD.Load<PackedScene>(GrindRailScenePath);
+
+        var created = new List<GrindRail>();
+        foreach (var layout in layouts)
+        {
+            if (layout.Length < 4f)
+                continue;
+
+            var rail = _grindRailScene.Instantiate<GrindRail>();
+            rail.Name = $"Rail{created.Count + 1}";
+            rail.Width = layout.Length;
+            rail.BaseSpeed = spec.BaseSpeed;
+            if (spec.SnapDistanceBelow > 0f)
+                rail.SnapDistanceBelow = spec.SnapDistanceBelow;
+            rail.Position = layout.Center;
+            rail.Rotation = layout.Rotation;
+            AddChild(rail);
+            created.Add(rail);
+        }
+
+        for (var i = 0; i < created.Count; i++)
+        {
+            created[i].SetChainLinks(
+                i > 0 ? created[i - 1] : null,
+                i < created.Count - 1 ? created[i + 1] : null);
+        }
+    }
 
     public void ApplyVisualPalette(LevelColorPalette palette)
     {

@@ -30,11 +30,12 @@ Quick reference for all level design work done so far. Use this when designing n
 
 ### Registration Checklist
 
-Every tile scene must be registered in **three** places:
+Every tile scene must be registered in **four** places:
 
 1. **Scene file** — `scenes/world/tiles/industrial/<TileName>.tscn`
 2. **`LevelTile.cs`** — `_defaultFloorSegments` dictionary entry (walkable surface segments)
-3. **`TileLevelGenerator.cs`** — `const string` path + `_tilePool.Add()` entry with connector Y values and weight
+3. **`LevelTile.cs`** — `_defaultRailChains` dictionary entry for ramp tiles (generated constant-clearance rail chains; the scene itself must not contain `GrindRail` nodes)
+4. **`TileLevelGenerator.cs`** — `const string` path + `_tilePool.Add()` entry with connector Y values and weight
 
 ---
 
@@ -50,20 +51,20 @@ Every tile scene must be registered in **three** places:
 | `MultiLevelTile` | 164→164 | Yes | 3 segs (mid-platform at 105) | None |
 | `HighFlatTile` | 60→60 | Yes | Single flat | None |
 | `MidFlatTile` | 100→100 | Yes | Single flat | None |
-| `GentleRiseTile` | 164→100 | No | 3 segs | Yes |
-| `MidRiseTile` | 100→60 | No | 3 segs | Yes |
-| `RampSectionTile` | 164→60 | No | 3 segs (ramp 164→60) | Sloped |
+| `GentleRiseTile` | 164→100 | No | 3 segs | Generated chain |
+| `MidRiseTile` | 100→60 | No | 3 segs | Generated chain |
+| `RampSectionTile` | 164→60 | No | 3 segs (ramp 164→60) | Generated chain |
 | `StairClimbTile` | 164→60 | No | 8 stair steps | Rail |
-| `GentleRiseDescTile` | 100→164 | Desc | Mirror of GentleRise | Yes |
-| `MidRiseDescTile` | 60→100 | Desc | Mirror of MidRise | Yes |
-| `RampSectionDescTile` | 60→164 | Desc | Mirror of RampSection | Sloped |
+| `GentleRiseDescTile` | 100→164 | Desc | Mirror of GentleRise | Generated chain |
+| `MidRiseDescTile` | 60→100 | Desc | Mirror of MidRise | Generated chain |
+| `RampSectionDescTile` | 60→164 | Desc | Mirror of RampSection | Generated chain |
 | `StairClimbDescTile` | 60→164 | Desc | Mirror of StairClimb | Rail |
-| `SteepRampAscTile` | 260→60 | No | 5 segs | Triple chain + boost |
-| `SteepRampAsc45Tile` | 360→60 | No | 5 segs | Triple chain |
-| `SteepRampAsc60Tile` | 460→60 | No | 7 segs | Triple chain |
-| `SteepRampDescTile` | 60→260 | Desc | Mirror of Asc | None |
-| `SteepRampDesc45Tile` | 60→360 | Desc | Mirror of Asc45 | None |
-| `SteepRampDesc60Tile` | 60→460 | Desc | Mirror of Asc60 | None |
+| `SteepRampAscTile` | 260→60 | No | 5 segs | Generated chain + boost |
+| `SteepRampAsc45Tile` | 360→60 | No | 5 segs | Generated chain |
+| `SteepRampAsc60Tile` | 460→60 | No | 7 segs | Generated chain |
+| `SteepRampDescTile` | 60→260 | Desc | Mirror of Asc | Generated chain |
+| `SteepRampDesc45Tile` | 60→360 | Desc | Mirror of Asc45 | Generated chain |
+| `SteepRampDesc60Tile` | 60→460 | Desc | Mirror of Asc60 | Generated chain |
 | `RampGapTile` | 164→164 | No | 3 segs (ramp up, gap, ramp down) | None |
 | `RailGapTile` | 164→164 | Yes | 2 segs with gap | Suspended over gap |
 | `RailGapAngledTile` | 164→164 | No | 2 segs with gap | Angled over gap |
@@ -104,10 +105,10 @@ Any asymmetric tile (`LeftY ≠ RightY`) **must** have a descending (`*Desc`) va
 2. Mirror all Polygon2D X coords: `newX = 1280 - oldX`
 3. Mirror all CollisionPolygon2D X coords
 4. Mirror node positions: `newPosX = 1280 - oldPosX`
-5. Negate GrindRail rotation
+5. Negate GrindRail rotation (n/a for ramp chain tiles — those scenes carry no rails; see `TILE_DESIGN.md#rail-chains`)
 6. Swap Left/Right GroundY on root node
 7. Add matching FloorSegments: `[sx, ex, sy, ey]` → `[1280-ex, 1280-sx, ey, sy]`
-8. Register in all 3 places
+8. Register in all 4 places
 
 Symmetrical tiles (`LeftY = RightY`) do not need a Desc variant.
 
