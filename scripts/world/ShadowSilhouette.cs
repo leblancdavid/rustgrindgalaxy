@@ -5,41 +5,54 @@ using Godot;
 /// Bakes sprite textures and Polygon2D visuals into black, vertically flipped
 /// ground shadows. The squash and sun skew are applied at runtime by Shadow
 /// via the sprite transform; only the flip is baked so the feet row stays the
-/// anchor.
+/// anchor. Each bake also records where the visual's bottom opaque row sits in
+/// the source's local space, so Shadow can start the shadow at the object's
+/// true bottom even when the art is sunk into the floor for perspective.
 /// </summary>
 public static class ShadowSilhouette
 {
+    public sealed class Bake
+    {
+        public Texture2D? Texture;
+
+        // Sprite bakes: y offset (texture pixels, +down) from the sprite's
+        // center to the bottommost opaque row, before the node's own scale.
+        // Polygon bakes: node-local y (+down, before the node transform) of
+        // the bottommost point.
+        public float FootLocalY;
+    }
+
     // Entries die with their source resource (scene reloads do not leak).
-    private static readonly ConditionalWeakTable<Texture2D, Texture2D> Cache = new();
-    private static readonly ConditionalWeakTable<Polygon2D, Texture2D> PolygonCache = new();
+    private static readonly ConditionalWeakTable<Texture2D, Bake> Cache = new();
+    private static readonly ConditionalWeakTable<Polygon2D, Bake> PolygonCache = new();
 
     private const int MaxBakePixels = 512 * 512;
 
-    public static Texture2D? Get(Texture2D? source)
+    public static Bake? Get(Texture2D? source)
     {
         if (source == null || !GodotObject.IsInstanceValid(source))
             return null;
-        if (Cache.TryGetValue(source, out var baked))
-            return baked;
+        if (Cache.TryGetValue(source, out var cached))
+            return cached;
         var result = BakeTexture(source);
         if (result != null)
             Cache.AddOrUpdate(source, result);
         return result;
     }
 
-    public static Texture2D? Get(Polygon2D? polygon)
+    public static Bake? Get(Polygon2D? polygon)
     {
         if (polygon == null || !GodotObject.IsInstanceValid(polygon))
             return null;
-        if (PolygonCache.TryGetValue(polygon, out var baked))
-            return baked;
+        if (PolygonCache.TryGetValue(polygon, out var cached))
+            return cached;
         var result = BakePolygon(polygon);
         if (result != null)
             PolygonCache.AddOrUpdate(polygon, result);
         return result;
     }
 
-    private static Texture2D? BakeTexture(Texture2D source)
+    private static Bake? BakeTexture(Texture2D source)
     {
         var img = source.GetImage();
         if (img == null)
@@ -74,10 +87,17 @@ public static class ShadowSilhouette
         // Flip about the bottommost OPAQUE row, not the canvas edge: sprite art
         // carries transparent padding, and mirroring that padding would detach
         // the shadow from the feet.
-        return FinishBake(alpha, w, h, minX, minY, maxX, maxY);
+        var tex = FinishBake(alpha, w, h, minX, minY, maxX, maxY);
+        if (tex == null)
+            return null;
+        return new Bake
+        {
+            Texture = tex,
+            FootLocalY = maxY + 0.5f - h * 0.5f,
+        };
     }
 
-    private static Texture2D? BakePolygon(Polygon2D polygon)
+    private static Bake? BakePolygon(Polygon2D polygon)
     {
         var pts = polygon.Polygon;
         if (pts.Length < 3)
@@ -132,11 +152,19 @@ public static class ShadowSilhouette
             }
         }
 
-        return FinishBake(alpha, w, h, 0, 0, w - 1, h - 1);
+        var tex = FinishBake(alpha, w, h, 0, 0, w - 1, h - 1);
+        if (tex == null)
+            return null;
+        // Canvas holds scale-applied points; ToGlobal re-applies them, so
+        // report the foot back in pre-scale local space. (Offset is ignored:
+        // visual nodes in this project keep it at zero.)
+        var footY = scale.Y != 0.0f ? maxY / scale.Y : maxY;
+        return new Bake
+        {
+            Texture = tex,
+            FootLocalY = footY,
+        };
     }
-
-    private static Texture2D? FinishBake(float[] alpha, int w, int h)
-        => FinishBake(alpha, w, h, 0, 0, w - 1, h - 1);
 
     private static Texture2D? FinishBake(float[] alpha, int w, int h, int bx0, int by0, int bx1, int by1)
     {
@@ -151,6 +179,7 @@ public static class ShadowSilhouette
         for (var v = 0; v < bh; v++)
             for (var u = 0; u < bw; u++)
                 flipped[v * bw + u] = alpha[(by1 - v) * w + (bx0 + u)];
+
         var blurred = new float[bw * bh];
         BoxBlurAlpha(flipped, blurred, bw, bh);
 

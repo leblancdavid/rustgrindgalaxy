@@ -1,4 +1,5 @@
 using Godot;
+using System.Collections.Generic;
 
 public partial class Prop : Node2D
 {
@@ -21,6 +22,7 @@ public partial class Prop : Node2D
     private Label _debugLabel;
     private LevelColorPalette _palette;
     private bool _paletteApplied;
+    private List<ForegroundClip.Entry> _occluderEntries;
 
     public override void _Ready()
     {
@@ -48,13 +50,21 @@ public partial class Prop : Node2D
         else
             UpdateVisual();
 
-        // Only mid-layer props stand in the play space; background/foreground
-        // dressing and wall-mounted fixtures do not cast.
-        if (Layer == PropLayer.Default && GetNodeOrNull<Shadow>("Shadow") == null)
+        // Background props sit behind the play space; mid and foreground
+        // props stand in it and cast. Foreground props also register as
+        // occluders: things drawn behind them must not leak shadows.
+        if (Layer != PropLayer.Background && GetNodeOrNull<Shadow>("Shadow") == null)
         {
             var shadow = Shadow.Attach(this);
             shadow.MaxAlpha = 0.3f;
         }
+        if (Layer == PropLayer.Foreground && _occluderEntries == null && _visual != null)
+            _occluderEntries = ForegroundClip.Register(this, _visual);
+    }
+
+    public override void _ExitTree()
+    {
+        ForegroundClip.Remove(_occluderEntries);
     }
 
     public void ApplyPalette(LevelColorPalette palette)

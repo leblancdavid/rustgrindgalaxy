@@ -24,9 +24,10 @@ public partial class Shadow : Node2D
 	[Export] public float ShadowSkewStrength = 1.0f;
 	// NaN = follow WorldSun (random per level); set for editor preview.
 	[Export] public float SunAngleDegrees = float.NaN;
-	// Silhouettes are anchored at their feet row, so they need less offset
-	// than the centered ellipse.
-	[Export] public float SilhouetteGroundOffset = 1.5f;
+	// Silhouettes are anchored at their feet row; FootLocalY records the
+	// object's bottom pixel row, so 0 makes the shadow flush with the art.
+	// Positive gaps it, negative overlaps into the object.
+	[Export] public float SilhouetteGroundOffset = 0.0f;
 	// Pads/beacons/props are placed centered on or sunk into the floor, so a
 	// ray from their origin starts inside the ground and misses. Retry once
 	// from this height above the origin, accepting only near-level surfaces;
@@ -106,6 +107,8 @@ void fragment() {
 	private Sprite2D? _target;
 	private Polygon2D? _polyTarget;
 	private Texture2D? _lastSource;
+	private float _footLocalY;
+	private bool _hasFoot;
 	private bool _hasSilhouette;
 	private bool _targetLost;
 	private float _currentRotation;
@@ -230,7 +233,27 @@ void fragment() {
 
 		_sprite.Visible = true;
 		var groundOffset = _hasSilhouette ? SilhouetteGroundOffset : GroundOffset;
-		GlobalPosition = new Vector2(ownerPos.X, hitPos.Y + groundOffset);
+		// Props and crates are drawn sunk into the floor for perspective; their
+		// shadow must start at the object's actual bottom pixel, not at the
+		// ground line hidden behind them. Grounded objects with feet at/above
+		// the surface are unaffected (max keeps the shadow on the ground).
+		var startY = hitPos.Y;
+		if (silhouette)
+		{
+			var footY = ComputeFootWorldY();
+			if (footY > startY)
+				startY = footY;
+		}
+		// Occlusion: when foreground art covers the caster's contact point,
+		// the caster itself is drawn behind that art; the shadow must not
+		// leak out from under it.
+		if (ForegroundClip.Covers(new Vector2(ownerPos.X, startY), _owner2D))
+		{
+			_sprite.Visible = false;
+			LerpRotationTowards(0.0f, delta);
+			return;
+		}
+		GlobalPosition = new Vector2(ownerPos.X, startY + groundOffset);
 
 		var tex = _sprite.Texture;
 		var texW = tex != null ? tex.GetWidth() : TextureSize;
@@ -385,22 +408,37 @@ void fragment() {
 		{
 			if (_target.Texture == _lastSource)
 				return;
-			ApplySilhouette(ShadowSilhouette.Get(_target.Texture));
+			var bake = ShadowSilhouette.Get(_target.Texture);
+			ApplySilhouette(bake?.Texture);
+			_footLocalY = bake?.FootLocalY ?? 0.0f;
+			_hasFoot = bake != null;
 			_lastSource = _target.Texture;
 		}
 		else
 		{
 			// Polygon bakes are cached by node, so identity is stable after the first hit.
-			var baked = ShadowSilhouette.Get(_polyTarget);
-			if (baked == null || baked == _lastSource)
+			var bake = ShadowSilhouette.Get(_polyTarget);
+			if (bake == null || bake.Texture == null || bake.Texture == _lastSource)
 				return;
-			ApplySilhouette(baked);
-			_lastSource = baked;
+			ApplySilhouette(bake.Texture);
+			_footLocalY = bake.FootLocalY;
+			_hasFoot = true;
+			_lastSource = bake.Texture;
 		}
 	}
 
-	private void ApplySilhouette(Texture2D? silhouette)
+	private float ComputeFootWorldY()
 	{
+		if (!_hasFoot)
+			return float.MinValue;
+		if (_target != null)
+			return _target.ToGlobal(new Vector2(0.0f, _footLocalY)).Y;
+		if (_polyTarget != null)
+			return _polyTarget.ToGlobal(new Vector2(0.0f, _footLocalY)).Y;
+		return float.MinValue;
+	}
+
+	private void ApplySilhouette(Texture2D? silhouette)	{
 		if (silhouette != null)
 		{
 			_sprite.Texture = silhouette;
