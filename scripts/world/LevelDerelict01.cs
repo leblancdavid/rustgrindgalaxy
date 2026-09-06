@@ -85,6 +85,7 @@ public partial class LevelDerelict01 : MissionLevel
         }
 
         var rng = new RandomNumberGenerator { Seed = (ulong)mission.RunSeed };
+        WorldSun.SetFromSeed((ulong)mission.RunSeed);
         SpawnEnemies(rng, mission.EnemyDensity);
         SpawnPickups(rng, mission.PickupDensity, mission.PrimaryMineral, mission.SecondaryMineral);
         SpawnHazards(rng, mission.HazardDensity, mission.PaletteKey);

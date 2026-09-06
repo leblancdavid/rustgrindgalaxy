@@ -21,6 +21,7 @@ shape = SubResource("1")
 script = ExtResource("2")
 BaseWidth = 24.0
 BaseHeight = 6.0
+TargetSprite = NodePath("../VisualContainer/PlayerSprite")
 
 [node name="VisualContainer" type="Node2D" parent="." unique_name_int_hint=243499029]
 position = Vector2(0, 1)

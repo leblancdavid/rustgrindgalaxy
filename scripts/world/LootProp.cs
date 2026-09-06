@@ -33,6 +33,7 @@ public partial class LootProp : Area2D
 
     private List<FragmentState> _debris;
     private float _shatterElapsed;
+    private Shadow _shadow;
 
     private const float DebrisGravity = 500f;
     private const float ShatterDuration = 1.2f;
@@ -109,6 +110,15 @@ public partial class LootProp : Area2D
         }
         _visual.Modulate = GetTypeColor();
         AddChild(_visual);
+
+        _shadow = new Shadow
+        {
+            Name = "Shadow",
+            MaxAlpha = 0.35f,
+            WidthOverVisual = 0.9f,
+        };
+        AddChild(_shadow);
+        MoveChild(_shadow, 0);
     }
 
     public void SetMineral(MineralType mineral)
