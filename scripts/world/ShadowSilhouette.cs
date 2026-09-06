@@ -15,11 +15,14 @@ public static class ShadowSilhouette
     {
         public Texture2D? Texture;
 
-        // Sprite bakes: y offset (texture pixels, +down) from the sprite's
-        // center to the bottommost opaque row, before the node's own scale.
-        // Polygon bakes: node-local y (+down, before the node transform) of
-        // the bottommost point.
+        // Foot segment (bottom opaque row of the art) in the visual's
+        // pre-transform local space: midpoint x, y, and half-width. Shadow
+        // uses ToGlobal on these to get the object's true ground line even
+        // when the visual is rotated (props on ramps) or flipped (west-facing
+        // sprites with negative scale).
+        public float FootMidLocalX;
         public float FootLocalY;
+        public float FootHalfWidth;
     }
 
     // Entries die with their source resource (scene reloads do not leak).
@@ -93,7 +96,9 @@ public static class ShadowSilhouette
         return new Bake
         {
             Texture = tex,
+            FootMidLocalX = (minX + maxX) * 0.5f - w * 0.5f,
             FootLocalY = maxY + 0.5f - h * 0.5f,
+            FootHalfWidth = (maxX - minX + 1) * 0.5f,
         };
     }
 
@@ -156,13 +161,14 @@ public static class ShadowSilhouette
         if (tex == null)
             return null;
         // Canvas holds scale-applied points; ToGlobal re-applies them, so
-        // report the foot back in pre-scale local space. (Offset is ignored:
-        // visual nodes in this project keep it at zero.)
-        var footY = scale.Y != 0.0f ? maxY / scale.Y : maxY;
+        // report the foot segment back in pre-scale local space. (Offset is
+        // ignored: visual nodes in this project keep it at zero.)
         return new Bake
         {
             Texture = tex,
-            FootLocalY = footY,
+            FootMidLocalX = scale.X != 0.0f ? (minX + maxX) * 0.5f / scale.X : (minX + maxX) * 0.5f,
+            FootLocalY = scale.Y != 0.0f ? maxY / scale.Y : maxY,
+            FootHalfWidth = (maxX - minX) * 0.5f / Mathf.Abs(scale.X != 0.0f ? scale.X : 1.0f),
         };
     }
 

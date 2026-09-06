@@ -107,7 +107,9 @@ void fragment() {
 	private Sprite2D? _target;
 	private Polygon2D? _polyTarget;
 	private Texture2D? _lastSource;
-	private float _footLocalY;
+	private float _footMidX;
+	private float _footY;
+	private float _footHalfW;
 	private bool _hasFoot;
 	private bool _hasSilhouette;
 	private bool _targetLost;
@@ -232,84 +234,122 @@ void fragment() {
 		}
 
 		_sprite.Visible = true;
-		var groundOffset = _hasSilhouette ? SilhouetteGroundOffset : GroundOffset;
-		// Props and crates are drawn sunk into the floor for perspective; their
-		// shadow must start at the object's actual bottom pixel, not at the
-		// ground line hidden behind them. Grounded objects with feet at/above
-		// the surface are unaffected (max keeps the shadow on the ground).
-		var startY = hitPos.Y;
-		if (silhouette)
+
+		// Contact frame from the art's bottom segment in world space. Rotated
+		// props (ramps) have their bottom-edge midpoint displaced sideways
+		// from the owner center, so anchoring on owner X visibly detaches
+		// shadows on slopes.
+		var contact = new Vector2(ownerPos.X, hitPos.Y);
+		var edgeDir = Vector2.Right;
+		var useSegment = false;
+		if (silhouette && _hasFoot)
 		{
-			var footY = ComputeFootWorldY();
-			if (footY > startY)
-				startY = footY;
+			var left = FootToWorld(_footMidX - _footHalfW, _footY);
+			var right = FootToWorld(_footMidX + _footHalfW, _footY);
+			var edge = right - left;
+			if (edge.X < 0.0f)
+				edge = -edge; // west-facing flipped visuals: the quad is symmetric
+			if (edge.LengthSquared() > 0.0001f)
+			{
+				var mid = (left + right) * 0.5f;
+				contact = new Vector2(mid.X, Mathf.Max(hitPos.Y, mid.Y));
+				edgeDir = edge.Normalized();
+				useSegment = true;
+			}
 		}
+
 		// Occlusion: when foreground art covers the caster's contact point,
 		// the caster itself is drawn behind that art; the shadow must not
 		// leak out from under it.
-		if (ForegroundClip.Covers(new Vector2(ownerPos.X, startY), _owner2D))
+		if (ForegroundClip.Covers(contact, _owner2D))
 		{
 			_sprite.Visible = false;
 			LerpRotationTowards(0.0f, delta);
 			return;
 		}
-		GlobalPosition = new Vector2(ownerPos.X, startY + groundOffset);
+
+		var groundOffset = silhouette ? SilhouetteGroundOffset : GroundOffset;
+		GlobalPosition = contact + new Vector2(0.0f, groundOffset);
+
+		// Node rotation only hugs the ground for characters standing on slopes;
+		// static props keep 0 because their tilt is already baked into edgeDir.
+		LerpRotationTowards(ComputeSlopeRotation(), delta);
+		var ownerRot = _owner2D != null && IsInstanceValid(_owner2D) ? _owner2D.GlobalRotation : 0.0f;
+		var parentRot = ownerRot + _currentRotation;
 
 		var tex = _sprite.Texture;
 		var texW = tex != null ? tex.GetWidth() : TextureSize;
 		var texH = tex != null ? tex.GetHeight() : TextureSize;
-		float k = 0.0f;
-		Transform2D spriteXf;
-		if (silhouette)
+		var shearX = SunShear() * sx;
+
+		// World-space basis columns of the shadow quad:
+		// - tilted static props: top edge along the base segment, body hanging
+		//   world-vertical so the shadow runs *down the hill*, not perpendicular
+		//   to the slope; sun shear pushes the tip horizontally.
+		// - characters / ellipse fallback: the classic frame rotated with the
+		//   node, so the shadow lies along the ground the body stands on.
+		Vector2 uW;
+		Vector2 vW;
+		if (useSegment && _owner2D is not CharacterBody2D)
 		{
-			k = SunShear() * sx;
-			// x-axis scaled, y-axis scaled + sheared: feet row (local y = 0)
-			// stays welded while the far end of the shadow slides away from the sun.
-			spriteXf = new Transform2D(
-				new Vector2(sx, 0.0f),
-				new Vector2(k, sy),
-				Vector2.Zero);
-			_sprite.Transform = spriteXf;
+			uW = edgeDir * sx;
+			vW = new Vector2(shearX, sy);
 		}
 		else
 		{
-			spriteXf = new Transform2D(new Vector2(sx, 0.0f), new Vector2(0.0f, sy), Vector2.Zero);
-			_sprite.Scale = new Vector2(sx, sy);
+			uW = new Vector2(sx, 0.0f).Rotated(parentRot);
+			vW = new Vector2(shearX, sy).Rotated(parentRot);
 		}
+		_sprite.Transform = new Transform2D(
+			uW.Rotated(-parentRot),
+			vW.Rotated(-parentRot),
+			Vector2.Zero);
 
 		_sprite.Modulate = new Color(0.0f, 0.0f, 0.0f, Mathf.Lerp(MaxAlpha, MinAlpha, t));
 
 		// Show only where opaque ground art is under the shadow's extent.
-		var halfWidth = texW * sx * 0.5f;
-		var height = texH * sy;
-		var shiftMax = Mathf.Abs(k) * texH;
-		UpdateGroundClip(GlobalPosition, halfWidth, height, shiftMax, spriteXf);
-
-		LerpRotationTowards(ComputeSlopeRotation(), delta);
+		UpdateGroundClip(GlobalPosition, uW, vW, texW, texH, silhouette);
 	}
 
-	private void UpdateGroundClip(Vector2 anchor, float halfWidth, float height, float shiftMax, Transform2D spriteXf)
+	private Vector2 FootToWorld(float x, float y)
+	{
+		if (_target != null)
+			return _target.ToGlobal(new Vector2(x, y));
+		return _polyTarget != null ? _polyTarget.ToGlobal(new Vector2(x, y)) : new Vector2(x, y);
+	}
+
+	private void UpdateGroundClip(Vector2 anchor, Vector2 uW, Vector2 vW, int texW, int texH, bool silhouette)
 	{
 		if (_clipMat == null)
 			return;
 
 		// The clip tests world positions; the engine gives canvas_item shaders
-		// no world matrix, so hand it the linear map we just composed on the
-		// CPU (owner rotation + shadow slope rotation * sprite squash/shear).
-		var ownerRot = _owner2D != null && IsInstanceValid(_owner2D) ? _owner2D.GlobalRotation : 0.0f;
-		var lin = new Transform2D(ownerRot + Rotation, Vector2.Zero) * spriteXf;
+		// no world matrix, so hand it the exact columns we just used for the
+		// quad: world point = anchor + x*uW + y*vW (x, y in texture pixels).
 		_clipMat.SetShaderParameter("u_origin", anchor);
-		_clipMat.SetShaderParameter("u_col0", lin.X);
-		_clipMat.SetShaderParameter("u_col1", lin.Y);
+		_clipMat.SetShaderParameter("u_col0", uW);
+		_clipMat.SetShaderParameter("u_col1", vW);
 
-		// Pad x by the height too: slope/owner rotation can tilt the quad's
-		// corners outside its unrotated width.
-		var xPad = halfWidth + shiftMax + height + 2.0f;
-		var rect = new Rect2(
-			anchor.X - xPad,
-			anchor.Y - 3.0f,
-			xPad * 2.0f,
-			height + 8.0f);
+		// Exact world AABB of the quad, padded.
+		var halfW = texW * 0.5f;
+		var y0 = silhouette ? 0.0f : -texH * 0.5f;
+		var y1 = silhouette ? texH : texH * 0.5f;
+		var minX = float.MaxValue;
+		var minY = float.MaxValue;
+		var maxX = float.MinValue;
+		var maxY = float.MinValue;
+		for (var cx = -1; cx <= 1; cx += 2)
+		{
+			for (var cy = 0; cy <= 1; cy++)
+			{
+				var p = anchor + uW * (halfW * cx) + vW * (cy == 0 ? y0 : y1);
+				minX = Mathf.Min(minX, p.X);
+				maxX = Mathf.Max(maxX, p.X);
+				minY = Mathf.Min(minY, p.Y);
+				maxY = Mathf.Max(maxY, p.Y);
+			}
+		}
+		var rect = new Rect2(minX - 2.0f, minY - 2.0f, (maxX - minX) + 4.0f, (maxY - minY) + 4.0f);
 		GroundClip.Query(rect, _clipScratch);
 
 		var count = Mathf.Min(_clipScratch.Count, MaxClipPolys);
@@ -410,8 +450,7 @@ void fragment() {
 				return;
 			var bake = ShadowSilhouette.Get(_target.Texture);
 			ApplySilhouette(bake?.Texture);
-			_footLocalY = bake?.FootLocalY ?? 0.0f;
-			_hasFoot = bake != null;
+			CaptureFoot(bake);
 			_lastSource = _target.Texture;
 		}
 		else
@@ -421,24 +460,24 @@ void fragment() {
 			if (bake == null || bake.Texture == null || bake.Texture == _lastSource)
 				return;
 			ApplySilhouette(bake.Texture);
-			_footLocalY = bake.FootLocalY;
-			_hasFoot = true;
+			CaptureFoot(bake);
 			_lastSource = bake.Texture;
 		}
 	}
 
-	private float ComputeFootWorldY()
+	private void CaptureFoot(ShadowSilhouette.Bake? bake)
 	{
-		if (!_hasFoot)
-			return float.MinValue;
-		if (_target != null)
-			return _target.ToGlobal(new Vector2(0.0f, _footLocalY)).Y;
-		if (_polyTarget != null)
-			return _polyTarget.ToGlobal(new Vector2(0.0f, _footLocalY)).Y;
-		return float.MinValue;
+		_hasFoot = bake != null;
+		if (bake != null)
+		{
+			_footMidX = bake.FootMidLocalX;
+			_footY = bake.FootLocalY;
+			_footHalfW = bake.FootHalfWidth;
+		}
 	}
 
-	private void ApplySilhouette(Texture2D? silhouette)	{
+	private void ApplySilhouette(Texture2D? silhouette)
+	{
 		if (silhouette != null)
 		{
 			_sprite.Texture = silhouette;
