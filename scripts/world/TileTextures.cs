@@ -49,11 +49,13 @@ void fragment() {
 	float oy = hash21(block + vec2(47.97, 31.7));
 	float flip = hash21(block + vec2(113.0, 57.0));
 
-	vec2 uv = world_uv + vec2(ox, oy);
+	vec2 uv = fract(world_uv + vec2(ox, oy));
 	if (flip > 0.5) {
 		uv.x = -uv.x;
 	}
-	vec4 t = sel < 0.5 ? texture(tex_a, uv) : texture(tex_b, uv);
+	vec4 ta = texture(tex_a, uv);
+	vec4 tb = texture(tex_b, uv);
+	vec4 t = mix(ta, tb, step(0.5, sel));
 	COLOR.rgb *= mix(vec3(1.0), clamp(t.rgb * 2.0, 0.0, 1.0), weight);
 }
 ";
