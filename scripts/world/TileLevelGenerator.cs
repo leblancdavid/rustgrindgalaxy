@@ -62,6 +62,16 @@ public partial class TileLevelGenerator : Node2D
     [Export] public int BeaconInterval = 5;
     [Export] public bool CycleAllTilesBeforeRepeat = false;
 
+    /// <summary>Preview override for ground textures; null = per-tile default
+    /// (Catwalk* tiles get the grate theme, everything else the panel theme).</summary>
+    public TileTextures.Theme? ForcedTheme
+    {
+        get => _forcedTheme;
+        set { _forcedTheme = value; RefreshTextureThemes(); }
+    }
+
+    private TileTextures.Theme? _forcedTheme;
+
     private const float TileW = 1280.0f;
 
     private PlayerController _player = null!;
@@ -221,6 +231,7 @@ public partial class TileLevelGenerator : Node2D
 		tile.SpawnLootProps(_rng, _colorPalette);
 		tile.SpawnRailSupports();
 		tile.ApplyVisualPalette(_colorPalette);
+		tile.ApplyTextureTheme(_forcedTheme ?? DefaultThemeFor(tile));
 
         if (GeneratedTileCount > 0 && GeneratedTileCount % BeaconInterval == BeaconInterval - 1)
             PlaceBeacon(tile);
@@ -229,6 +240,18 @@ public partial class TileLevelGenerator : Node2D
         GeneratedTileCount++;
         offsetX = tile.GetTileRightX();
         LevelEndX = offsetX;
+    }
+
+    private static TileTextures.Theme DefaultThemeFor(LevelTile tile)
+    {
+        var fileName = tile.SceneFilePath.GetFile().GetBaseName();
+        return fileName.StartsWith("Catwalk") ? TileTextures.Theme.Catwalk : TileTextures.Theme.Building;
+    }
+
+    public void RefreshTextureThemes()
+    {
+        foreach (var tile in _activeTiles)
+            tile.ApplyTextureTheme(_forcedTheme ?? DefaultThemeFor(tile));
     }
 
     private void PlaceBeacon(LevelTile tile)

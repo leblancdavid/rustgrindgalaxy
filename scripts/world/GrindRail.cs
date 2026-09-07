@@ -6,11 +6,15 @@ public partial class GrindRail : Node2D
 
     [Export] public float Width = 96.0f;
     [Export] public float Height = 10.0f;
+    [Export] public float VisualThickness = 8.0f;
     [Export] public float BaseSpeed = 150.0f;
     [Export] public float SnapDistanceAbove = 18.0f;
     [Export] public float SnapDistanceBelow = 5.0f;
     [Export] public NodePath NextRailPath;
     [Export] public NodePath PrevRailPath;
+
+    private const float RailTexWidth = 32.0f;
+    private const float RailTexHeight = 8.0f;
 
     private Area2D _area = null!;
     private CollisionShape2D _collisionShape = null!;
@@ -18,6 +22,8 @@ public partial class GrindRail : Node2D
     private Polygon2D _glowPoly = null!;
     private GrindRail? _nextRail;
     private GrindRail? _prevRail;
+    private readonly float _uvOffset = GD.Randf() * RailTexWidth;
+    private readonly bool _uvFlipped = GD.Randf() < 0.5f;
 
     public GrindRail? NextRail => _nextRail;
     public GrindRail? PrevRail => _prevRail;
@@ -52,6 +58,7 @@ public partial class GrindRail : Node2D
         AddChild(_glowPoly);
 
         UpdateVisuals();
+        SetVisualTexture(TileTextures.RailMaterial());
         _area.BodyEntered += OnBodyEntered;
         _area.BodyExited += OnBodyExited;
     }
@@ -65,13 +72,33 @@ public partial class GrindRail : Node2D
 
         var hw = Width * 0.5f;
         var hh = Height * 0.5f;
+        var bottom = -hh + Mathf.Max(VisualThickness, Height);
         _poly.Polygon = new[]
         {
             new Vector2(-hw, -hh),
             new Vector2(hw, -hh),
-            new Vector2(hw, hh),
-            new Vector2(-hw, hh),
+            new Vector2(hw, bottom),
+            new Vector2(-hw, bottom),
         };
+        _poly.UV = new[]
+        {
+            UvAt(new Vector2(-hw, -hh), hh, bottom),
+            UvAt(new Vector2(hw, -hh), hh, bottom),
+            UvAt(new Vector2(hw, bottom), hh, bottom),
+            UvAt(new Vector2(-hw, bottom), hh, bottom),
+        };
+    }
+
+    private Vector2 UvAt(Vector2 p, float hh, float bottom)
+    {
+        var dir = _uvFlipped ? -1f : 1f;
+        return new Vector2((dir * p.X + _uvOffset) / RailTexWidth, (p.Y + hh) / (bottom + hh));
+    }
+
+    /// <summary>Assigns (or clears, with null) the tiling rail texture material.</summary>
+    public void SetVisualTexture(ShaderMaterial? material)
+    {
+        _poly.Material = material;
     }
 
     public void ApplyPalette(LevelColorPalette palette, PaletteSlot slot = PaletteSlot.PrimaryLight)

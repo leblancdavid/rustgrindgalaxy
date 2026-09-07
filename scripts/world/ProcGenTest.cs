@@ -184,6 +184,27 @@ public partial class ProcGenTest : Node2D
         _player.GlobalPosition = _respawnPosition;
     }
 
+    private static readonly TileTextures.Theme?[] ThemeCycle =
+    {
+        null,
+        TileTextures.Theme.Building,
+        TileTextures.Theme.Terrain,
+        TileTextures.Theme.Catwalk,
+        TileTextures.Theme.None,
+    };
+
+    private int _themeIndex;
+
+    public override void _UnhandledInput(InputEvent @event)
+    {
+        if (@event is InputEventKey e && e.Pressed && !e.Echo && e.PhysicalKeycode == Key.T)
+        {
+            _themeIndex = (_themeIndex + 1) % ThemeCycle.Length;
+            _tileGenerator.ForcedTheme = ThemeCycle[_themeIndex];
+            GD.Print($"Texture theme: {(_themeIndex == 0 ? "auto" : ThemeCycle[_themeIndex]!.Value.ToString())}");
+        }
+    }
+
     private Vector2 FindSafeSpawn()
     {
         var spaceState = GetWorld2D().DirectSpaceState;

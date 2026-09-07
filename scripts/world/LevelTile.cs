@@ -321,6 +321,11 @@ public partial class LevelTile : Node2D
         }
     }
 
+    public void ApplyTextureTheme(TileTextures.Theme theme)
+    {
+        TileTextures.ApplyTheme(this, theme);
+    }
+
     public void ApplyVisualPalette(LevelColorPalette palette)
     {
         var b = palette.Brightness;
