@@ -14,31 +14,31 @@ TileWidth = 1280
 LeftGroundY = 100.0
 RightGroundY = 164.0
 
-[node name="FlatVisual" type="Polygon2D" parent="."]
+[node name="FoundationFlatVisual" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(1280, 164, 960, 164, 960, 400, 1280, 400)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
-[node name="FlatTrim" type="Polygon2D" parent="."]
+[node name="FoundationFlatTrim" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(1280, 164, 960, 164, 960, 167, 1280, 167)
 color = Color(0.964706, 0.694118, 0.219608, 1)
 
-[node name="RampVisual" type="Polygon2D" parent="."]
+[node name="FoundationRampVisual" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(960, 164, 320, 100, 320, 400, 960, 400)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
-[node name="RampTrim" type="Polygon2D" parent="."]
+[node name="FoundationRampTrim" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(960, 164, 320, 100, 320, 103, 960, 167)
 color = Color(0.964706, 0.694118, 0.219608, 1)
 
-[node name="RampRise" type="Polygon2D" parent="."]
+[node name="FoundationRampRise" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(960, 164, 958, 164, 958, 180, 960, 180)
 color = Color(0.388235, 0.411765, 0.462745, 1)
 
-[node name="LandingVisual" type="Polygon2D" parent="."]
+[node name="FoundationLandingVisual" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(320, 100, 0, 100, 0, 400, 320, 400)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
-[node name="LandingTrim" type="Polygon2D" parent="."]
+[node name="FoundationLandingTrim" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(320, 100, 0, 100, 0, 103, 320, 103)
 color = Color(0.964706, 0.694118, 0.219608, 1)
 

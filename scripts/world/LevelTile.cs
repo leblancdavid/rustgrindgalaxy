@@ -326,6 +326,86 @@ public partial class LevelTile : Node2D
         TileTextures.ApplyTheme(this, theme);
     }
 
+    /// <summary>
+    /// New two-layer theme application using ThemePair (surface + foundation).
+    /// </summary>
+    public void ApplyTextureTheme(TileTextures.ThemePair pair)
+    {
+        TileTextures.ApplyThemePair(this, pair);
+    }
+
+    /// <summary>
+    /// Generates thin surface visuals (SurfaceVisual_N, SurfaceTrim_N) from FloorSegments.
+    /// Called once at tile placement. Surface polygons follow segment slope with baked UVs.
+    /// </summary>
+    public void BuildSurfaceVisuals(TileTextures.ThemePair pair)
+    {
+        if (FloorSegments == null || FloorSegments.Length == 0)
+            return;
+
+        // Remove existing surface visuals
+        var toRemove = new List<Node>();
+        foreach (var child in GetChildren())
+        {
+            if (child.Name.ToString().StartsWith("Surface"))
+                toRemove.Add(child);
+        }
+        foreach (var node in toRemove)
+            node.QueueFree();
+
+        float thickness = pair.SurfaceThickness;
+        int variants = Mathf.Max(1, pair.SurfaceVariants);
+
+        for (int i = 0; i < FloorSegments.Length; i++)
+        {
+            var seg = FloorSegments[i];
+            var start = new Vector2(seg.StartX, seg.StartY);
+            var end = new Vector2(seg.EndX, seg.EndY);
+            var dir = (end - start).Normalized();
+            var perp = new Vector2(-dir.Y, dir.X); // Upward perpendicular
+            float length = (end - start).Length();
+            int variantIndex = i % variants;
+
+            // Surface visual - thin quad along segment
+            var visual = new Polygon2D
+            {
+                Name = $"SurfaceVisual_{i}_{variantIndex}",
+                ZIndex = 1,
+                Polygon = new Vector2[]
+                {
+                    start,
+                    end,
+                    end + perp * thickness,
+                    start + perp * thickness,
+                }
+            };
+            // Bake UVs: UV.X = distance along segment / 64px, UV.Y = 0..1 across thickness
+            var uv = new Vector2[4];
+            uv[0] = new Vector2(0f, 1f);                           // start, bottom
+            uv[1] = new Vector2(length / 64f, 1f);                 // end, bottom
+            uv[2] = new Vector2(length / 64f, 0f);                 // end, top
+            uv[3] = new Vector2(0f, 0f);                           // start, top
+            visual.UV = uv;
+            AddChild(visual);
+
+            // Surface trim - 2px bright edge on top
+            var trim = new Polygon2D
+            {
+                Name = $"SurfaceTrim_{i}_{variantIndex}",
+                ZIndex = 2,
+                Polygon = new Vector2[]
+                {
+                    start + perp * thickness,
+                    end + perp * thickness,
+                    end + perp * (thickness + 2f),
+                    start + perp * (thickness + 2f),
+                }
+            };
+            trim.UV = uv; // Same UV mapping
+            AddChild(trim);
+        }
+    }
+
     public void ApplyVisualPalette(LevelColorPalette palette)
     {
         var b = palette.Brightness;

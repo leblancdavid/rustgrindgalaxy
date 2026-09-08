@@ -21,15 +21,15 @@ color = Color(0.301961, 0.317647, 0.356863, 1)
 polygon = PackedVector2Array(0, 360, 440, 360, 440, 363, 0, 363)
 color = Color(0.964706, 0.694118, 0.219608, 1)
 
-[node name="RampVisual" type="Polygon2D" parent="."]
+[node name="FoundationRampVisual" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(440, 360, 500, 338.16, 756, 81.84, 816, 60, 816, 376, 756, 376, 500, 376, 440, 376)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
-[node name="RampTrim" type="Polygon2D" parent="."]
+[node name="FoundationRampTrim" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(440, 360, 500, 338.16, 756, 81.84, 816, 60, 816, 63, 756, 84.84, 500, 341.16, 440, 363)
 color = Color(0.964706, 0.694118, 0.219608, 1)
 
-[node name="RampRise" type="Polygon2D" parent="."]
+[node name="FoundationRampRise" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(440, 360, 442, 360, 442, 376, 440, 376)
 color = Color(0.388235, 0.411765, 0.462745, 1)
 

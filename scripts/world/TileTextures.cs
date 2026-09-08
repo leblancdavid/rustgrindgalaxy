@@ -6,26 +6,48 @@ using System.Collections.Generic;
 /// Textures are multiplied by the polygon's flat color, so the existing
 /// LevelColorPalette tinting (ApplyVisualPalette) stays the sole color source.
 ///
-/// The ground shader derives its sampling position in the vertex stage from
-/// MODEL_MATRIX * VERTEX (the polygon's world position) / tex_px, so the
-/// pattern stays continuous across tile seams (1280 is a multiple of every
-/// tile size) with no per-polygon UV baking — ground tiles never move after
-/// placement (same assumption as GroundClip). The shader blends
-/// tex_a/tex_b and jitters/flips them by blocky world-position hash so the
-/// tiling never visibly repeats. The rail shader keeps the per-instance
-/// baked UVs (offset/flip vertical mapping) that GrindRail supplies.
+/// Two-layer system:
+/// - FOUNDATION: Thick structural fill, world-space UV shader, seamless 64x64 tiling
+/// - SURFACE:    Thin walkable layer (4-8px), follows FloorSegments, baked UVs, strip textures
 /// </summary>
 public static class TileTextures
 {
+	// Legacy single-theme enum (kept for backward compatibility)
 	public enum Theme { None, Building, Terrain, Catwalk }
+
+	// New two-layer theme system
+	public enum SurfaceTheme { None, Grate, MetalPlate, Concrete, RockTop, Organic, Ice }
+	public enum FoundationTheme { None, MetalPanel, RockStrata, ConcreteBlock, Dirt, Organic, Ice }
+
+	public struct ThemePair
+	{
+		public SurfaceTheme Surface;
+		public FoundationTheme Foundation;
+		public float SurfaceThickness;  // 4-8px per theme
+		public int SurfaceVariants;     // 2-4 strip variants
+	}
+
+	/// <summary>Curated theme presets - surface + foundation pairs that visually belong together.</summary>
+	public static readonly Dictionary<string, ThemePair> ThemePresets = new()
+	{
+		["Industrial"]      = new ThemePair { Surface = SurfaceTheme.Grate,        Foundation = FoundationTheme.MetalPanel,     SurfaceThickness = 4f, SurfaceVariants = 2 },
+		["Catwalk"]         = new ThemePair { Surface = SurfaceTheme.Grate,        Foundation = FoundationTheme.MetalPanel,     SurfaceThickness = 4f, SurfaceVariants = 2 },
+		["HeavyIndustrial"] = new ThemePair { Surface = SurfaceTheme.MetalPlate,   Foundation = FoundationTheme.MetalPanel,     SurfaceThickness = 6f, SurfaceVariants = 3 },
+		["Derelict"]        = new ThemePair { Surface = SurfaceTheme.Concrete,     Foundation = FoundationTheme.ConcreteBlock,  SurfaceThickness = 8f, SurfaceVariants = 4 },
+		["Surface"]         = new ThemePair { Surface = SurfaceTheme.RockTop,      Foundation = FoundationTheme.RockStrata,     SurfaceThickness = 8f, SurfaceVariants = 3 },
+		["Organic"]         = new ThemePair { Surface = SurfaceTheme.Organic,      Foundation = FoundationTheme.Dirt,           SurfaceThickness = 6f, SurfaceVariants = 4 },
+		["Ice"]             = new ThemePair { Surface = SurfaceTheme.Ice,          Foundation = FoundationTheme.Ice,            SurfaceThickness = 4f, SurfaceVariants = 2 },
+	};
 
 	private const string Dir = "res://assets/tiles/";
 
-	private const string GroundShaderCode = @"shader_type canvas_item;
+	// Foundation shader (existing) - world-space UV, seamless tiling with block jitter
+	private const string FoundationShaderCode = @"shader_type canvas_item;
 
 uniform sampler2D tex_a : filter_nearest;
 uniform sampler2D tex_b : filter_nearest;
 uniform vec2 tex_px = vec2(64.0, 64.0);
+uniform vec2 tex_scale = vec2(1.0, 1.0);
 uniform float block_px = 96.0;
 uniform float weight = 0.55;
 
@@ -38,7 +60,7 @@ float hash21(vec2 p) {
 }
 
 void vertex() {
-	world_uv = (MODEL_MATRIX * vec4(VERTEX, 0.0, 1.0)).xy / tex_px;
+	world_uv = (MODEL_MATRIX * vec4(VERTEX, 0.0, 1.0)).xy / (tex_px * tex_scale);
 }
 
 void fragment() {
@@ -60,6 +82,33 @@ void fragment() {
 }
 ";
 
+	// Surface shader (NEW) - simple sampled texture with pre-baked UVs, variant selection via uniform
+	private const string SurfaceShaderCode = @"shader_type canvas_item;
+
+uniform sampler2D tex_a : filter_nearest;
+uniform sampler2D tex_b : filter_nearest;
+uniform sampler2D tex_c : filter_nearest;
+uniform sampler2D tex_d : filter_nearest;
+uniform float variant_index = 0.0;
+
+varying vec2 uv;
+
+void vertex() {
+	uv = UV;
+}
+
+void fragment() {
+	vec4 tex = texture(tex_a, uv);
+	if (variant_index > 0.5) tex = texture(tex_b, uv);
+	if (variant_index > 1.5) tex = texture(tex_c, uv);
+	if (variant_index > 2.5) tex = texture(tex_d, uv);
+	
+	COLOR = tex;
+	// Multiply by vertex color for palette tinting
+	COLOR.rgb *= COLOR.a;
+}
+";
+
 	private const string RailShaderCode = @"shader_type canvas_item;
 
 uniform sampler2D tex_a : filter_nearest;
@@ -75,25 +124,47 @@ void fragment() {
 }
 ";
 
-	private struct ThemeSpec
+	private struct FoundationSpec
 	{
 		public string TexA;
 		public string TexB;
 		public Vector2 TexPx;
+		public Vector2 TexScale;
 		public float BlockPx;
 	}
 
-	private static readonly Dictionary<Theme, ThemeSpec> Specs = new()
+	private struct SurfaceSpec
 	{
-		[Theme.Building] = new ThemeSpec { TexA = "panel_00.png", TexB = "panel_01.png", TexPx = new Vector2(64, 64), BlockPx = 96 },
-		[Theme.Terrain] = new ThemeSpec { TexA = "rock_00.png", TexB = "rock_01.png", TexPx = new Vector2(64, 64), BlockPx = 96 },
-		[Theme.Catwalk] = new ThemeSpec { TexA = "grate_00.png", TexB = "grate_01.png", TexPx = new Vector2(32, 16), BlockPx = 80 },
+		public string[] Variants;  // 2-4 strip texture filenames
+		public Vector2 TexPx;      // Strip texture size (e.g., 64x8)
+	}
+
+	private static readonly Dictionary<FoundationTheme, FoundationSpec> FoundationSpecs = new()
+	{
+		[FoundationTheme.MetalPanel]    = new FoundationSpec { TexA = "panel_00.png", TexB = "panel_01.png", TexPx = new Vector2(64, 64), TexScale = new Vector2(1.0f, 1.0f), BlockPx = 96 },
+		[FoundationTheme.RockStrata]    = new FoundationSpec { TexA = "rock_00.png", TexB = "rock_01.png", TexPx = new Vector2(64, 64), TexScale = new Vector2(1.0f, 1.0f), BlockPx = 96 },
+		[FoundationTheme.ConcreteBlock] = new FoundationSpec { TexA = "concrete_00.png", TexB = "concrete_01.png", TexPx = new Vector2(64, 64), TexScale = new Vector2(1.0f, 1.0f), BlockPx = 96 },
+		[FoundationTheme.Dirt]          = new FoundationSpec { TexA = "dirt_00.png", TexB = "dirt_01.png", TexPx = new Vector2(64, 64), TexScale = new Vector2(1.0f, 1.0f), BlockPx = 96 },
+		[FoundationTheme.Organic]       = new FoundationSpec { TexA = "organic_00.png", TexB = "organic_01.png", TexPx = new Vector2(64, 64), TexScale = new Vector2(1.0f, 1.0f), BlockPx = 96 },
+		[FoundationTheme.Ice]           = new FoundationSpec { TexA = "ice_00.png", TexB = "ice_01.png", TexPx = new Vector2(64, 64), TexScale = new Vector2(1.0f, 1.0f), BlockPx = 96 },
 	};
 
-	private static Shader _groundShader;
+	private static readonly Dictionary<SurfaceTheme, SurfaceSpec> SurfaceSpecs = new()
+	{
+		[SurfaceTheme.Grate]       = new SurfaceSpec { Variants = new[] { "grate_strip_00.png", "grate_strip_01.png" }, TexPx = new Vector2(64, 8) },
+		[SurfaceTheme.MetalPlate]  = new SurfaceSpec { Variants = new[] { "plate_strip_00.png", "plate_strip_01.png", "plate_strip_02.png" }, TexPx = new Vector2(64, 8) },
+		[SurfaceTheme.Concrete]    = new SurfaceSpec { Variants = new[] { "concrete_strip_00.png", "concrete_strip_01.png", "concrete_strip_02.png", "concrete_strip_03.png" }, TexPx = new Vector2(64, 8) },
+		[SurfaceTheme.RockTop]     = new SurfaceSpec { Variants = new[] { "rocktop_strip_00.png", "rocktop_strip_01.png", "rocktop_strip_02.png" }, TexPx = new Vector2(64, 8) },
+		[SurfaceTheme.Organic]     = new SurfaceSpec { Variants = new[] { "organic_strip_00.png", "organic_strip_01.png", "organic_strip_02.png", "organic_strip_03.png" }, TexPx = new Vector2(64, 8) },
+		[SurfaceTheme.Ice]         = new SurfaceSpec { Variants = new[] { "ice_strip_00.png", "ice_strip_01.png" }, TexPx = new Vector2(64, 8) },
+	};
+
+	private static Shader _foundationShader;
+	private static Shader _surfaceShader;
 	private static Shader _railShader;
 	private static ShaderMaterial _railMat;
-	private static readonly Dictionary<Theme, ShaderMaterial> _groundMats = new();
+	private static readonly Dictionary<FoundationTheme, ShaderMaterial> _foundationMats = new();
+	private static readonly Dictionary<SurfaceTheme, ShaderMaterial> _surfaceMats = new();
 	private static readonly Dictionary<string, Texture2D> _texCache = new();
 
 	private static Texture2D LoadTex(string file)
@@ -106,29 +177,61 @@ void fragment() {
 		return tex;
 	}
 
-	/// <summary>Shared ground material for a theme, or null when unavailable (flat fill fallback).</summary>
-	public static ShaderMaterial GroundMaterial(Theme theme)
+	/// <summary>Foundation material - world-space UV shader for thick structural fill.</summary>
+	public static ShaderMaterial GetFoundationMaterial(FoundationTheme theme)
 	{
-		if (theme == Theme.None || !Specs.TryGetValue(theme, out var spec))
+		if (theme == FoundationTheme.None || !FoundationSpecs.TryGetValue(theme, out var spec))
 			return null;
-		if (_groundMats.TryGetValue(theme, out var cached))
+		if (_foundationMats.TryGetValue(theme, out var cached))
 			return cached;
 
 		var texA = LoadTex(spec.TexA);
 		var texB = LoadTex(spec.TexB);
 		if (texA == null || texB == null)
 		{
-			_groundMats[theme] = null;
+			_foundationMats[theme] = null;
 			return null;
 		}
 
-		_groundShader ??= new Shader { Code = GroundShaderCode };
-		var mat = new ShaderMaterial { Shader = _groundShader };
+		_foundationShader ??= new Shader { Code = FoundationShaderCode };
+		var mat = new ShaderMaterial { Shader = _foundationShader };
 		mat.SetShaderParameter("tex_a", texA);
 		mat.SetShaderParameter("tex_b", texB);
 		mat.SetShaderParameter("tex_px", spec.TexPx);
+		mat.SetShaderParameter("tex_scale", spec.TexScale);
 		mat.SetShaderParameter("block_px", spec.BlockPx);
-		_groundMats[theme] = mat;
+		_foundationMats[theme] = mat;
+		return mat;
+	}
+
+	/// <summary>Surface material - simple texture with pre-baked UVs, variant selection via uniform.</summary>
+	public static ShaderMaterial GetSurfaceMaterial(SurfaceTheme theme)
+	{
+		if (theme == SurfaceTheme.None || !SurfaceSpecs.TryGetValue(theme, out var spec))
+			return null;
+		if (_surfaceMats.TryGetValue(theme, out var cached))
+			return cached;
+
+		var variants = spec.Variants;
+		var texA = variants.Length > 0 ? LoadTex(variants[0]) : null;
+		var texB = variants.Length > 1 ? LoadTex(variants[1]) : null;
+		var texC = variants.Length > 2 ? LoadTex(variants[2]) : null;
+		var texD = variants.Length > 3 ? LoadTex(variants[3]) : null;
+
+		if (texA == null)
+		{
+			_surfaceMats[theme] = null;
+			return null;
+		}
+
+		_surfaceShader ??= new Shader { Code = SurfaceShaderCode };
+		var mat = new ShaderMaterial { Shader = _surfaceShader };
+		mat.SetShaderParameter("tex_a", texA);
+		mat.SetShaderParameter("tex_b", texB);
+		mat.SetShaderParameter("tex_c", texC);
+		mat.SetShaderParameter("tex_d", texD);
+		// variant_index set per-polygon in LevelTile.BuildSurfaceVisuals()
+		_surfaceMats[theme] = mat;
 		return mat;
 	}
 
@@ -146,14 +249,18 @@ void fragment() {
 	}
 
 	/// <summary>
-	/// Applies the ground-fill material to every ground visual polygon of the
-	/// tile (same name filter as ApplyVisualPalette's fill branch) and to all
-	/// of its rails. Theme None restores the flat fill. The shader computes
-	/// world UVs itself, so no per-polygon data is baked.
+	/// Legacy single-theme ApplyTheme (backward compatibility).
+	/// Applies foundation material to all Visual polygons.
 	/// </summary>
 	public static void ApplyTheme(LevelTile tile, Theme theme)
 	{
-		var mat = GroundMaterial(theme);
+		var mat = theme switch
+		{
+			Theme.Building => GetFoundationMaterial(FoundationTheme.MetalPanel),
+			Theme.Terrain => GetFoundationMaterial(FoundationTheme.RockStrata),
+			Theme.Catwalk => GetFoundationMaterial(FoundationTheme.MetalPanel),
+			_ => null
+		};
 
 		foreach (var child in tile.GetChildren())
 		{
@@ -177,6 +284,62 @@ void fragment() {
 			}
 
 			poly.Material = mat;
+		}
+	}
+
+	/// <summary>
+	/// New two-layer ApplyThemePair.
+	/// Foundation -> Foundation*Visual polygons (thick, world-space UV)
+	/// Surface -> Surface*Visual/Trim polygons (thin, baked UVs)
+	/// </summary>
+	public static void ApplyThemePair(LevelTile tile, ThemePair pair)
+	{
+		var foundationMat = GetFoundationMaterial(pair.Foundation);
+		var surfaceMat = GetSurfaceMaterial(pair.Surface);
+
+		foreach (var child in tile.GetChildren())
+		{
+			if (child is GrindRail rail)
+			{
+				rail.SetVisualTexture(RailMaterial());
+				continue;
+			}
+			if (child is not Polygon2D poly || poly.Polygon.Length < 3)
+				continue;
+
+			var name = (string)poly.Name;
+
+			// Foundation layer: FoundationVisual, FoundationRampVisual, FoundationLandingVisual, Foundation*Trim, Foundation*Rise
+			bool isFoundation = name.StartsWith("Foundation");
+			// Surface layer: SurfaceVisual, SurfaceTrim
+			bool isSurface = name.StartsWith("Surface");
+
+			if (isFoundation)
+			{
+				if (foundationMat == null)
+					poly.Material = null;
+				else
+					poly.Material = foundationMat;
+			}
+			else if (isSurface)
+			{
+				if (surfaceMat == null)
+				{
+					poly.Material = null;
+				}
+				else
+				{
+					// Create instance material per polygon to set variant_index
+					// Variant index is encoded in name: SurfaceVisual_{segmentIndex}_{variantIndex}
+					var instanceMat = (ShaderMaterial)surfaceMat.Duplicate();
+					int variant = 0;
+					var parts = name.Split('_');
+					if (parts.Length >= 3 && int.TryParse(parts[^1], out var parsedVariant))
+						variant = parsedVariant;
+					instanceMat.SetShaderParameter("variant_index", (float)variant);
+					poly.Material = instanceMat;
+				}
+			}
 		}
 	}
 }

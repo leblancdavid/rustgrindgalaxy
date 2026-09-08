@@ -116,7 +116,7 @@ color = Color(0.909804, 0.772549, 0.345098, 1)
 polygon = PackedVector2Array(960, 60, 1120, 60, 1120, 79, 960, 79)
 color = Color(0.388235, 0.411765, 0.462745, 1)
 
-[node name="LandingVisual" type="Polygon2D" parent="."]
+[node name="FoundationLandingVisual" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(1120, 60, 1280, 60, 1280, 400, 1120, 400)
 color = Color(0.301961, 0.317647, 0.356863, 1)
 
