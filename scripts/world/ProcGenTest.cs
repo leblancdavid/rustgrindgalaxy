@@ -2,270 +2,283 @@ using Godot;
 
 public partial class ProcGenTest : Node2D
 {
-    [Export] public Vector2 SpawnPosition = new(200.0f, 96.0f);
-    [Export] public float FallRespawnY = 420.0f;
+	[Export] public Vector2 SpawnPosition = new(200.0f, 96.0f);
+	[Export] public float FallRespawnY = 420.0f;
 
-    private Vector2 _respawnPosition;
-    private PlayerController _player = null!;
-    private Camera2D _camera = null!;
-    private Hud _hud = null!;
-    private TileLevelGenerator _tileGenerator = null!;
-    private Node2D _spawnedActors = null!;
-    private ColorRect _spaceRect = null!;
-    private ColorRect _upperBand = null!;
-    private ColorRect _glowStripe = null!;
-    private Sprite2D _fogSprite = null!;
-    private ColorRect _darknessRect = null!;
-    private const float FogHalfHeight = 600f;
+	private Vector2 _respawnPosition;
+	private PlayerController _player = null!;
+	private Camera2D _camera = null!;
+	private Hud _hud = null!;
+	private TileLevelGenerator _tileGenerator = null!;
+	private Node2D _spawnedActors = null!;
+	private ColorRect _spaceRect = null!;
+	private Sprite2D _skySprite = null!;
+	private Sprite2D _groundSprite = null!;
+	private Sprite2D _fogSprite = null!;
+	private ColorRect _darknessRect = null!;
+	private BackgroundProps _bgProps = null!;
+	private float _groundScreenY = 150f;
+	private float _skyScreenY = -60f;
+	private const float FogHalfHeight = 600f;
+	private const float FogBaseY = -40f;
+	private const float FogSeamFraction = 0.18f;
+	private const float ViewHalfHeight = 180f;
+	private const float GroundParallaxFactor = 0.15f;
+	private const float SkyParallaxFactor = 0.10f;
+	private const float ParallaxRefCamY = 96f;
+	private const float GroundTrackingRate = 4f;
+	private const float SkyBaseY = -60f;
+	private const float GroundYOffset = -96f;
 
-    public override void _Ready()
-    {
-        _player = GetNode<PlayerController>("Player");
-        _camera = _player.GetNode<Camera2D>("Camera2D");
-        _hud = GetNode<Hud>("Hud");
-        _tileGenerator = GetNode<TileLevelGenerator>("TileGenerator");
+	public override void _Ready()
+	{
+		_player = GetNode<PlayerController>("Player");
+		_camera = _player.GetNode<Camera2D>("Camera2D");
+		_hud = GetNode<Hud>("Hud");
+		_tileGenerator = GetNode<TileLevelGenerator>("TileGenerator");
 
-        RemoveCameraBounds();
-        _camera.Position = new Vector2(0, -80);
+		RemoveCameraBounds();
+		_camera.Position = new Vector2(0, -80);
 
-        var generator = new ModuleGenerator();
-        _player.SetLoadout(generator.GenerateDebugLoadout(ModuleRarity.Rare));
-        _player.GodMode = true;
-        _player.GlobalPosition = SpawnPosition;
+		var generator = new ModuleGenerator();
+		_player.SetLoadout(generator.GenerateDebugLoadout(ModuleRarity.Rare));
+		_player.GodMode = true;
+		_player.GlobalPosition = SpawnPosition;
 
-        _respawnPosition = SpawnPosition;
+		_respawnPosition = SpawnPosition;
 
-        var seed = (long)(GD.Randi() | ((ulong)GD.Randi() << 32));
-        var rng = new RandomNumberGenerator { Seed = (ulong)seed };
+		var seed = (long)(GD.Randi() | ((ulong)GD.Randi() << 32));
+		var rng = new RandomNumberGenerator { Seed = (ulong)seed };
 
-        var primary = (MineralType)(rng.Randi() % 6);
-        var secondary = (MineralType)(rng.Randi() % 6);
-        while (secondary == primary) secondary = (MineralType)(rng.Randi() % 6);
-        var palette = LevelColorPalette.FromMinerals(primary, secondary);
-        GD.Print($"Palette: {primary}/{secondary}");
-        var darkenBg = rng.Randf() < 0.5f;
-        var bgDim = darkenBg ? 0.65f : 1.0f;
-        var fgPalette = darkenBg ? palette : palette.WithBrightness(0.85f);
+		var primary = (MineralType)(rng.Randi() % 6);
+		var secondary = (MineralType)(rng.Randi() % 6);
+		while (secondary == primary) secondary = (MineralType)(rng.Randi() % 6);
+		var palette = LevelColorPalette.FromMinerals(primary, secondary);
+		GD.Print($"Palette: {primary}/{secondary}");
+		var darkenBg = rng.Randf() < 0.5f;
+		var bgDim = darkenBg ? 0.65f : 1.0f;
+		var fgPalette = darkenBg ? palette : palette.WithBrightness(0.85f);
 
-        ApplyPalette(palette, bgDim);
+		ApplyPalette(palette, bgDim);
 
-        _tileGenerator.Initialize(_player, null!, seed, fgPalette);
-        _tileGenerator.BuildInitial();
-        _tileGenerator.UpdateStreaming();
+		_tileGenerator.Initialize(_player, null!, seed, fgPalette);
+		_tileGenerator.BuildInitial();
+		_tileGenerator.UpdateStreaming();
 
-        _spawnedActors = GetNode<Node2D>("SpawnedActors");
-        SpawnEnemies();
-    }
+		_spawnedActors = GetNode<Node2D>("SpawnedActors");
+		SpawnEnemies();
+	}
 
-    private void ApplyPalette(LevelColorPalette palette, float bgDim = 1.0f)
-    {
-        _spaceRect = GetNode<ColorRect>("ParallaxBackground/DeepSpace/SpaceRect");
-        _upperBand = GetNode<ColorRect>("ParallaxBackground/FarLayer/UpperBand");
-        _glowStripe = GetNode<ColorRect>("ParallaxBackground/FarLayer/GlowStripe");
+	private void ApplyPalette(LevelColorPalette palette, float bgDim = 1.0f)
+	{
+		_spaceRect = GetNode<ColorRect>("ParallaxBackground/DeepSpace/SpaceRect");
+		_skySprite = GetNode<Sprite2D>("ParallaxBackground/DeepSpace/SkySprite");
+		_groundSprite = GetNode<Sprite2D>("ParallaxBackground/DeepSpace/GroundSprite");
 
-        _spaceRect.Color = new Color(palette.PrimaryDark.R * bgDim, palette.PrimaryDark.G * bgDim, palette.PrimaryDark.B * bgDim, 1f);
-        _upperBand.Color = new Color(palette.PrimaryMedium.R * bgDim, palette.PrimaryMedium.G * bgDim, palette.PrimaryMedium.B * bgDim, 1f);
-        _glowStripe.Color = new Color(palette.SecondaryLight.R * bgDim, palette.SecondaryLight.G * bgDim, palette.SecondaryLight.B * bgDim, 0.2f);
+		_spaceRect.Color = new Color(palette.PrimaryDark.R * bgDim, palette.PrimaryDark.G * bgDim, palette.PrimaryDark.B * bgDim, 1f);
+		_skySprite.Modulate = new Color(palette.PrimaryDark.R * bgDim, palette.PrimaryDark.G * bgDim, palette.PrimaryDark.B * bgDim, 1f);
+		_groundSprite.Modulate = new Color(palette.PrimaryDark.R * bgDim, palette.PrimaryDark.G * bgDim, palette.PrimaryDark.B * bgDim, 1f);
 
-        var farLayer = GetNode("ParallaxBackground/FarLayer");
-        foreach (var child in farLayer.GetChildren())
-        {
-            if (child is Polygon2D poly && child.Name.ToString().StartsWith("Silhouette"))
-                poly.Color = new Color(palette.PrimaryDark.R * bgDim, palette.PrimaryDark.G * bgDim, palette.PrimaryDark.B * bgDim, 0.55f);
-        }
+		_fogSprite = MistFog.CreateDoubleFog(palette, bgDim, FogHalfHeight);
+		AddChild(_fogSprite);
+		MoveChild(_fogSprite, 1);
+		_fogSprite.Position = new Vector2(-1500, FogBaseY);
 
-        var midLayer = GetNode("ParallaxBackground/MidLayer");
-        foreach (var child in midLayer.GetChildren())
-        {
-            if (child is Polygon2D poly)
-            {
-                var name = child.Name.ToString();
-                if (name.StartsWith("MidPanel"))
-                    poly.Color = new Color(palette.PrimaryMedium.R * bgDim, palette.PrimaryMedium.G * bgDim, palette.PrimaryMedium.B * bgDim, 0.38f);
-                else if (name.StartsWith("Support"))
-                    poly.Color = new Color(palette.PrimaryLight.R * bgDim, palette.PrimaryLight.G * bgDim, palette.PrimaryLight.B * bgDim, 0.3f);
-            }
-        }
+		var (darkLayer, darkRect) = MistFog.CreateDarknessOverlay();
+		AddChild(darkLayer);
+		_darknessRect = darkRect;
 
-        _fogSprite = MistFog.CreateDoubleFog(palette, bgDim, FogHalfHeight);
-        AddChild(_fogSprite);
-        MoveChild(_fogSprite, 1);
-        _fogSprite.Position = new Vector2(-1500, -40);
+		_bgProps = new BackgroundProps();
+		AddChild(_bgProps);
+		_bgProps.Configure(_camera, ParallaxRefCamY, SeamYAtRef());
+		_bgProps.SetPaletteData(palette, bgDim);
+		MoveChild(_bgProps, 1);
+	}
 
-        var (darkLayer, darkRect) = MistFog.CreateDarknessOverlay();
-        AddChild(darkLayer);
-        _darknessRect = darkRect;
-    }
+	private float SeamYAtRef()
+	{
+		var seamWorldY = FogBaseY + FogHalfHeight * 2f * FogSeamFraction;
+		return (seamWorldY - (ParallaxRefCamY - ViewHalfHeight)) + GroundYOffset;
+	}
 
-    public override void _Process(double delta)
-    {
-        _hud.UpdatePlayerState(_player);
-        _hud.UpdateTileName(GetTileLabelText());
-        _tileGenerator.UpdateStreaming();
+	public override void _Process(double delta)
+	{
+		_hud.UpdatePlayerState(_player);
+		_hud.UpdateTileName(GetTileLabelText());
+		_tileGenerator.UpdateStreaming();
 
-        _fogSprite.Position = new Vector2(_camera.GlobalPosition.X - 1500, -40);
+		_fogSprite.Position = new Vector2(_camera.GlobalPosition.X - 1500, FogBaseY);
 
-        var midY = -40 + FogHalfHeight;
-        var depth = Mathf.Clamp((_player.GlobalPosition.Y - midY) / FogHalfHeight, 0f, 1f);
-        _darknessRect.Modulate = new Color(0, 0, 0, depth * 0.35f);
+		var seamWorldY = FogBaseY + FogHalfHeight * 2f * FogSeamFraction;
+		var targetSeamY = (seamWorldY - (ParallaxRefCamY - ViewHalfHeight)) - (_camera.GlobalPosition.Y - ParallaxRefCamY) * GroundParallaxFactor + GroundYOffset;
+		_groundScreenY = Mathf.Lerp(_groundScreenY, targetSeamY, 1f - Mathf.Exp(-(float)delta * GroundTrackingRate));
+		_groundSprite.Position = new Vector2(0, _groundScreenY);
 
-        var surfaceY = GetSurfaceYAtX(_player.GlobalPosition.X);
-        var threshold = surfaceY < float.MaxValue ? surfaceY + 500f : FallRespawnY;
-        if (_player.GlobalPosition.Y > threshold)
-        {
-            RespawnPlayer();
-        }
-    }
+		var targetSkyY = SkyBaseY - (_camera.GlobalPosition.Y - ParallaxRefCamY) * SkyParallaxFactor;
+		_skyScreenY = Mathf.Lerp(_skyScreenY, targetSkyY, 1f - Mathf.Exp(-(float)delta * GroundTrackingRate));
+		_skySprite.Position = new Vector2(0, _skyScreenY);
 
-    private void SpawnEnemies()
-    {
-        var raiderScene = GD.Load<PackedScene>("res://scenes/enemies/Raider.tscn");
-        var droneScene = GD.Load<PackedScene>("res://scenes/enemies/Drone.tscn");
-        var combatDroneScene = GD.Load<PackedScene>("res://scenes/enemies/CombatDrone.tscn");
-        var bombBotScene = GD.Load<PackedScene>("res://scenes/enemies/BombBot.tscn");
-        var boomerangScene = GD.Load<PackedScene>("res://scenes/enemies/BoomerangRaider.tscn");
-        var rng = new RandomNumberGenerator();
+		var midY = FogBaseY + FogHalfHeight;
+		var depth = Mathf.Clamp((_player.GlobalPosition.Y - midY) / FogHalfHeight, 0f, 1f);
+		_darknessRect.Modulate = new Color(0, 0, 0, depth * 0.35f);
 
-        var groundTypes = new[] { raiderScene, bombBotScene, boomerangScene };
-        var flyingTypes = new[] { droneScene, combatDroneScene };
+		var surfaceY = GetSurfaceYAtX(_player.GlobalPosition.X);
+		var threshold = surfaceY < float.MaxValue ? surfaceY + 500f : FallRespawnY;
+		if (_player.GlobalPosition.Y > threshold)
+		{
+			RespawnPlayer();
+		}
+	}
 
-        foreach (var tile in _tileGenerator.ActiveTiles)
-        {
-            var groundCount = (int)(rng.Randi() % 3) + 1;
-            for (var i = 0; i < groundCount; i++)
-            {
-                var t = rng.RandfRange(0.1f, 0.9f);
-                var localX = t * tile.TileWidth;
-                var posX = tile.GetTileLeftX() + localX;
-                var surfaceY = tile.Position.Y + tile.GetGroundYAt(localX);
+	private void SpawnEnemies()
+	{
+		var raiderScene = GD.Load<PackedScene>("res://scenes/enemies/Raider.tscn");
+		var droneScene = GD.Load<PackedScene>("res://scenes/enemies/Drone.tscn");
+		var combatDroneScene = GD.Load<PackedScene>("res://scenes/enemies/CombatDrone.tscn");
+		var bombBotScene = GD.Load<PackedScene>("res://scenes/enemies/BombBot.tscn");
+		var boomerangScene = GD.Load<PackedScene>("res://scenes/enemies/BoomerangRaider.tscn");
+		var rng = new RandomNumberGenerator();
 
-                var roll = rng.Randf();
-                var chosen = roll < 0.45f ? groundTypes[0]
-                    : roll < 0.75f ? groundTypes[1]
-                    : groundTypes[2];
+		var groundTypes = new[] { raiderScene, bombBotScene, boomerangScene };
+		var flyingTypes = new[] { droneScene, combatDroneScene };
 
-                var enemy = chosen.Instantiate<Node2D>();
-                enemy.Position = new Vector2(posX, surfaceY);
-                _spawnedActors.AddChild(enemy);
-            }
+		foreach (var tile in _tileGenerator.ActiveTiles)
+		{
+			var groundCount = (int)(rng.Randi() % 3) + 1;
+			for (var i = 0; i < groundCount; i++)
+			{
+				var t = rng.RandfRange(0.1f, 0.9f);
+				var localX = t * tile.TileWidth;
+				var posX = tile.GetTileLeftX() + localX;
+				var surfaceY = tile.Position.Y + tile.GetGroundYAt(localX);
 
-            var flyingCount = (int)(rng.Randi() % 2) + 1;
-            for (var i = 0; i < flyingCount; i++)
-            {
-                var t = rng.RandfRange(0.1f, 0.9f);
-                var localX = t * tile.TileWidth;
-                var posX = tile.GetTileLeftX() + localX;
-                var surfaceY = tile.Position.Y + tile.GetGroundYAt(localX);
+				var roll = rng.Randf();
+				var chosen = roll < 0.45f ? groundTypes[0]
+					: roll < 0.75f ? groundTypes[1]
+					: groundTypes[2];
 
-                var enemy = flyingTypes[rng.Randi() % flyingTypes.Length].Instantiate<Node2D>();
-                enemy.Position = new Vector2(posX, surfaceY - rng.RandfRange(40, 70));
-                _spawnedActors.AddChild(enemy);
-            }
-        }
-    }
+				var enemy = chosen.Instantiate<Node2D>();
+				enemy.Position = new Vector2(posX, surfaceY);
+				_spawnedActors.AddChild(enemy);
+			}
 
-    private void RemoveCameraBounds()
-    {
-        _camera.LimitLeft = -10000;
-        _camera.LimitTop = -10000;
-        _camera.LimitRight = 25000;
-        _camera.LimitBottom = 10000;
-    }
+			var flyingCount = (int)(rng.Randi() % 2) + 1;
+			for (var i = 0; i < flyingCount; i++)
+			{
+				var t = rng.RandfRange(0.1f, 0.9f);
+				var localX = t * tile.TileWidth;
+				var posX = tile.GetTileLeftX() + localX;
+				var surfaceY = tile.Position.Y + tile.GetGroundYAt(localX);
 
-    public void SetRespawnPoint(Vector2 position)
-    {
-        _respawnPosition = position;
-    }
+				var enemy = flyingTypes[rng.Randi() % flyingTypes.Length].Instantiate<Node2D>();
+				enemy.Position = new Vector2(posX, surfaceY - rng.RandfRange(40, 70));
+				_spawnedActors.AddChild(enemy);
+			}
+		}
+	}
 
-    private void RespawnPlayer()
-    {
-        _player.ResetTransientState();
-        _player.Velocity = Vector2.Zero;
-        _player.GlobalPosition = _respawnPosition;
-    }
+	private void RemoveCameraBounds()
+	{
+		_camera.LimitLeft = -10000;
+		_camera.LimitTop = -10000;
+		_camera.LimitRight = 25000;
+		_camera.LimitBottom = 10000;
+	}
 
-    private static readonly TileTextures.Theme?[] ThemeCycle =
-    {
-        null,
-        TileTextures.Theme.Building,
-        TileTextures.Theme.Terrain,
-        TileTextures.Theme.Catwalk,
-        TileTextures.Theme.None,
-    };
+	public void SetRespawnPoint(Vector2 position)
+	{
+		_respawnPosition = position;
+	}
 
-    private int _themeIndex;
+	private void RespawnPlayer()
+	{
+		_player.ResetTransientState();
+		_player.Velocity = Vector2.Zero;
+		_player.GlobalPosition = _respawnPosition;
+	}
 
-    public override void _UnhandledInput(InputEvent @event)
-    {
-        if (@event is InputEventKey e && e.Pressed && !e.Echo && e.PhysicalKeycode == Key.T)
-        {
-            _themeIndex = (_themeIndex + 1) % ThemeCycle.Length;
-            _tileGenerator.ForcedTheme = ThemeCycle[_themeIndex];
-            GD.Print($"Texture theme: {(_themeIndex == 0 ? "auto" : ThemeCycle[_themeIndex]!.Value.ToString())}");
-        }
-    }
+	private static readonly TileTextures.Theme?[] ThemeCycle =
+	{
+		null,
+		TileTextures.Theme.Building,
+		TileTextures.Theme.Terrain,
+		TileTextures.Theme.Catwalk,
+		TileTextures.Theme.None,
+	};
 
-    private Vector2 FindSafeSpawn()
-    {
-        var spaceState = GetWorld2D().DirectSpaceState;
-        var query = PhysicsRayQueryParameters2D.Create(
-            new Vector2(SpawnPosition.X, -500),
-            new Vector2(SpawnPosition.X, FallRespawnY + 500),
-            1);
-        var result = spaceState.IntersectRay(query);
-        if (result.Count > 0)
-        {
-            var hitPos = (Vector2)result["position"];
-            return new Vector2(SpawnPosition.X, hitPos.Y - 30);
-        }
+	private int _themeIndex;
 
-        foreach (var tile in _tileGenerator.ActiveTiles)
-        {
-            if (SpawnPosition.X >= tile.GetTileLeftX() && SpawnPosition.X < tile.GetTileRightX())
-            {
-                var surfaceY = tile.Position.Y + tile.LeftGroundY;
-                return new Vector2(SpawnPosition.X, surfaceY - 30);
-            }
-        }
+	public override void _UnhandledInput(InputEvent @event)
+	{
+		if (@event is InputEventKey e && e.Pressed && !e.Echo && e.PhysicalKeycode == Key.T)
+		{
+			_themeIndex = (_themeIndex + 1) % ThemeCycle.Length;
+			_tileGenerator.ForcedTheme = ThemeCycle[_themeIndex];
+			GD.Print($"Texture theme: {(_themeIndex == 0 ? "auto" : ThemeCycle[_themeIndex]!.Value.ToString())}");
+		}
+	}
 
-        if (_tileGenerator.ActiveTiles.Count > 0)
-        {
-            var tile = _tileGenerator.ActiveTiles[0];
-            var surfaceY = tile.Position.Y + tile.LeftGroundY;
-            return new Vector2(tile.GetTileLeftX() + 80, surfaceY - 30);
-        }
+	private Vector2 FindSafeSpawn()
+	{
+		var spaceState = GetWorld2D().DirectSpaceState;
+		var query = PhysicsRayQueryParameters2D.Create(
+			new Vector2(SpawnPosition.X, -500),
+			new Vector2(SpawnPosition.X, FallRespawnY + 500),
+			1);
+		var result = spaceState.IntersectRay(query);
+		if (result.Count > 0)
+		{
+			var hitPos = (Vector2)result["position"];
+			return new Vector2(SpawnPosition.X, hitPos.Y - 30);
+		}
 
-        return SpawnPosition;
-    }
+		foreach (var tile in _tileGenerator.ActiveTiles)
+		{
+			if (SpawnPosition.X >= tile.GetTileLeftX() && SpawnPosition.X < tile.GetTileRightX())
+			{
+				var surfaceY = tile.Position.Y + tile.LeftGroundY;
+				return new Vector2(SpawnPosition.X, surfaceY - 30);
+			}
+		}
 
-    private float GetSurfaceYAtX(float worldX)
-    {
-        foreach (var tile in _tileGenerator.ActiveTiles)
-        {
-            if (worldX >= tile.GetTileLeftX() && worldX < tile.GetTileRightX())
-            {
-                var t = (worldX - tile.GetTileLeftX()) / tile.TileWidth;
-                var leftSurface = tile.Position.Y + tile.LeftGroundY;
-                var rightSurface = tile.Position.Y + tile.RightGroundY;
-                return Mathf.Lerp(leftSurface, rightSurface, t);
-            }
-        }
-        return float.MaxValue;
-    }
+		if (_tileGenerator.ActiveTiles.Count > 0)
+		{
+			var tile = _tileGenerator.ActiveTiles[0];
+			var surfaceY = tile.Position.Y + tile.LeftGroundY;
+			return new Vector2(tile.GetTileLeftX() + 80, surfaceY - 30);
+		}
 
-    private string GetTileLabelText()
-    {
-        var px = _player.GlobalPosition.X;
-        for (var i = 0; i < _tileGenerator.ActiveTiles.Count; i++)
-        {
-            var tile = _tileGenerator.ActiveTiles[i];
-            if (px >= tile.GetTileLeftX() && px < tile.GetTileRightX())
-            {
-                var fileName = tile.SceneFilePath.GetFile().GetBaseName();
-                var typeName = fileName.EndsWith("Tile") ? fileName[..^4] : fileName;
-                return $"Tile [{i}/{_tileGenerator.GeneratedTileCount}]: {typeName}";
-            }
-        }
-        return "Tile: —";
-    }
+		return SpawnPosition;
+	}
+
+	private float GetSurfaceYAtX(float worldX)
+	{
+		foreach (var tile in _tileGenerator.ActiveTiles)
+		{
+			if (worldX >= tile.GetTileLeftX() && worldX < tile.GetTileRightX())
+			{
+				var t = (worldX - tile.GetTileLeftX()) / tile.TileWidth;
+				var leftSurface = tile.Position.Y + tile.LeftGroundY;
+				var rightSurface = tile.Position.Y + tile.RightGroundY;
+				return Mathf.Lerp(leftSurface, rightSurface, t);
+			}
+		}
+		return float.MaxValue;
+	}
+
+	private string GetTileLabelText()
+	{
+		var px = _player.GlobalPosition.X;
+		for (var i = 0; i < _tileGenerator.ActiveTiles.Count; i++)
+		{
+			var tile = _tileGenerator.ActiveTiles[i];
+			if (px >= tile.GetTileLeftX() && px < tile.GetTileRightX())
+			{
+				var fileName = tile.SceneFilePath.GetFile().GetBaseName();
+				var typeName = fileName.EndsWith("Tile") ? fileName[..^4] : fileName;
+				return $"Tile [{i}/{_tileGenerator.GeneratedTileCount}]: {typeName}";
+			}
+		}
+		return "Tile: —";
+	}
 }

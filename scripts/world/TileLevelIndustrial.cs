@@ -54,6 +54,20 @@ public partial class TileLevelIndustrial : MissionLevel
             var midY = 20 + FogHalfHeight;
             var depth = Mathf.Clamp((player.GlobalPosition.Y - midY) / FogHalfHeight, 0f, 1f);
             _darknessRect.Modulate = new Color(0, 0, 0, depth * 0.35f);
+
+            // Parallax background layers based on player horizontal position
+            var playerX = player.GlobalPosition.X;
+            var layer0Speed = 0.1f; // sky - almost stationary
+            var layer1Speed = 0.4f; // distant industrial
+            var layer2Speed = 0.8f; // warehouses - closer
+
+            var layer0Pos = new Vector2(playerX * layer0Speed, 20);
+            var layer1Pos = new Vector2(playerX * layer1Speed, 20);
+            var layer2Pos = new Vector2(playerX * layer2Speed, 20);
+
+            GetNode<ColorRect>("Layer0_Sky").GlobalPosition = layer0Pos;
+            GetNode<ColorRect>("Layer1_Industrial").GlobalPosition = layer1Pos;
+            GetNode<ColorRect>("Layer2_Warehouses").GlobalPosition = layer2Pos;
         }
     }
 
